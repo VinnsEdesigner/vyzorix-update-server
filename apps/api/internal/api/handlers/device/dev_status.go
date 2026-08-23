@@ -31,7 +31,7 @@ func NewStatusHandler(deviceService *device.Service) *StatusHandler {
 
 // Handle processes the device status request.
 // @Summary      Get device status
-// @Description  Returns the live status (online, last_seen, app version) for a device.
+// @Description  Returns the live status (online, last_seen, app version) for a device
 // @Tags         devices
 // @Accept       json
 // @Produce      json

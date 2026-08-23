@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { registration, type InboxEntry, type InboxStatus } from '@vyzorix/api-client';
-import { fetchInboxEntryViaGraphQL } from './_graphql-fallback';
+import { getInbox, type InboxEntry, type InboxStatus } from '@vyzorix/api-client';
+import { fetchInboxEntryViaGraphQL, normalizeInboxEntry } from './_graphql-fallback';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
@@ -19,10 +19,10 @@ export function useRegistrationStatus(
     queryKey: queryKeys.registrationStatus(imei ?? ''),
     queryFn: async (): Promise<RegistrationStatus | null> => {
       if (!imei) return null;
-      const org = organizationId ?? undefined;
       let entry: InboxEntry | null;
       try {
-        entry = await registration.getInboxEntry(imei, org);
+        const raw = await getInbox().getDeviceInboxImei(imei);
+        entry = raw ? normalizeInboxEntry(raw) : null;
       } catch (restError) {
         if (!organizationId) throw restError;
         entry = await fetchInboxEntryViaGraphQL(organizationId, imei);

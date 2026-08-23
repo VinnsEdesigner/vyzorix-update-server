@@ -5,12 +5,25 @@ import (
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceListResult
+	_ openapi.DeviceDetailResult
+	_ openapi.DeviceCountResult
+	_ openapi.DeviceTagsResult
+	_ openapi.SetDeviceTagsRequest
+	_ openapi.DeviceTagAddedResult
+	_ openapi.DeviceTagRemovedResult
+	_ openapi.ErrorResponse
 )
 
 // ListHandler handles GET /v1/dashboard/devices.
@@ -27,7 +40,21 @@ func NewListHandler(deviceService *device.Service, hub *hub.Hub) *ListHandler {
 	}
 }
 
-// Handle processes the device listing request with pagination.
+// Handle handles GET /v1/dashboard/devices.
+// @Summary      List dashboard devices
+// @Description  Returns paginated devices for the dashboard with cursor pagination
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        cursor   query int    false  "pagination cursor (offset)"
+// @Param        limit    query int    false  "page size (default 50)"
+// @Param        search   query string false  "search by IMEI/name"
+// @Param        status   query string false  "filter by status"
+// @Success      200  {object}  openapi.DeviceListResult  "devices"
+// @Failure      400  {object}  openapi.ErrorResponse  "organization context required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /dashboard/devices [get]
 func (h *ListHandler) Handle(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -149,7 +176,17 @@ func (h *ListHandler) isDeviceOnline(deviceID string) bool {
 }
 
 // ListByOperator handles GET /v1/dashboard/devices?operatorId=<id>.
-// Returns all devices for a specific operator.
+// @Summary      List devices by operator
+// @Description  Returns devices assigned to a specific operator
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        operatorId  query string  false  "operator ID"
+// @Success      200  {object}  openapi.DeviceListResult  "devices"
+// @Failure      400  {object}  openapi.ErrorResponse  "organization context required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /dashboard/devices/operator [get]
 func (h *ListHandler) ListByOperator(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -212,6 +249,18 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 }
 
 // GetDevice handles GET /v1/device/:imei.
+// @Summary      Get device
+// @Description  Returns a single device by IMEI
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.DeviceDetailResult  "device"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/{imei} [get]
 func (h *ListHandler) GetDevice(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
@@ -254,6 +303,16 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 }
 
 // Count handles GET /v1/device/count.
+// @Summary      Count devices
+// @Description  Returns the device count for the current organization
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.DeviceCountResult  "device count"
+// @Failure      400  {object}  openapi.ErrorResponse  "organization context required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/count [get]
 func (h *ListHandler) Count(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -294,6 +353,16 @@ func (h *ListHandler) CountByOrganization(c *gin.Context) {
 	})
 }
 
+// GetTags handles GET /v1/devices/:imei/tags.
+// @Summary      Get device tags
+// @Description  Returns the tags for a device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.DeviceTagsResult  "tags"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Router       /devices/{imei}/tags [get]
 func (h *ListHandler) GetTags(c *gin.Context) {
 	imei := c.Param("imei")
 	d, err := h.deviceService.GetDevice(c.Request.Context(), imei)
@@ -304,6 +373,18 @@ func (h *ListHandler) GetTags(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": d.Tags})
 }
 
+// SetTags handles PUT /v1/devices/:imei/tags.
+// @Summary      Set device tags
+// @Description  Replaces all tags for a device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.SetDeviceTagsRequest  true  "tags"
+// @Success      200  {object}  openapi.DeviceTagsResult  "tags"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid body"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/tags [put]
 func (h *ListHandler) SetTags(c *gin.Context) {
 	imei := c.Param("imei")
 	var body struct {
@@ -320,6 +401,17 @@ func (h *ListHandler) SetTags(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"tags": body.Tags})
 }
 
+// AddTag handles POST /v1/devices/:imei/tags/:tag.
+// @Summary      Add device tag
+// @Description  Adds a single tag to a device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        tag   path  string  true  "tag to add"
+// @Success      200  {object}  openapi.DeviceTagAddedResult  "added"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/tags/{tag} [post]
 func (h *ListHandler) AddTag(c *gin.Context) {
 	imei := c.Param("imei")
 	tag := c.Param("tag")
@@ -330,6 +422,17 @@ func (h *ListHandler) AddTag(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"added": tag})
 }
 
+// RemoveTag handles DELETE /v1/devices/:imei/tags/:tag.
+// @Summary      Remove device tag
+// @Description  Removes a single tag from a device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        tag   path  string  true  "tag to remove"
+// @Success      200  {object}  openapi.DeviceTagRemovedResult  "removed"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/tags/{tag} [delete]
 func (h *ListHandler) RemoveTag(c *gin.Context) {
 	imei := c.Param("imei")
 	tag := c.Param("tag")

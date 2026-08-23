@@ -19,7 +19,30 @@ export * from "./diagnostics";
 export * from "./events";
 export * from "./realtime";
 export * from "./commands";
-export * from "./device";
+export {
+  type DeviceListItem,
+  type DeviceListResult,
+  type DeviceDetailResult,
+  type DeviceCountResult,
+  type DeviceTagsResult,
+  type DeviceTagAddedResult,
+  type DeviceTagRemovedResult,
+  type DeviceConfirmResult,
+  type DeviceConfirmRequest,
+  type DeviceFCMTokenRequest,
+  type SetDeviceTagsRequest,
+  type DeviceTransferRequest,
+  type DeviceTransferResult,
+  type DeviceSettingsResult,
+  type UpdateDeviceSettingsRequest,
+  type ThresholdsResult,
+  type ConnectionStatusResult,
+  type ConnectionListResult,
+  type ConnectionMetricsResult,
+  type DeviceDisconnectResult,
+  validateIMEIChecksum,
+  validateFCMToken,
+} from "./device";
 export * from "./invitation";
 export * from "./logs";
 export * from "./metrics";

@@ -6,7 +6,11 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  ChannelStatusResult,
+  ChannelSubscribeRequest,
+  ChannelSubscribeResult,
+  ChannelUnsubscribeResult,
+  PostChannelsUnsubscribeParams
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,27 +20,42 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getChannels = () => {
+/**
+ * Returns active channel streams for the org
+ * @summary Channel status
+ */
 const getChannelsStatus = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<ChannelStatusResult>>,) => {
+      return customAxios<ChannelStatusResult>(
       {url: `/channels/status`, method: 'GET'
     },
       options);
     }
-  const postChannelsSubscribe = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/channels/subscribe`, method: 'POST'
+  /**
+ * Registers a logical subscription to a channel scope for the operator
+ * @summary Subscribe to channel
+ */
+const postChannelsSubscribe = (
+    channelSubscribeRequest: ChannelSubscribeRequest,
+ options?: SecondParameter<typeof customAxios<ChannelSubscribeResult>>,) => {
+      return customAxios<ChannelSubscribeResult>(
+      {url: `/channels/subscribe`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: channelSubscribeRequest
     },
       options);
     }
-  const postChannelsUnsubscribe = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/channels/unsubscribe`, method: 'POST'
+  /**
+ * Removes a logical subscription to a channel scope
+ * @summary Unsubscribe from channel
+ */
+const postChannelsUnsubscribe = (
+    params: PostChannelsUnsubscribeParams,
+ options?: SecondParameter<typeof customAxios<ChannelUnsubscribeResult>>,) => {
+      return customAxios<ChannelUnsubscribeResult>(
+      {url: `/channels/unsubscribe`, method: 'POST',
+        params
     },
       options);
     }

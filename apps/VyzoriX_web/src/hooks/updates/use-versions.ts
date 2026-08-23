@@ -1,12 +1,14 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  updates,
-  type VersionListResult,
-  type VersionParams,
-} from '@vyzorix/api-client';
+import { getUpdates, type VersionListResult } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { fetchVersionsViaGraphQL } from './_graphql-fallback';
+import { fetchVersionsViaGraphQL, normalizeWireVersionList } from './_graphql-fallback';
+
+export interface VersionParams {
+  status?: string;
+  page?: number;
+  limit?: number;
+}
 
 export function useVersions(
   params?: VersionParams,
@@ -15,9 +17,15 @@ export function useVersions(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.updateVersions({ ...params, organizationId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<VersionListResult> => {
       try {
-        return await updates.getVersions(params);
+        return normalizeWireVersionList(
+          await getUpdates().getUpdatesVersions({
+            status: params?.status,
+            page: params?.page,
+            limit: params?.limit,
+          }),
+        );
       } catch {
         if (!organizationId) throw new Error('No organization selected');
         return fetchVersionsViaGraphQL(organizationId, {
@@ -31,3 +39,5 @@ export function useVersions(
     ...options,
   });
 }
+
+export type { VersionListResult };

@@ -100,7 +100,7 @@ describe('useUpdateOrgThresholds', () => {
     const { result } = renderHookWithQueryClient(() => useUpdateOrgThresholds('org-1'));
     result.current.mutate({ riskWarn: 75 });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.thresholds.riskWarn).toBe(75);
-    expect(result.current.data?.thresholds.riskCrit).toBe(buildThresholds().riskCrit);
+    expect(result.current.data?.thresholds?.riskWarn).toBe(75);
+    expect(result.current.data?.thresholds?.riskCrit).toBe(buildThresholds().riskCrit);
   });
 });

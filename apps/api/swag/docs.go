@@ -15,20 +15,87 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/updates/check": {
+        "/admin/api-keys": {
             "get": {
+                "description": "Lists all API keys across all operators (super admin only)",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "usage-stats",
-                    "usage-stats"
+                    "admin"
                 ],
+                "summary": "List all API keys",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by operator ID",
+                        "name": "operator_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search by key name",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API keys with operator identity",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminAPIKeyListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/api-keys/operator/{operatorId}": {
+            "get": {
+                "description": "Lists all API keys for a specific operator (super admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List operator API keys",
                 "parameters": [
                     {
                         "type": "string",
@@ -39,18 +106,587 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "operator ID",
+                        "name": "operatorId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "operator API keys",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminAPIKeyListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/api-keys/stats": {
+            "get": {
+                "description": "Returns global API key statistics (super admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get global API key stats",
+                "parameters": [
+                    {
+                        "type": "string",
                         "description": "Organization ID",
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "global stats",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.GlobalAPIKeyStatsResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/api-keys/stats/operator/{operatorId}": {
+            "get": {
+                "description": "Returns API key statistics for a specific operator (super admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get operator API key stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "operator ID",
+                        "name": "operatorId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "operator stats",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorAPIKeyStatsResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/api-keys/{keyId}": {
+            "delete": {
+                "description": "Force revokes an API key for any operator (super admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Force revoke API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "keyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "key revoked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "key not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/clients": {
+            "get": {
+                "description": "Returns all OAuth clients (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List admin clients",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "clients",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/clients/{clientId}": {
+            "get": {
+                "description": "Returns a single OAuth client by ID (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get admin client",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientResult"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "client not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Revokes a client (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete admin client",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client deleted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates mutable client fields (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update admin client",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "client update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateAdminClientRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated client",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientResult"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required / invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/clients/{clientId}/rotate-key": {
+            "post": {
+                "description": "Rotates the signing key with a 24-hour grace period (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Rotate admin client key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client with rotated key",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientResult"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "client not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/support-bundle": {
+            "get": {
+                "description": "Returns a diagnostic support bundle with runtime and DB stats (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get support bundle",
+                "responses": {
+                    "200": {
+                        "description": "support bundle",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SupportBundleResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/updates/check": {
+            "get": {
+                "description": "Checks GitHub for the latest server release and includes usage stats",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "usage-stats"
+                ],
+                "summary": "Check for server updates",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "update check result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateCheckerResult"
+                        }
+                    }
+                }
             }
         },
         "/alerts/rules": {
             "get": {
-                "description": "Returns all org-scoped alert rules with their current instance states.",
+                "description": "Returns all org-scoped alert rules with their current instance states",
                 "consumes": [
                     "application/json"
                 ],
@@ -74,25 +710,25 @@ const docTemplate = `{
                     "200": {
                         "description": "alert rules with instances",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRuleListResult"
                         }
                     },
                     "400": {
                         "description": "org context missing",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "internal error",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Creates a new org-scoped alert rule. Validated before persistence.",
+                "description": "Creates a new org-scoped alert rule. Validated before persistence",
                 "consumes": [
                     "application/json"
                 ],
@@ -117,7 +753,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_api_handlers_alert.ruleRequest"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRuleRequest"
                         }
                     }
                 ],
@@ -125,19 +761,19 @@ const docTemplate = `{
                     "201": {
                         "description": "created rule with instances",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRule"
                         }
                     },
                     "400": {
                         "description": "invalid input",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "internal error",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
@@ -145,7 +781,7 @@ const docTemplate = `{
         },
         "/alerts/rules/{id}": {
             "get": {
-                "description": "Returns one alert rule with its current instance states.",
+                "description": "Returns one alert rule with its current instance states",
                 "consumes": [
                     "application/json"
                 ],
@@ -176,25 +812,25 @@ const docTemplate = `{
                     "200": {
                         "description": "rule with instances",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRule"
                         }
                     },
                     "400": {
                         "description": "not found / forbidden",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "internal error",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Removes the rule and its instances.",
+                "description": "Removes the rule and its instances",
                 "consumes": [
                     "application/json"
                 ],
@@ -225,25 +861,25 @@ const docTemplate = `{
                     "200": {
                         "description": "deleted confirmation",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeletedResult"
                         }
                     },
                     "400": {
                         "description": "not found",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "internal error",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
             },
             "patch": {
-                "description": "Replaces a rule's mutable fields. Disabling clears its instances.",
+                "description": "Replaces a rule's mutable fields. Disabling clears its instances",
                 "consumes": [
                     "application/json"
                 ],
@@ -275,7 +911,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_api_handlers_alert.ruleRequest"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRuleRequest"
                         }
                     }
                 ],
@@ -283,19 +919,19 @@ const docTemplate = `{
                     "200": {
                         "description": "updated rule with instances",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRule"
                         }
                     },
                     "400": {
                         "description": "invalid input / not found",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "internal error",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
@@ -303,7 +939,7 @@ const docTemplate = `{
         },
         "/alerts/rules/{id}/evaluate": {
             "post": {
-                "description": "Triggers evaluation on the rule's metric immediately.",
+                "description": "Triggers evaluation on the rule's metric immediately",
                 "consumes": [
                     "application/json"
                 ],
@@ -334,13 +970,13 @@ const docTemplate = `{
                     "200": {
                         "description": "evaluation result (transitioned index)",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertEvaluateResult"
                         }
                     },
                     "500": {
                         "description": "evaluation failed",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
@@ -348,7 +984,7 @@ const docTemplate = `{
         },
         "/alerts/rules/{id}/history": {
             "get": {
-                "description": "Transition events for an org, optionally narrowed to one rule.",
+                "description": "Transition events for an org, optionally narrowed to one rule",
                 "consumes": [
                     "application/json"
                 ],
@@ -384,13 +1020,13 @@ const docTemplate = `{
                     "200": {
                         "description": "event entries",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertHistoryResult"
                         }
                     },
                     "500": {
                         "description": "internal error",
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
                         }
                     }
                 }
@@ -398,18 +1034,17 @@ const docTemplate = `{
         },
         "/annotations": {
             "get": {
+                "description": "Returns org-scoped annotations, optionally filtered by tag and time range",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "annotations",
                     "annotations"
                 ],
+                "summary": "List annotations",
                 "parameters": [
                     {
                         "type": "string",
@@ -420,27 +1055,56 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                        "description": "filter by tag",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit (default 200)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 lower bound",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "RFC3339 upper bound",
+                        "name": "end_time",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "annotations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AnnotationListResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             },
             "post": {
+                "description": "Creates a new org-scoped annotation",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "annotations",
                     "annotations"
                 ],
+                "summary": "Create annotation",
                 "parameters": [
                     {
                         "type": "string",
@@ -450,30 +1114,50 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                        "description": "annotation definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AnnotationRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "201": {
+                        "description": "created annotation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Annotation"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/annotations/{id}": {
-            "delete": {
+            "get": {
+                "description": "Returns one annotation by ID",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "annotations",
                     "annotations"
                 ],
+                "summary": "Get annotation",
                 "parameters": [
                     {
                         "type": "string",
@@ -484,82 +1168,35 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "annotation ID",
+                        "name": "id",
+                        "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {}
-            }
-        },
-        "/api-keys": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-keys"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                "responses": {
+                    "200": {
+                        "description": "annotation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Annotation"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
                     }
-                ],
-                "responses": {}
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-keys"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/api-keys/{id}": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "api-keys"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
+                }
             },
             "delete": {
+                "description": "Removes an annotation",
                 "consumes": [
                     "application/json"
                 ],
@@ -567,8 +1204,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "api-keys"
+                    "annotations"
                 ],
+                "summary": "Delete annotation",
                 "parameters": [
                     {
                         "type": "string",
@@ -576,11 +1214,38 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "annotation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "deleted confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeletedResult"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             },
             "patch": {
+                "description": "Replaces an annotation's mutable fields",
                 "consumes": [
                     "application/json"
                 ],
@@ -588,8 +1253,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "api-keys"
+                    "annotations"
                 ],
+                "summary": "Update annotation",
                 "parameters": [
                     {
                         "type": "string",
@@ -597,13 +1263,90 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "annotation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "annotation definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AnnotationRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "updated annotation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Annotation"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input / not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/api-keys/{id}/rotate": {
+        "/apk/{name}": {
+            "get": {
+                "description": "Serves APK files with optional Range support for resume",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "updater"
+                ],
+                "summary": "Download APK",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APK filename",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "APK binary",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "filename required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "file not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/admin/lockout/unlock/{operator_id}": {
             "post": {
+                "description": "Clears an operator's account lockout. Requires org-scoped super_admin",
                 "consumes": [
                     "application/json"
                 ],
@@ -611,8 +1354,72 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "api-keys"
+                    "auth"
                 ],
+                "summary": "Unlock account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "operator ID to unlock",
+                        "name": "operator_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "account unlocked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "operator_id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "operator not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/admin/operators": {
+            "get": {
+                "description": "Lists all operators in the system (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List operators",
                 "parameters": [
                     {
                         "type": "string",
@@ -622,11 +1429,1108 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "operators",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperatorListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new operator (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Create operator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "operator credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateOperatorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created operator",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperator"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "email already in use",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/admin/operators/{id}": {
+            "get": {
+                "description": "Returns a single operator by ID (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get operator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "operator ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "operator",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperator"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an operator. Cannot delete yourself or the last super_admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete operator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "operator ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "operator deleted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "operator id required / cannot delete self",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "cannot delete last super_admin",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates mutable operator fields (super_admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update operator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "operator ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "operator update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateOperatorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated operator",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperator"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "super_admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "email already in use",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api-keys": {
+            "get": {
+                "description": "Returns paginated API keys for the operator with monthly quota usage",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "List API keys",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API keys with pagination",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKeyListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Generates a new API key. The full key is only returned once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "Create API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "API key creation request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateAPIKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created API key with full secret",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKeyWithSecret"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api-keys/{keyId}": {
+            "get": {
+                "description": "Returns a single API key by ID (without the full secret)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "Get API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "keyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "API key",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKey"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Revokes an API key so it can no longer be used",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "Revoke API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "keyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "no content"
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates mutable API key fields (name, scope)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "Update API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "keyId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "API key update request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateAPIKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated API key",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKey"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/api-keys/{keyId}/rotate": {
+            "post": {
+                "description": "Rotates an API key, returning a new full secret (shown only once)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "api-keys"
+                ],
+                "summary": "Rotate API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "keyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "rotated API key with full secret",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKeyWithSecret"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/cancel-verification": {
+            "post": {
+                "description": "Cancels a pending email verification for an email address",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Cancel verification",
+                "parameters": [
+                    {
+                        "description": "email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CancelVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "email required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/client-credentials": {
+            "get": {
+                "description": "Returns all client credentials for the authenticated operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "client-credentials"
+                ],
+                "summary": "List client credentials",
+                "responses": {
+                    "200": {
+                        "description": "clients",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredentialListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new OAuth client credential. The secret is only returned once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "client-credentials"
+                ],
+                "summary": "Create client credentials",
+                "parameters": [
+                    {
+                        "description": "client name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateClientCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "created client with secret",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/client-credentials/{clientId}": {
+            "get": {
+                "description": "Returns a single client credential by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "client-credentials"
+                ],
+                "summary": "Get client credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "client not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Revokes a client credential by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "client-credentials"
+                ],
+                "summary": "Revoke client credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client revoked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "client not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates mutable client credential fields (e.g., name)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "client-credentials"
+                ],
+                "summary": "Update client credential",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "client update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateClientCredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated client",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required / invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "client not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/client-credentials/{clientId}/rotate-secret": {
+            "post": {
+                "description": "Rotates a client credential's secret. The new secret is only returned once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "client-credentials"
+                ],
+                "summary": "Rotate client secret",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "client with new secret",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential"
+                        }
+                    },
+                    "400": {
+                        "description": "clientId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "client not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/forgot-password": {
+            "post": {
+                "description": "Sends a password reset link to the email if it exists",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Forgot password",
+                "parameters": [
+                    {
+                        "description": "email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "reset link sent (if email exists)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "email required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/lockout/status": {
+            "get": {
+                "description": "Returns the current account lockout status for the authenticated operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get lockout status",
+                "responses": {
+                    "200": {
+                        "description": "lockout status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LockoutStatusResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/auth/login": {
             "post": {
+                "description": "Authenticates an operator with email/password and starts a session",
                 "consumes": [
                     "application/json"
                 ],
@@ -636,11 +2540,49 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "responses": {}
+                "summary": "Operator login",
+                "parameters": [
+                    {
+                        "description": "login credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "login result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "423": {
+                        "description": "account locked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/auth/login/tokens": {
             "post": {
+                "description": "Authenticates an operator and returns access/refresh tokens instead of a cookie",
                 "consumes": [
                     "application/json"
                 ],
@@ -650,11 +2592,532 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "responses": {}
+                "summary": "Operator login (token response)",
+                "parameters": [
+                    {
+                        "description": "login credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "login result with tokens",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginWithTokensResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "description": "Ends the current session and clears the session cookie",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout",
+                "parameters": [
+                    {
+                        "description": "logout options",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LogoutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "logged out",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "logout failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "description": "Returns the authenticated operator's profile and organization context",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Get current operator",
+                "responses": {
+                    "200": {
+                        "description": "current operator",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MeResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "failed to get organizations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the current operator's display name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update operator name",
+                "parameters": [
+                    {
+                        "description": "new name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateNameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated operator",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorSettingsResultLegacy"
+                        }
+                    },
+                    "400": {
+                        "description": "name required / invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/disable": {
+            "post": {
+                "description": "Disables MFA after verifying a TOTP code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Disable MFA",
+                "parameters": [
+                    {
+                        "description": "TOTP code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFADisableRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "disabled",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "code required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated / invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/enable": {
+            "post": {
+                "description": "Enables MFA after verifying a TOTP code and returns backup codes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Enable MFA",
+                "parameters": [
+                    {
+                        "description": "TOTP code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAEnableRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "enabled with backup codes",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAEnableResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated / invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/enroll": {
+            "post": {
+                "description": "Generates a new TOTP MFA secret and enrollment URI",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Enroll MFA",
+                "responses": {
+                    "200": {
+                        "description": "MFA secret and URI",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAEnrollResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/regenerate-backup-codes": {
+            "post": {
+                "description": "Generates and persists a new set of MFA backup codes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Regenerate MFA backup codes",
+                "responses": {
+                    "200": {
+                        "description": "new backup codes",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFARegenerateResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/status": {
+            "get": {
+                "description": "Returns whether MFA is enabled for the current operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Get MFA status",
+                "responses": {
+                    "200": {
+                        "description": "MFA status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAStatusResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/verify": {
+            "post": {
+                "description": "Completes login by verifying an MFA code and creating a session with tokens",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Verify MFA (login)",
+                "parameters": [
+                    {
+                        "description": "operator_id + MFA code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAVerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "session with tokens",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAVerifyResult"
+                        }
+                    },
+                    "400": {
+                        "description": "operator_id and code required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid MFA code / operator invalid",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/verify-backup": {
+            "post": {
+                "description": "Verifies a backup code for an operator with MFA enabled",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Verify MFA backup code",
+                "parameters": [
+                    {
+                        "description": "backup code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFABackupCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "valid",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFABackupCodeResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated / invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "MFA not enabled",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/mfa/verify-setup": {
+            "post": {
+                "description": "Verifies a TOTP code during MFA enrollment setup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "mfa"
+                ],
+                "summary": "Verify MFA setup",
+                "parameters": [
+                    {
+                        "description": "TOTP code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAVerifySetupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verified",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated / invalid code",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/auth/oauth/github": {
             "post": {
+                "description": "Initiates GitHub OAuth flow with a 307 redirect to GitHub",
                 "consumes": [
                     "application/json"
                 ],
@@ -664,11 +3127,34 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "responses": {}
+                "summary": "GitHub OAuth login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "post-OAuth redirect URL",
+                        "name": "redirect_url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "redirect to GitHub consent screen",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/auth/oauth/google": {
             "post": {
+                "description": "Initiates Google OAuth flow with a 307 redirect to Google",
                 "consumes": [
                     "application/json"
                 ],
@@ -678,7 +3164,29 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
-                "responses": {}
+                "summary": "Google OAuth login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "post-OAuth redirect URL",
+                        "name": "redirect_url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "307": {
+                        "description": "redirect to Google consent screen",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/auth/organizations": {
@@ -701,11 +3209,31 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "operator's organizations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/auth/organizations/select": {
             "post": {
+                "description": "Switches the operator's active organization context",
                 "consumes": [
                     "application/json"
                 ],
@@ -715,6 +3243,7 @@ const docTemplate = `{
                 "tags": [
                     "auth"
                 ],
+                "summary": "Select organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -722,13 +3251,794 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "organization selection",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SelectOrganizationRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "selection result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SelectOrganizationResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/poll-verification": {
+            "get": {
+                "description": "Polls the verification status for a token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Poll verification status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verification status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PollVerificationResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "verification check failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Exchanges a refresh token for a new access/refresh token pair",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "refresh token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "new token pair",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RefreshTokenResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid or expired refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Registers a new operator account and sends a verification email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Register operator",
+                "parameters": [
+                    {
+                        "description": "registration credentials",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created operator",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RegisterResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "account exists",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/resend-password-reset": {
+            "post": {
+                "description": "Resends a password reset link with rate limiting",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend password reset",
+                "parameters": [
+                    {
+                        "description": "email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "reset link sent",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "email required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "rate limited",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/resend-verification": {
+            "get": {
+                "description": "Resends the verification email via a query parameter (alternative to POST)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend verification email (GET)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "operator email",
+                        "name": "email",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verification email sent (if email exists)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "email required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Resends the verification email to an operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend verification email",
+                "parameters": [
+                    {
+                        "description": "email",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ResendVerificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verification email sent (if email exists)",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "email required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "description": "Resets a password using a valid reset token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "reset token + new password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "password reset",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token and newPassword required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid or expired reset token",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/sessions": {
+            "get": {
+                "description": "Returns all active sessions for the authenticated operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "List sessions",
+                "responses": {
+                    "200": {
+                        "description": "sessions",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SessionListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Revokes all sessions except the current one",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Revoke other sessions",
+                "responses": {
+                    "200": {
+                        "description": "sessions revoked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RevokeResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/sessions/concurrent": {
+            "get": {
+                "description": "Returns whether the operator has concurrent active logins",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Check concurrent sessions",
+                "responses": {
+                    "200": {
+                        "description": "concurrent session info",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConcurrentSessionsResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/sessions/revoke-all": {
+            "post": {
+                "description": "Revokes all sessions including the current one and clears the session cookie",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Revoke all sessions (all devices)",
+                "responses": {
+                    "200": {
+                        "description": "all sessions revoked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RevokeResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/sessions/{id}": {
+            "get": {
+                "description": "Returns a single session by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Get session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "session",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SessionInfo"
+                        }
+                    },
+                    "400": {
+                        "description": "session id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "session not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Revokes a specific session by ID. Cannot revoke the current session",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sessions"
+                ],
+                "summary": "Revoke session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "session revoked",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "session id required / cannot revoke current",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "session not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-email": {
+            "get": {
+                "description": "Verifies an operator's email via a token query parameter (alternative to POST)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify email (GET)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verified",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailVerifyResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Verifies an operator's email using a verification token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify email",
+                "parameters": [
+                    {
+                        "description": "verification token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailVerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "verified",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailVerifyResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/bin/{name}": {
+            "get": {
+                "description": "Serves binary artifacts (same as APK but different path prefix)",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "updater"
+                ],
+                "summary": "Download binary artifact",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "binary filename",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "binary artifact",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "filename required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "file not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/changelog": {
+            "get": {
+                "description": "Returns the release changelog served to Android clients",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updater"
+                ],
+                "summary": "OTA changelog",
+                "responses": {
+                    "200": {
+                        "description": "changelog",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateChangelogResult"
+                        }
+                    },
+                    "404": {
+                        "description": "changelog not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/channels/status": {
             "get": {
+                "description": "Returns active channel streams for the org",
                 "consumes": [
                     "application/json"
                 ],
@@ -738,6 +4048,7 @@ const docTemplate = `{
                 "tags": [
                     "channels"
                 ],
+                "summary": "Channel status",
                 "parameters": [
                     {
                         "type": "string",
@@ -747,11 +4058,25 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "channel status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelStatusResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/channels/subscribe": {
             "post": {
+                "description": "Registers a logical subscription to a channel scope for the operator",
                 "consumes": [
                     "application/json"
                 ],
@@ -761,6 +4086,7 @@ const docTemplate = `{
                 "tags": [
                     "channels"
                 ],
+                "summary": "Subscribe to channel",
                 "parameters": [
                     {
                         "type": "string",
@@ -768,13 +4094,42 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "subscription request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelSubscribeRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "subscription result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelSubscribeResult"
+                        }
+                    },
+                    "400": {
+                        "description": "scope required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/channels/unsubscribe": {
             "post": {
+                "description": "Removes a logical subscription to a channel scope",
                 "consumes": [
                     "application/json"
                 ],
@@ -784,6 +4139,7 @@ const docTemplate = `{
                 "tags": [
                     "channels"
                 ],
+                "summary": "Unsubscribe from channel",
                 "parameters": [
                     {
                         "type": "string",
@@ -791,36 +4147,77 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/commands/{imei}/execute": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "commands"
-                ],
-                "parameters": [
+                    },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "channel scope",
+                        "name": "scope",
+                        "in": "query",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "unsubscription result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelUnsubscribeResult"
+                        }
+                    },
+                    "400": {
+                        "description": "scope required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/commands/{imei}/history": {
+        "/check-update": {
             "get": {
+                "description": "Checks if an update is available for a device by version code",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updater"
+                ],
+                "summary": "Check for update",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "client version code",
+                        "name": "version_code",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "update check result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdaterCheckResult"
+                        }
+                    },
+                    "500": {
+                        "description": "manifest not loaded",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/command/{dispatchId}": {
+            "delete": {
+                "description": "Cancels a pending or in-flight command by dispatch ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -830,6 +4227,7 @@ const docTemplate = `{
                 "tags": [
                     "commands"
                 ],
+                "summary": "Cancel command",
                 "parameters": [
                     {
                         "type": "string",
@@ -837,25 +4235,176 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "dispatch ID",
+                        "name": "dispatchId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "cancel result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandCancelResult"
+                        }
+                    },
+                    "400": {
+                        "description": "dispatch id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "command not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/command/{dispatchId}/retry": {
+            "post": {
+                "description": "Retries a failed command by dispatch ID, issuing a new dispatch",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commands"
+                ],
+                "summary": "Retry command",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "dispatch ID",
+                        "name": "dispatchId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "retry result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandRetryResult"
+                        }
+                    },
+                    "400": {
+                        "description": "dispatch id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "command not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/command/{dispatchId}/status": {
+            "get": {
+                "description": "Returns the dispatch and command status for a command",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commands"
+                ],
+                "summary": "Get command status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "dispatch ID",
+                        "name": "dispatchId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "command status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandStatus"
+                        }
+                    },
+                    "400": {
+                        "description": "dispatch id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "command not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/config-versions/{resource}": {
             "get": {
+                "description": "Returns the version history for a resource type",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "config-versions",
                     "config-versions"
                 ],
+                "summary": "List config versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -866,29 +4415,53 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "resource type",
+                        "name": "resource",
+                        "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit (default 50)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "versions",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersionListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid resource type",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/config-versions/{resource}/{version}": {
             "get": {
+                "description": "Returns one config version snapshot by resource type and version number",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "config-versions",
                     "config-versions"
                 ],
+                "summary": "Get config version",
                 "parameters": [
                     {
                         "type": "string",
@@ -899,29 +4472,54 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "resource type",
+                        "name": "resource",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "version number",
+                        "name": "version",
+                        "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "config version",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersion"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/config-versions/{resource}/{version}/restore": {
             "post": {
+                "description": "Re-applies the version's snapshot as the live settings",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "config-versions",
                     "config-versions"
                 ],
+                "summary": "Restore config version",
                 "parameters": [
                     {
                         "type": "string",
@@ -932,37 +4530,55 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "resource type",
+                        "name": "resource",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "version number",
+                        "name": "version",
+                        "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "restore result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersionRestoreResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/contact-points": {
+        "/connections": {
             "get": {
+                "description": "Returns the status of all WebSocket connections within the organization",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "contact-points",
-                    "contact-points"
+                    "connections"
                 ],
+                "summary": "List connections",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Organization ID",
@@ -971,62 +4587,36 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
-            },
-            "post": {
-                "consumes": [
-                    "application/json",
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "application/json"
-                ],
-                "tags": [
-                    "contact-points",
-                    "contact-points"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                "responses": {
+                    "200": {
+                        "description": "connections",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionListResult"
+                        }
                     },
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
                     }
-                ],
-                "responses": {}
+                }
             }
         },
-        "/contact-points/{id}": {
+        "/connections/metrics": {
             "get": {
+                "description": "Returns aggregate WebSocket metrics for the organization",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "contact-points",
-                    "contact-points"
+                    "connections"
                 ],
+                "summary": "Get connection metrics",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Organization ID",
@@ -1035,85 +4625,35 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
-            },
-            "delete": {
-                "consumes": [
-                    "application/json",
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "application/json"
-                ],
-                "tags": [
-                    "contact-points",
-                    "contact-points"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                "responses": {
+                    "200": {
+                        "description": "connection metrics",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionMetricsResult"
+                        }
                     },
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
                     }
-                ],
-                "responses": {}
-            },
-            "patch": {
-                "consumes": [
-                    "application/json",
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "application/json"
-                ],
-                "tags": [
-                    "contact-points",
-                    "contact-points"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
+                }
             }
         },
-        "/contact-points/{id}/test": {
-            "post": {
+        "/dashboard/device/{imei}/commands": {
+            "get": {
+                "description": "Returns paginated command history for a device",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "contact-points",
-                    "contact-points"
+                    "commands"
                 ],
+                "summary": "List command history",
                 "parameters": [
                     {
                         "type": "string",
@@ -1124,29 +4664,816 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by command status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis lower bound",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis upper bound",
+                        "name": "endTime",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "command history",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandHistoryResult"
+                        }
+                    },
+                    "401": {
+                        "description": "operator context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/device/{imei}/events": {
+            "get": {
+                "description": "Returns event history for a device with filtering and pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List device events",
+                "parameters": [
+                    {
+                        "type": "string",
                         "description": "Organization ID",
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "pagination cursor",
+                        "name": "before",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "events",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEventListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "device not found / forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/device/{imei}/logs": {
+            "get": {
+                "description": "Returns event logs for a device with cursor-based pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List device logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "pagination cursor",
+                        "name": "before",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "log level filter",
+                        "name": "level",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "logs",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceLogEventListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "device not found / forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/device/{imei}/metrics": {
+            "get": {
+                "description": "Returns aggregated metrics for chart visualization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "time window (e.g. 1h, 24h)",
+                        "name": "window",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device metrics",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.GetTelemetryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/device/{imei}/metrics/export": {
+            "get": {
+                "description": "Exports metrics data in JSON or CSV format",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Export device metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "json or csv (default json)",
+                        "name": "format",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "exported metrics",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.GetTelemetryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/device/{imei}/telemetry": {
+            "get": {
+                "description": "Returns raw telemetry frames for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device telemetry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "max frames (default 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device telemetry",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.GetTelemetryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/devices": {
+            "get": {
+                "description": "Returns paginated devices for the dashboard with cursor pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List dashboard devices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pagination cursor (offset)",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search by IMEI/name",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "devices",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "organization context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/devices/operator": {
+            "get": {
+                "description": "Returns devices assigned to a specific operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List devices by operator",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "operator ID",
+                        "name": "operatorId",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "devices",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "organization context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/events/recent": {
+            "get": {
+                "description": "Returns most recent events across all accessible devices",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List recent device events",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit (default 50, max 200)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "events",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEventListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "operator context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/events/types/{type}": {
+            "get": {
+                "description": "Returns events of a specific type across all accessible devices",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List device events by type",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "event type",
+                        "name": "type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit (default 100, max 500)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "pagination offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "events",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEventListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/events/{id}": {
+            "get": {
+                "description": "Returns a single device event by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get event by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "event",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEvent"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "event not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/dashboard/stats": {
             "get": {
+                "description": "Returns aggregated dashboard statistics for the organization",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "dashboard",
                     "dashboard"
                 ],
+                "summary": "Get dashboard stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "dashboard stats",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DashboardStats"
+                        }
+                    },
+                    "401": {
+                        "description": "operator context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/confirm": {
+            "post": {
+                "description": "Confirms a device registration from an approved inbox entry",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Confirm device registration",
+                "parameters": [
+                    {
+                        "description": "confirmation request (imei + commandSecret)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceConfirmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "confirmed device",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceConfirmResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device/inbox entry not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/count": {
+            "get": {
+                "description": "Returns the device count for the current organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Count devices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device count",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceCountResult"
+                        }
+                    },
+                    "400": {
+                        "description": "organization context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/inbox": {
+            "get": {
+                "description": "Returns paginated inbox entries for the authenticated operator within the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inbox"
+                ],
+                "summary": "List inbox entries",
                 "parameters": [
                     {
                         "type": "string",
@@ -1157,17 +5484,342 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "inbox entries",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "organization context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Submits a device registration request to the operator inbox. Requires device attestation when configured",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inbox"
+                ],
+                "summary": "Create inbox request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "HMAC-SHA256 body signature (legacy attestation)",
+                        "name": "X-Device-Signature",
+                        "in": "header"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Firebase App Check token (recommended attestation)",
+                        "name": "X-Firebase-AppCheck",
+                        "in": "header"
+                    },
+                    {
+                        "description": "device registration request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created inbox entry",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxEntryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "attestation failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/inbox/{imei}": {
+            "get": {
+                "description": "Returns a single inbox entry by IMEI within the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inbox"
+                ],
+                "summary": "Get inbox entry",
+                "parameters": [
+                    {
+                        "type": "string",
                         "description": "Organization ID",
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "inbox entry",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxEntryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates an inbox entry (e.g., add operator notes) within the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inbox"
+                ],
+                "summary": "Update inbox entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "inbox update (notes)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateInboxEntryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated inbox entry",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxEntryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required / invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/devices/status": {
+        "/device/inbox/{imei}/ack": {
+            "post": {
+                "description": "Acknowledges (approves or rejects) an inbox entry within the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inbox"
+                ],
+                "summary": "Acknowledge inbox entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "ack action (acknowledge|approve|reject)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxAckRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ack result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxAckResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid action / IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/inbox/{imei}/resend": {
+            "post": {
+                "description": "Resends the FCM notification to a device that was approved but may have missed the notification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "inbox"
+                ],
+                "summary": "Resend approval notification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "resend result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxResendResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/{imei}": {
             "get": {
+                "description": "Returns a single device by IMEI",
                 "consumes": [
                     "application/json"
                 ],
@@ -1177,6 +5829,7 @@ const docTemplate = `{
                 "tags": [
                     "devices"
                 ],
+                "summary": "Get device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1184,13 +5837,44 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
-            }
-        },
-        "/devices/{id}/events": {
-            "get": {
+                "responses": {
+                    "200": {
+                        "description": "device",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceDetailResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a device",
                 "consumes": [
                     "application/json"
                 ],
@@ -1200,6 +5884,51 @@ const docTemplate = `{
                 "tags": [
                     "devices"
                 ],
+                "summary": "Delete device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device deleted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "device ID required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/{imei}/command": {
+            "post": {
+                "description": "Dispatches a command to a device. Risk-gated commands may require a confirmation token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commands"
+                ],
+                "summary": "Execute command",
                 "parameters": [
                     {
                         "type": "string",
@@ -1207,13 +5936,124 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "command request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "202": {
+                        "description": "dispatch result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandDispatchResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "425": {
+                        "description": "confirmation required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/devices/{id}/events/recent": {
+        "/device/{imei}/commands/pending": {
             "get": {
+                "description": "Returns commands pending delivery for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commands"
+                ],
+                "summary": "List pending commands",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "pending commands",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandPendingResult"
+                        }
+                    },
+                    "400": {
+                        "description": "device imei required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/{imei}/connection-status": {
+            "get": {
+                "description": "Returns the WebSocket connection status for a specific device",
                 "consumes": [
                     "application/json"
                 ],
@@ -1223,6 +6063,7 @@ const docTemplate = `{
                 "tags": [
                     "devices"
                 ],
+                "summary": "Get device connection status",
                 "parameters": [
                     {
                         "type": "string",
@@ -1230,13 +6071,40 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "connection status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionStatusResult"
+                        }
+                    },
+                    "400": {
+                        "description": "device ID required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/devices/{id}/events/{type}": {
-            "get": {
+        "/device/{imei}/disconnect": {
+            "post": {
+                "description": "Forcefully disconnects a device's WebSocket connection within the organization",
                 "consumes": [
                     "application/json"
                 ],
@@ -1246,6 +6114,7 @@ const docTemplate = `{
                 "tags": [
                     "devices"
                 ],
+                "summary": "Disconnect device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1253,13 +6122,46 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "disconnect result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceDisconnectResult"
+                        }
+                    },
+                    "400": {
+                        "description": "device ID required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not connected",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/devices/{id}/logs": {
-            "get": {
+        "/device/{imei}/fcm-token": {
+            "patch": {
+                "description": "Updates a device's FCM push notification token",
                 "consumes": [
                     "application/json"
                 ],
@@ -1269,20 +6171,50 @@ const docTemplate = `{
                 "tags": [
                     "devices"
                 ],
+                "summary": "Update FCM token",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "FCM token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceFCMTokenRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "token updated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid IMEI / body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/diagnostics/{id}": {
+        "/device/{imei}/inspect": {
             "get": {
+                "description": "Returns full device inspection data for the Diagnostics Inspector",
                 "consumes": [
                     "application/json"
                 ],
@@ -1292,143 +6224,7 @@ const docTemplate = `{
                 "tags": [
                     "diagnostics"
                 ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/inbox/{imei}": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inbox"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/inbox/{imei}/requests": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inbox"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/inbox/{imei}/{entryId}": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inbox"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            },
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inbox"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            },
-            "patch": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "inbox"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/inbox/{imei}/{entryId}/resend": {
-            "post": {
-                "consumes": [
-                    "application/json",
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json",
-                    "application/json"
-                ],
-                "tags": [
-                    "inbox",
-                    "inbox"
-                ],
+                "summary": "Get device inspection",
                 "parameters": [
                     {
                         "type": "string",
@@ -1439,17 +6235,2043 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device inspection",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceInspectionResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/device/{imei}/timeline": {
+            "get": {
+                "description": "Returns chronological event timeline for the Diagnostics Timeline",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "diagnostics"
+                ],
+                "summary": "Get device timeline",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by event type",
+                        "name": "eventType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis lower bound",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis upper bound",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "pagination cursor",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "timeline events",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TimelineResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices": {
+            "get": {
+                "description": "Returns paginated devices for the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List devices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "search by IMEI/name",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "devices",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "organization_id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}": {
+            "get": {
+                "description": "Returns a single device by IMEI within the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device detail",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceDetailResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found in organization",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deregisters a device from the organization. Use ?hard=true for permanent deletion",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Deregister device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "hard delete (default false)",
+                        "name": "hard",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device deregistered",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found in organization",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}/command/confirm": {
+            "post": {
+                "description": "Issues a single-use confirmation token for a risky device command",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "commands"
+                ],
+                "summary": "Request command confirmation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "command name",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandConfirmRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "confirmation not required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandConfirmResult"
+                        }
+                    },
+                    "201": {
+                        "description": "confirmation token issued",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandConfirmResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}/settings": {
+            "get": {
+                "description": "Returns device-level settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceSettingsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required / org context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates device-level settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Update device settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "settings updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateDeviceSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated device settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceSettingsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required / invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "settings not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}/settings/thresholds": {
+            "get": {
+                "description": "Returns the effective thresholds using hierarchy: device → org → default",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device thresholds",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "thresholds",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required / org context required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates device-level alert thresholds",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Update device thresholds",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "threshold updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated thresholds",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "IMEI required / invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}/status": {
+            "get": {
+                "description": "Returns the live status (online, last_seen, app version) for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "device status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceStatus"
+                        }
+                    },
+                    "400": {
+                        "description": "device not found / forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}/tags": {
+            "get": {
+                "description": "Returns the tags for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Get device tags",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "tags",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagsResult"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Replaces all tags for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Set device tags",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "tags",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SetDeviceTagsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "tags",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/devices/{imei}/tags/{tag}": {
+            "post": {
+                "description": "Adds a single tag to a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Add device tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "tag to add",
+                        "name": "tag",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "added",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagAddedResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes a single tag from a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Remove device tag",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "tag to remove",
+                        "name": "tag",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "removed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagRemovedResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/download-progress": {
+            "post": {
+                "description": "Tracks download progress for analytics",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updater"
+                ],
+                "summary": "Report download progress",
+                "parameters": [
+                    {
+                        "description": "download progress",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DownloadProgressRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "recorded",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DownloadProgressResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/invitations": {
+            "get": {
+                "description": "Returns invitations sent by the authenticated operator",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "List sent invitations",
+                "responses": {
+                    "200": {
+                        "description": "invitations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InvitationListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Invites an operator to an organization by email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Create invitation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "invitation details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateInvitationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created invitation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Invitation"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input / cannot invite self",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied / max invitations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "organization not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "invitation already exists",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/invitations/{id}": {
+            "delete": {
+                "description": "Cancels a pending invitation. Only the inviter or an org admin can delete",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Delete invitation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "invitation ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "invitation deleted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invitation id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "only inviter or admin can delete",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "invitation not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "only pending invitations can be deleted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/invite/{token}": {
+            "get": {
+                "description": "Returns invitation details for a token (public, used by the invitee)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Get invitation by token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "invitation token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "invitation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InvitationByTokenResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "invitation not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/invite/{token}/accept": {
+            "post": {
+                "description": "Accepts an invitation and adds the operator to the organization",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Accept invitation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "invitation token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "invitation accepted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "email mismatch / org at capacity",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "invitation not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/invite/{token}/reject": {
+            "post": {
+                "description": "Rejects an invitation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Reject invitation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "invitation token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "invitation rejected",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "token required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "email does not match",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "invitation not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/invitations": {
+            "get": {
+                "description": "Returns pending invitations addressed to the authenticated operator's email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "List pending invitations for current operator",
+                "responses": {
+                    "200": {
+                        "description": "pending invitations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InvitationListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/notifications": {
+            "get": {
+                "description": "Returns the current operator's notification settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get notification settings",
+                "responses": {
+                    "200": {
+                        "description": "notification settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationSettings"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the current operator's notification settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update notification settings",
+                "parameters": [
+                    {
+                        "description": "notification updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated notification settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationSettings"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/notifications/webhook/rotate": {
+            "post": {
+                "description": "Generates a new webhook signing secret. The new secret is only returned once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Rotate webhook secret",
+                "responses": {
+                    "200": {
+                        "description": "new webhook secret",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookSecretResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/notifications/webhook/test": {
+            "post": {
+                "description": "Sends a test payload to the configured webhook URL and reports the result",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Test webhook",
+                "parameters": [
+                    {
+                        "description": "webhook URL to test",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookTestRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "webhook test result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookTestResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/preferences": {
+            "get": {
+                "description": "Returns the current operator's UI preferences",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get operator preferences",
+                "responses": {
+                    "200": {
+                        "description": "preferences",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PreferencesResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the current operator's UI preferences",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update operator preferences",
+                "parameters": [
+                    {
+                        "description": "preference updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PreferencesResult"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated preferences",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PreferencesResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/settings": {
+            "get": {
+                "description": "Returns the current operator's settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get operator settings",
+                "responses": {
+                    "200": {
+                        "description": "operator settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorSettingsResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "failed to get settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the current operator's settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update operator settings",
+                "parameters": [
+                    {
+                        "description": "settings updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SettingsResponseResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/thresholds": {
+            "get": {
+                "description": "Returns the current operator's alert thresholds",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Get operator thresholds",
+                "responses": {
+                    "200": {
+                        "description": "thresholds",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the current operator's alert thresholds",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Update operator thresholds",
+                "parameters": [
+                    {
+                        "description": "threshold updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated thresholds",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/contact-points": {
+            "get": {
+                "description": "Returns all org-scoped contact points",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contact-points"
+                ],
+                "summary": "List contact points",
+                "parameters": [
+                    {
+                        "type": "string",
                         "description": "Organization ID",
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "contact points",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointListResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new org-scoped contact point",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contact-points"
+                ],
+                "summary": "Create contact point",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "contact point definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created contact point",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPoint"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/contact-points/{id}": {
+            "get": {
+                "description": "Returns one contact point by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contact-points"
+                ],
+                "summary": "Get contact point",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "contact point ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "contact point",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPoint"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Removes a contact point",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contact-points"
+                ],
+                "summary": "Delete contact point",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "contact point ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deleted confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeletedResult"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Replaces a contact point's mutable fields",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contact-points"
+                ],
+                "summary": "Update contact point",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "contact point ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "contact point definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated contact point",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPoint"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input / not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/contact-points/{id}/test": {
+            "post": {
+                "description": "Sends a one-off test notification through the contact point",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "contact-points"
+                ],
+                "summary": "Test contact point",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "contact point ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "test result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointTestResult"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "delivery failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/organizations": {
             "get": {
+                "description": "Returns all organizations the operator is a member of",
                 "consumes": [
                     "application/json"
                 ],
@@ -1459,6 +8281,7 @@ const docTemplate = `{
                 "tags": [
                     "organizations"
                 ],
+                "summary": "List organizations",
                 "parameters": [
                     {
                         "type": "string",
@@ -1468,9 +8291,29 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "organizations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             },
             "post": {
+                "description": "Creates a new organization and makes the caller its owner",
                 "consumes": [
                     "application/json"
                 ],
@@ -1480,6 +8323,7 @@ const docTemplate = `{
                 "tags": [
                     "organizations"
                 ],
+                "summary": "Create organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -1487,13 +8331,48 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "organization definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateOrganizationRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "201": {
+                        "description": "created organization",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/organizations/{id}": {
             "get": {
+                "description": "Returns one organization by ID with member count",
                 "consumes": [
                     "application/json"
                 ],
@@ -1503,6 +8382,7 @@ const docTemplate = `{
                 "tags": [
                     "organizations"
                 ],
+                "summary": "Get organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -1510,11 +8390,117 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "organization",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "org id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an organization. Only super_admin members can delete",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Delete organization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "deletion result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "organization id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "organization not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             },
             "patch": {
+                "description": "Updates mutable organization fields. Sensitive fields (maxMembers, isActive) require super_admin",
                 "consumes": [
                     "application/json"
                 ],
@@ -1524,6 +8510,7 @@ const docTemplate = `{
                 "tags": [
                     "organizations"
                 ],
+                "summary": "Update organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -1531,13 +8518,209 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "organization update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateOrganizationRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "updated organization",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied / insufficient role",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/devices/{imei}/transfer": {
+            "post": {
+                "description": "Transfers a device to another organization. Requires super_admin in source org and membership in target org",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "Transfer device",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "source organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "imei",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "target organization",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTransferRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "transfer result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTransferResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input / same org",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied / not member of target",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/invitations": {
+            "get": {
+                "description": "Returns invitations for an organization, optionally filtered by status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "List organization invitations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "invitations",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InvitationListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "org id required / invalid status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/organizations/{id}/members": {
             "get": {
+                "description": "Returns all members of an organization",
                 "consumes": [
                     "application/json"
                 ],
@@ -1547,6 +8730,7 @@ const docTemplate = `{
                 "tags": [
                     "members"
                 ],
+                "summary": "List organization members",
                 "parameters": [
                     {
                         "type": "string",
@@ -1554,13 +8738,46 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "members",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationMemberListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/organizations/{id}/members/{memberId}": {
             "get": {
+                "description": "Returns a single organization member by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -1570,6 +8787,7 @@ const docTemplate = `{
                 "tags": [
                     "members"
                 ],
+                "summary": "Get organization member",
                 "parameters": [
                     {
                         "type": "string",
@@ -1577,11 +8795,63 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "member ID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "member",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationMember"
+                        }
+                    },
+                    "400": {
+                        "description": "org id and member id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             },
             "delete": {
+                "description": "Removes a member from an organization. Cannot remove the last super_admin or yourself",
                 "consumes": [
                     "application/json"
                 ],
@@ -1591,6 +8861,7 @@ const docTemplate = `{
                 "tags": [
                     "members"
                 ],
+                "summary": "Remove organization member",
                 "parameters": [
                     {
                         "type": "string",
@@ -1598,13 +8869,141 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "member ID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "member removed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "org id and member id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "cannot remove last super_admin / self / higher role",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/members/{memberId}/reinstate": {
+            "post": {
+                "description": "Reinstates a suspended organization member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "members"
+                ],
+                "summary": "Reinstate member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "member ID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "reinstate member result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/organizations/{id}/members/{memberId}/role": {
             "patch": {
+                "description": "Updates a member's role. Cannot change role to super_admin",
                 "consumes": [
                     "application/json"
                 ],
@@ -1614,6 +9013,7 @@ const docTemplate = `{
                 "tags": [
                     "members"
                 ],
+                "summary": "Update member role",
                 "parameters": [
                     {
                         "type": "string",
@@ -1621,33 +9021,509 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "member ID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "new role",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateMemberRoleRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "updated member",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationMember"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid role / input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied / insufficient role",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/members/{memberId}/suspend": {
+            "post": {
+                "description": "Suspends an organization member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "members"
+                ],
+                "summary": "Suspend member",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "member ID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "suspend member result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/members/{memberId}/transfer": {
+            "post": {
+                "description": "Transfers organization ownership to another member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "members"
+                ],
+                "summary": "Transfer ownership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "member ID",
+                        "name": "memberId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "transfer ownership result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "member not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/settings": {
+            "get": {
+                "description": "Returns organization-level settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Get organization settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "organization settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationSettingsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "org id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates organization-level settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Update organization settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "settings updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateOrganizationSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated organization settings",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationSettingsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "org id required / invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "settings not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/organizations/{id}/settings/thresholds": {
+            "get": {
+                "description": "Returns organization-level alert thresholds",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Get organization thresholds",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "thresholds",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "org id required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates organization-level alert thresholds",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Update organization thresholds",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "threshold updates",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "updated thresholds",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "org id required / invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "authentication required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "access denied",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/service-accounts": {
             "get": {
+                "description": "Returns all org-scoped service accounts",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "service-accounts",
                     "service-accounts"
                 ],
+                "summary": "List service accounts",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Organization ID",
@@ -1656,21 +9532,33 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "service accounts",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountListResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             },
             "post": {
+                "description": "Creates a new org-scoped service account",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "service-accounts",
                     "service-accounts"
                 ],
+                "summary": "Create service account",
                 "parameters": [
                     {
                         "type": "string",
@@ -1680,30 +9568,50 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                        "description": "service account definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateServiceAccountRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "201": {
+                        "description": "created service account",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccount"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/service-accounts/{id}": {
             "delete": {
+                "description": "Removes a service account and its tokens",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "service-accounts",
                     "service-accounts"
                 ],
+                "summary": "Delete service account",
                 "parameters": [
                     {
                         "type": "string",
@@ -1714,17 +9622,37 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
+                        "description": "service account ID",
+                        "name": "id",
+                        "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "deleted confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeletedResult"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/service-accounts/{id}/rotate": {
             "post": {
+                "description": "Revokes the existing token and issues a new one. Returns the full key once",
                 "consumes": [
                     "application/json"
                 ],
@@ -1734,6 +9662,7 @@ const docTemplate = `{
                 "tags": [
                     "service-accounts"
                 ],
+                "summary": "Rotate service account token",
                 "parameters": [
                     {
                         "type": "string",
@@ -1741,13 +9670,49 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "service account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "new token definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RotateServiceAccountTokenRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "201": {
+                        "description": "rotated token with full key",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenRotated"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input / not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/service-accounts/{id}/tokens": {
             "get": {
+                "description": "Returns all tokens for a service account",
                 "consumes": [
                     "application/json"
                 ],
@@ -1757,6 +9722,7 @@ const docTemplate = `{
                 "tags": [
                     "service-accounts"
                 ],
+                "summary": "List service account tokens",
                 "parameters": [
                     {
                         "type": "string",
@@ -1764,13 +9730,98 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "service account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "tokens",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenListResult"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new token for a service account. Returns the full key once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "service-accounts"
+                ],
+                "summary": "Create service account token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "service account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "token definition",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateServiceAccountTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created token with full key",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenCreated"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input / not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/service-accounts/{id}/tokens/{token}": {
             "delete": {
+                "description": "Revokes a single token by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -1780,6 +9831,65 @@ const docTemplate = `{
                 "tags": [
                     "service-accounts"
                 ],
+                "summary": "Revoke service account token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "service account ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "token ID",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "revoked confirmation",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RevokedResult"
+                        }
+                    },
+                    "400": {
+                        "description": "not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/telemetry/cleanup": {
+            "delete": {
+                "description": "Deletes telemetry entries older than the retention window",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "telemetry"
+                ],
+                "summary": "Clean up old telemetry",
                 "parameters": [
                     {
                         "type": "string",
@@ -1789,10 +9899,29 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "cleanup result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/telemetry/{imei}": {
+        "/telemetry/history": {
             "get": {
                 "consumes": [
                     "application/json"
@@ -1810,13 +9939,72 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "deviceId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis lower bound",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis upper bound",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit (default 1000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "response format",
+                        "name": "format",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "telemetry history",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryQueryResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/updater/changelog": {
+        "/telemetry/history/export": {
             "get": {
+                "description": "Exports telemetry history for a device as JSON",
                 "consumes": [
                     "application/json"
                 ],
@@ -1824,8 +10012,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "updater"
+                    "telemetry"
                 ],
+                "summary": "Export telemetry history",
                 "parameters": [
                     {
                         "type": "string",
@@ -1833,13 +10022,224 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "deviceId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis lower bound",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "epoch-millis upper bound",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "result limit (default 1000)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "telemetry history export",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryQueryResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "export disabled",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/updater/check": {
+        "/telemetry/latest/{deviceId}": {
+            "get": {
+                "description": "Returns the latest telemetry entry for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "telemetry"
+                ],
+                "summary": "Get latest telemetry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "latest telemetry",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryEntry"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/telemetry/stats/{deviceId}": {
+            "get": {
+                "description": "Returns aggregated telemetry statistics for a device",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "telemetry"
+                ],
+                "summary": "Get telemetry stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "device IMEI",
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "telemetry stats",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryStatsResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/updates/changelog": {
+            "get": {
+                "description": "Returns the changelog for a version (or all versions when omitted)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updates"
+                ],
+                "summary": "Get update changelog",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version filter (default 'all')",
+                        "name": "version",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "changelog",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateChangelogResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/updates/device-status": {
             "post": {
+                "description": "Device callback reporting update installation status",
                 "consumes": [
                     "application/json"
                 ],
@@ -1847,22 +10247,51 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "updater"
+                    "updates"
                 ],
+                "summary": "Report device update status",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                        "description": "device status callback",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceUpdateStatusRequest"
+                        }
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "acknowledged",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceUpdateStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "push/device not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/updater/progress": {
+        "/updates/export": {
             "get": {
+                "description": "Exports versions as JSON or CSV",
                 "consumes": [
                     "application/json"
                 ],
@@ -1870,8 +10299,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "updater"
+                    "updates"
                 ],
+                "summary": "Export versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -1879,13 +10309,57 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "json or csv (default json)",
+                        "name": "format",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "version filter",
+                        "name": "version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "include changelog (default true)",
+                        "name": "includeChangelog",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "include APK metadata (default true)",
+                        "name": "includeApkInfo",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "exported versions",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateExportResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid format",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/updater/version": {
+        "/updates/history": {
             "get": {
+                "description": "Returns paginated push update history",
                 "consumes": [
                     "application/json"
                 ],
@@ -1893,8 +10367,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "updater"
+                    "updates"
                 ],
+                "summary": "List update push history",
                 "parameters": [
                     {
                         "type": "string",
@@ -1902,13 +10377,45 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "push history",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushHistoryListResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/updater/{name}/apk": {
+        "/updates/history/{pushId}": {
             "get": {
+                "description": "Returns details for a specific push update including per-device status",
                 "consumes": [
                     "application/json"
                 ],
@@ -1916,8 +10423,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "updater"
+                    "updates"
                 ],
+                "summary": "Get push detail",
                 "parameters": [
                     {
                         "type": "string",
@@ -1925,13 +10433,52 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "push ID",
+                        "name": "pushId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "push detail",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushDetailResult"
+                        }
+                    },
+                    "400": {
+                        "description": "pushId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "push not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
-        "/updater/{name}/bin": {
-            "get": {
+        "/updates/history/{pushId}/cancel": {
+            "post": {
+                "description": "Cancels a pending or in-progress push update",
                 "consumes": [
                     "application/json"
                 ],
@@ -1939,8 +10486,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "updater"
+                    "updates"
                 ],
+                "summary": "Cancel push",
                 "parameters": [
                     {
                         "type": "string",
@@ -1948,13 +10496,123 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "push ID",
+                        "name": "pushId",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "push cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateCancelPushResult"
+                        }
+                    },
+                    "400": {
+                        "description": "pushId required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "push not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "push cannot be cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/updates/push": {
+            "post": {
+                "description": "Pushes an update to one or more devices (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updates"
+                ],
+                "summary": "Push update to devices",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "push request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "push accepted",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushResult"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/updates/status": {
             "get": {
+                "description": "Returns the current GitHub-release sync status",
                 "consumes": [
                     "application/json"
                 ],
@@ -1964,6 +10622,7 @@ const docTemplate = `{
                 "tags": [
                     "updates"
                 ],
+                "summary": "Get update sync status",
                 "parameters": [
                     {
                         "type": "string",
@@ -1973,11 +10632,119 @@ const docTemplate = `{
                         "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "sync status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateStatusResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/updates/sync": {
+            "post": {
+                "description": "Triggers a GitHub-release sync (admin only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updates"
+                ],
+                "summary": "Sync versions from GitHub",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "sync started",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSyncResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "admin required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/updates/sync/status": {
+            "get": {
+                "description": "Returns the current GitHub-release sync status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updates"
+                ],
+                "summary": "Get sync status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "X-Organization-ID",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sync status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSyncStatusResult"
+                        }
+                    },
+                    "401": {
+                        "description": "not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/updates/versions": {
             "get": {
+                "description": "Returns a paginated list of synced update versions",
                 "consumes": [
                     "application/json"
                 ],
@@ -1987,6 +10754,7 @@ const docTemplate = `{
                 "tags": [
                     "updates"
                 ],
+                "summary": "List update versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -1994,36 +10762,45 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
-                    }
-                ],
-                "responses": {}
-            }
-        },
-        "/updates/versions/{id}/changelog": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "updates"
-                ],
-                "parameters": [
+                    },
                     {
                         "type": "string",
-                        "description": "Organization ID",
-                        "name": "X-Organization-ID",
-                        "in": "header",
-                        "required": true
+                        "description": "filter by version status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page size (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "versions",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateVersionListResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/updates/{id}/status": {
             "get": {
+                "description": "Alias for GET /updates/status",
                 "consumes": [
                     "application/json"
                 ],
@@ -2033,6 +10810,7 @@ const docTemplate = `{
                 "tags": [
                     "updates"
                 ],
+                "summary": "Get update status (alias)",
                 "parameters": [
                     {
                         "type": "string",
@@ -2040,14 +10818,437 @@ const docTemplate = `{
                         "name": "X-Organization-ID",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "sync status",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateStatusResult"
+                        }
+                    },
+                    "500": {
+                        "description": "internal error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/version": {
+            "get": {
+                "description": "Returns the current OTA version manifest for Android clients",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updater"
+                ],
+                "summary": "OTA version manifest",
+                "responses": {
+                    "200": {
+                        "description": "version manifest",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdaterVersionManifestResult"
+                        }
+                    },
+                    "404": {
+                        "description": "manifest not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse"
+                        }
+                    }
+                }
             }
         }
     },
     "definitions": {
-        "internal_api_handlers_alert.ruleRequest": {
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKey": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "last_request_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "request_count": {
+                    "type": "integer"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKeyListResult": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKey"
+                    }
+                },
+                "keys_created_this_month": {
+                    "type": "integer"
+                },
+                "monthly_limit": {
+                    "type": "integer"
+                },
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.APIKeyWithSecret": {
+            "type": "object",
+            "properties": {
+                "api_key": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "last_request_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "request_count": {
+                    "type": "integer"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminAPIKey": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "last_request_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "operator_name": {
+                    "type": "string"
+                },
+                "request_count": {
+                    "type": "integer"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminAPIKeyListResult": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminAPIKey"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClient": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientListResult": {
+            "type": "object",
+            "properties": {
+                "clients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClient"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientResult": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClient"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperator": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperatorListResult": {
+            "type": "object",
+            "properties": {
+                "operators": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminOperator"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertEvaluateResult": {
+            "type": "object",
+            "properties": {
+                "rule_id": {
+                    "type": "string"
+                },
+                "transitioned": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertHistoryEvent": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "from_state": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "rule_id": {
+                    "type": "string"
+                },
+                "to_state": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertHistoryResult": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertHistoryEvent"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertInstance": {
+            "type": "object",
+            "properties": {
+                "evaluated_at": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "state": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRule": {
+            "type": "object",
+            "properties": {
+                "condition": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "for_seconds": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertInstance"
+                    }
+                },
+                "metric": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notify_interval_seconds": {
+                    "type": "integer"
+                },
+                "on_error": {
+                    "type": "string"
+                },
+                "on_no_data": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "webhook_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRuleListResult": {
+            "type": "object",
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRule"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AlertRuleRequest": {
             "type": "object",
             "properties": {
                 "condition": {
@@ -2079,6 +11280,3671 @@ const docTemplate = `{
                 },
                 "webhook_url": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Annotation": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AnnotationListResult": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Annotation"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AnnotationRequest": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CancelVerificationRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelStatusResult": {
+            "type": "object",
+            "properties": {
+                "active_streams": {
+                    "type": "integer"
+                },
+                "org": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelSubscribeRequest": {
+            "type": "object",
+            "properties": {
+                "scope": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelSubscribeResult": {
+            "type": "object",
+            "properties": {
+                "subscribed": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ChannelUnsubscribeResult": {
+            "type": "object",
+            "properties": {
+                "unsubscribed": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredentialListResult": {
+            "type": "object",
+            "properties": {
+                "clients": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientSettings": {
+            "type": "object",
+            "properties": {
+                "autoReconnect": {
+                    "type": "boolean"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "logBufferLimit": {
+                    "type": "integer"
+                },
+                "notificationsEnabled": {
+                    "type": "boolean"
+                },
+                "requestTimeoutMs": {
+                    "type": "integer"
+                },
+                "serverUrl": {
+                    "type": "string"
+                },
+                "signalHistoryLimit": {
+                    "type": "integer"
+                },
+                "strictHmac": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandCancelResult": {
+            "type": "object",
+            "properties": {
+                "cancelled": {
+                    "type": "boolean"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "serverTime": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandConfirmRequest": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandConfirmResult": {
+            "type": "object",
+            "properties": {
+                "confirmation_required": {
+                    "type": "boolean"
+                },
+                "confirmation_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "integer"
+                },
+                "risk_tier": {
+                    "type": "string"
+                },
+                "trace_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandDispatchResult": {
+            "type": "object",
+            "properties": {
+                "command_id": {
+                    "type": "string"
+                },
+                "device_online": {
+                    "type": "boolean"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "serverTime": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandHistoryEntry": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "completedAt": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "deliveredAt": {
+                    "type": "integer"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "failureReason": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "latencyMs": {
+                    "type": "integer"
+                },
+                "sentAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandHistoryResult": {
+            "type": "object",
+            "properties": {
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandHistoryEntry"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandPendingResult": {
+            "type": "object",
+            "properties": {
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandResponse"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandRequest": {
+            "type": "object",
+            "properties": {
+                "args": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "command": {
+                    "type": "string"
+                },
+                "confirmation_token": {
+                    "type": "string"
+                },
+                "dispatch_id": {
+                    "type": "string"
+                },
+                "nonce": {
+                    "type": "string"
+                },
+                "signature": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandResponse": {
+            "type": "object",
+            "properties": {
+                "args": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "command": {
+                    "type": "string"
+                },
+                "delivery": {
+                    "type": "string"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "serverTime": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandRetryResult": {
+            "type": "object",
+            "properties": {
+                "command_id": {
+                    "type": "string"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "retried": {
+                    "type": "boolean"
+                },
+                "serverTime": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CommandStatus": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "command_id": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "serverTime": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConcurrentSessionsResult": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "has_concurrent": {
+                    "type": "boolean"
+                },
+                "sessions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SessionInfo"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersion": {
+            "type": "object",
+            "properties": {
+                "changed_by": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "resource_type": {
+                    "type": "string"
+                },
+                "snapshot": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersionListResult": {
+            "type": "object",
+            "properties": {
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersion"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConfigVersionRestoreResult": {
+            "type": "object",
+            "properties": {
+                "restored_to_version": {
+                    "type": "integer"
+                },
+                "settings": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionListResult": {
+            "type": "object",
+            "properties": {
+                "connections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionStatusResult"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionMetricsResult": {
+            "type": "object",
+            "properties": {
+                "online_connections": {
+                    "type": "integer"
+                },
+                "total_connections": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionStatusResult": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                },
+                "online": {
+                    "type": "boolean"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPoint": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "config": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "boolean"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointListResult": {
+            "type": "object",
+            "properties": {
+                "contact_points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPoint"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointRequest": {
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "config": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "template_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointTestResult": {
+            "type": "object",
+            "properties": {
+                "sent": {
+                    "type": "boolean"
+                },
+                "tested_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateAPIKeyRequest": {
+            "type": "object",
+            "properties": {
+                "expires_in_days": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateClientCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateInvitationRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateOperatorRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateOrganizationRequest": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "maxMembers": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateServiceAccountRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CreateServiceAccountTokenRequest": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "service_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CursorPaginationResult": {
+            "type": "object",
+            "properties": {
+                "hasMore": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "nextCursor": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DashboardStats": {
+            "type": "object",
+            "properties": {
+                "offline_devices": {
+                    "type": "integer"
+                },
+                "online_devices": {
+                    "type": "integer"
+                },
+                "pending_devices": {
+                    "type": "integer"
+                },
+                "total_devices": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeletedResult": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceConfirmRequest": {
+            "type": "object",
+            "properties": {
+                "commandSecret": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceConfirmResult": {
+            "type": "object",
+            "properties": {
+                "confirmed": {
+                    "type": "boolean"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "online": {
+                    "type": "boolean"
+                },
+                "registered_at": {
+                    "type": "integer"
+                },
+                "server_time": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceCountResult": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "serverTime": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceDetailResult": {
+            "type": "object",
+            "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "device_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "last_seen": {
+                    "type": "integer"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "registered_at": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceDisconnectResult": {
+            "type": "object",
+            "properties": {
+                "deviceId": {
+                    "type": "string"
+                },
+                "disconnected": {
+                    "type": "boolean"
+                },
+                "operatorId": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEvent": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEventListResult": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEvent"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceFCMTokenRequest": {
+            "type": "object",
+            "properties": {
+                "fcmToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceInspectionResult": {
+            "type": "object",
+            "properties": {
+                "connection": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsConnectionInfo"
+                },
+                "identity": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsIdentityInfo"
+                },
+                "registration": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsRegistrationInfo"
+                },
+                "software": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsSoftwareInfo"
+                },
+                "telemetry": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsTelemetryInfo"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceListItem": {
+            "type": "object",
+            "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "device_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "last_seen": {
+                    "type": "integer"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "online": {
+                    "type": "boolean"
+                },
+                "registered_at": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceListResult": {
+            "type": "object",
+            "properties": {
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceListItem"
+                    }
+                },
+                "nextCursor": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceLogEvent": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "id": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceLogEventListResult": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceLogEvent"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CursorPaginationResult"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceSettingsResult": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "customName": {
+                    "type": "string"
+                },
+                "deviceImei": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "thresholds": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceStatus": {
+            "type": "object",
+            "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "device_class": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "last_seen": {
+                    "type": "integer"
+                },
+                "online": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagAddedResult": {
+            "type": "object",
+            "properties": {
+                "added": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagRemovedResult": {
+            "type": "object",
+            "properties": {
+                "removed": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTagsResult": {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTransferRequest": {
+            "type": "object",
+            "properties": {
+                "target_organization_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceTransferResult": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                },
+                "from_org_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "to_org_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceUpdateStatusRequest": {
+            "type": "object",
+            "properties": {
+                "deviceId": {
+                    "type": "string"
+                },
+                "dispatchId": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceUpdateStatusResponse": {
+            "type": "object",
+            "properties": {
+                "acknowledged": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsConnectionInfo": {
+            "type": "object",
+            "properties": {
+                "clientIp": {
+                    "type": "string"
+                },
+                "connectedAt": {
+                    "type": "integer"
+                },
+                "fcmStatus": {
+                    "type": "string"
+                },
+                "lastSeen": {
+                    "type": "integer"
+                },
+                "protocol": {
+                    "type": "string"
+                },
+                "webSocketStatus": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsIdentityInfo": {
+            "type": "object",
+            "properties": {
+                "deviceName": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsRegistrationInfo": {
+            "type": "object",
+            "properties": {
+                "commandSecretSet": {
+                    "type": "boolean"
+                },
+                "fcmTokenRefreshedAt": {
+                    "type": "integer"
+                },
+                "fcmTokenValid": {
+                    "type": "boolean"
+                },
+                "registeredAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsSoftwareInfo": {
+            "type": "object",
+            "properties": {
+                "appVersion": {
+                    "type": "string"
+                },
+                "buildId": {
+                    "type": "string"
+                },
+                "osVersion": {
+                    "type": "string"
+                },
+                "securityPatch": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DiagnosticsTelemetryInfo": {
+            "type": "object",
+            "properties": {
+                "avgLatencyMs": {
+                    "type": "integer"
+                },
+                "framesToday": {
+                    "type": "integer"
+                },
+                "lastTimestamp": {
+                    "type": "integer"
+                },
+                "sessionsToday": {
+                    "type": "integer"
+                },
+                "totalBytesToday": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DownloadProgressRequest": {
+            "type": "object",
+            "properties": {
+                "device_id": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DownloadProgressResult": {
+            "type": "object",
+            "properties": {
+                "recorded": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailNotifications": {
+            "type": "object",
+            "properties": {
+                "commandFailed": {
+                    "type": "boolean"
+                },
+                "deviceOffline": {
+                    "type": "boolean"
+                },
+                "deviceOnline": {
+                    "type": "boolean"
+                },
+                "registrationRequest": {
+                    "type": "boolean"
+                },
+                "thresholdBreach": {
+                    "type": "boolean"
+                },
+                "updateAvailable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailVerifyRequest": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailVerifyResult": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "verified": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "docs": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "fields": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "trace_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ForgotPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.GetTelemetryResponse": {
+            "type": "object",
+            "properties": {
+                "frames": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryFrameDTO"
+                    }
+                },
+                "stats": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryStatsDTO"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.GlobalAPIKeyStatsResult": {
+            "type": "object",
+            "properties": {
+                "active_keys": {
+                    "type": "integer"
+                },
+                "max_per_month": {
+                    "type": "integer"
+                },
+                "requests_by_scope": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "revoked_keys": {
+                    "type": "integer"
+                },
+                "top_operators": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TopOperatorStat"
+                    }
+                },
+                "total_keys": {
+                    "type": "integer"
+                },
+                "total_operators": {
+                    "type": "integer"
+                },
+                "total_requests": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxAckRequest": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxAckResult": {
+            "type": "object",
+            "properties": {
+                "acknowledgedAt": {
+                    "type": "integer"
+                },
+                "approvedAt": {
+                    "type": "integer"
+                },
+                "approvingAt": {
+                    "type": "integer"
+                },
+                "commandSecret": {
+                    "type": "string"
+                },
+                "fcmPushSent": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "rejectedAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxEntryResponse": {
+            "type": "object",
+            "properties": {
+                "acknowledgedAt": {
+                    "type": "integer"
+                },
+                "appVersion": {
+                    "type": "string"
+                },
+                "approvedAt": {
+                    "type": "integer"
+                },
+                "approvingAt": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "integer"
+                },
+                "deviceClass": {
+                    "type": "string"
+                },
+                "deviceName": {
+                    "type": "string"
+                },
+                "fcmToken": {
+                    "type": "string"
+                },
+                "firebaseInstallId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "operatorId": {
+                    "type": "string"
+                },
+                "osVersion": {
+                    "type": "string"
+                },
+                "rejectedAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxListResult": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
+                },
+                "requests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxEntryResponse"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxRequest": {
+            "type": "object",
+            "properties": {
+                "appVersion": {
+                    "type": "string"
+                },
+                "deviceClass": {
+                    "type": "string"
+                },
+                "deviceName": {
+                    "type": "string"
+                },
+                "fcmToken": {
+                    "type": "string"
+                },
+                "firebaseInstallId": {
+                    "type": "string"
+                },
+                "idempotencyKey": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "osVersion": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InboxResendResult": {
+            "type": "object",
+            "properties": {
+                "fcmPushSent": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imei": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Invitation": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "invited_at": {
+                    "type": "string"
+                },
+                "invited_by": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InvitationByTokenResult": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "invited_at": {
+                    "type": "string"
+                },
+                "inviter_name": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "string"
+                },
+                "organization_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.InvitationListResult": {
+            "type": "object",
+            "properties": {
+                "invitations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Invitation"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LockoutStatusResult": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "locked": {
+                    "type": "boolean"
+                },
+                "max_attempts": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "unlock_at": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "device_fingerprint": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "remember": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginResult": {
+            "type": "object",
+            "properties": {
+                "device_fingerprint": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "last_organization_id": {
+                    "type": "string"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "mfa_session": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "needs_organization": {
+                    "type": "boolean"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
+                    }
+                },
+                "requires_mfa": {
+                    "type": "boolean"
+                },
+                "selected_organization": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
+                },
+                "signing_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LoginWithTokensResult": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "device_fingerprint": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "integer"
+                },
+                "last_organization_id": {
+                    "type": "string"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "mfa_session": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "needs_organization": {
+                    "type": "boolean"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
+                    }
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "requires_mfa": {
+                    "type": "boolean"
+                },
+                "selected_organization": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "signing_key": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.LogoutRequest": {
+            "type": "object",
+            "properties": {
+                "all_devices": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFABackupCodeRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFABackupCodeResult": {
+            "type": "object",
+            "properties": {
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFADisableRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAEnableRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAEnableResult": {
+            "type": "object",
+            "properties": {
+                "backup_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAEnrollResult": {
+            "type": "object",
+            "properties": {
+                "secret": {
+                    "type": "string"
+                },
+                "uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAOperator": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFARegenerateResult": {
+            "type": "object",
+            "properties": {
+                "backup_codes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAStatusResult": {
+            "type": "object",
+            "properties": {
+                "mfa_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAVerifyRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAVerifyResult": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "integer"
+                },
+                "operator": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAOperator"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                },
+                "signing_key": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MFAVerifySetupRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MeResult": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_organization_id": {
+                    "type": "string"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "needs_organization": {
+                    "type": "boolean"
+                },
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
+                    }
+                },
+                "selected_organization": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MessageResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricAggregateResult": {
+            "type": "object",
+            "properties": {
+                "avg": {
+                    "type": "number"
+                },
+                "max": {
+                    "type": "number"
+                },
+                "min": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricStatsDTO": {
+            "type": "object",
+            "properties": {
+                "avg": {
+                    "type": "number"
+                },
+                "current": {
+                    "type": "number"
+                },
+                "max": {
+                    "type": "number"
+                },
+                "min": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationSettings": {
+            "type": "object",
+            "properties": {
+                "channels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "email": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailNotifications"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "push": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PushNotifications"
+                },
+                "webhook": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookNotifications"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "channels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "email": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.EmailNotifications"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "push": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PushNotifications"
+                },
+                "webhook": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookNotifications"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorAPIKeyStatsResult": {
+            "type": "object",
+            "properties": {
+                "active_keys": {
+                    "type": "integer"
+                },
+                "keys_created_this_month": {
+                    "type": "integer"
+                },
+                "monthly_limit": {
+                    "type": "integer"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "revoked_keys": {
+                    "type": "integer"
+                },
+                "total_keys": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorSettingsResult": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientSettings"
+                },
+                "notifications": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationSettings"
+                },
+                "thresholds": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorSettingsResultLegacy": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientSettings"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds": {
+            "type": "object",
+            "properties": {
+                "bufferCrit": {
+                    "type": "integer"
+                },
+                "bufferWarn": {
+                    "type": "integer"
+                },
+                "riskCrit": {
+                    "type": "integer"
+                },
+                "riskWarn": {
+                    "type": "integer"
+                },
+                "thermalCrit": {
+                    "type": "integer"
+                },
+                "thermalWarn": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Organization": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "max_members": {
+                    "type": "integer"
+                },
+                "member_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationListResult": {
+            "type": "object",
+            "properties": {
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Organization"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationMember": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "invited_by": {
+                    "type": "string"
+                },
+                "joined_at": {
+                    "type": "string"
+                },
+                "operator_email": {
+                    "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "operator_name": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "string"
+                },
+                "removed_at": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationMemberListResult": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationMember"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationSettingsResult": {
+            "type": "object",
+            "properties": {
+                "alertCooldownMinutes": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "dateFormat": {
+                    "type": "string"
+                },
+                "defaultThresholds": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "organizationId": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PollVerificationResult": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "emailError": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PreferencesResult": {
+            "type": "object",
+            "properties": {
+                "preferences": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.PushNotifications": {
+            "type": "object",
+            "properties": {
+                "commandFailed": {
+                    "type": "boolean"
+                },
+                "deviceOffline": {
+                    "type": "boolean"
+                },
+                "deviceOnline": {
+                    "type": "boolean"
+                },
+                "registrationRequest": {
+                    "type": "boolean"
+                },
+                "thresholdBreach": {
+                    "type": "boolean"
+                },
+                "updateAvailable": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RefreshTokenRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RefreshTokenResult": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RegisterResult": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ResendVerificationRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "newPassword": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RevokeResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "revoked_count": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RevokedResult": {
+            "type": "object",
+            "properties": {
+                "revoked": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.RotateServiceAccountTokenRequest": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SelectOrganizationRequest": {
+            "type": "object",
+            "properties": {
+                "organization_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SelectOrganizationResult": {
+            "type": "object",
+            "properties": {
+                "organization_id": {
+                    "type": "string"
+                },
+                "organization_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccount": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountListResult": {
+            "type": "object",
+            "properties": {
+                "service_accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccount"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountToken": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "service_id": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenCreated": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenListResult": {
+            "type": "object",
+            "properties": {
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountToken"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenRotated": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key_prefix": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "service_id": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SessionInfo": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "ip_address": {
+                    "type": "string"
+                },
+                "is_current": {
+                    "type": "boolean"
+                },
+                "selected_organization_id": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SessionListResult": {
+            "type": "object",
+            "properties": {
+                "sessions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SessionInfo"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SetDeviceTagsRequest": {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SettingsResponseResult": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientSettings"
+                },
+                "notifications": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.NotificationSettings"
+                },
+                "preferences": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SuccessResult": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.SupportBundleResult": {
+            "type": "object",
+            "properties": {
+                "device_count": {
+                    "type": "integer"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "go_max_procs": {
+                    "type": "integer"
+                },
+                "go_num_cpu": {
+                    "type": "integer"
+                },
+                "go_version": {
+                    "type": "string"
+                },
+                "goroutines": {
+                    "type": "integer"
+                },
+                "hostname": {
+                    "type": "string"
+                },
+                "operator_count": {
+                    "type": "integer"
+                },
+                "org_count": {
+                    "type": "integer"
+                },
+                "schema_version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryEntry": {
+            "type": "object",
+            "properties": {
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number",
+                        "format": "float64"
+                    }
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryFrameDTO": {
+            "type": "object",
+            "properties": {
+                "bufferLevel": {
+                    "type": "number"
+                },
+                "riskScore": {
+                    "type": "number"
+                },
+                "thermalTemp": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
+                "uptime": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryEntry": {
+            "type": "object",
+            "properties": {
+                "bufferLevel": {
+                    "type": "integer"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "payload": {
+                    "type": "string"
+                },
+                "receivedAt": {
+                    "type": "string"
+                },
+                "riskScore": {
+                    "type": "integer"
+                },
+                "thermalTemp": {
+                    "type": "number"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryQueryResult": {
+            "type": "object",
+            "properties": {
+                "deviceId": {
+                    "type": "string"
+                },
+                "endTime": {
+                    "type": "integer"
+                },
+                "entries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryEntry"
+                    }
+                },
+                "queryTime": {
+                    "type": "integer"
+                },
+                "startTime": {
+                    "type": "integer"
+                },
+                "totalCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryStatsDTO": {
+            "type": "object",
+            "properties": {
+                "bufferLevel": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricStatsDTO"
+                },
+                "riskScore": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricStatsDTO"
+                },
+                "thermalTemp": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricStatsDTO"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryStatsResult": {
+            "type": "object",
+            "properties": {
+                "bufferLevel": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricAggregateResult"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "latestEntry": {
+                    "type": "string"
+                },
+                "oldestEntry": {
+                    "type": "string"
+                },
+                "riskScore": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricAggregateResult"
+                },
+                "sampleCount": {
+                    "type": "integer"
+                },
+                "thermalTemp": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricAggregateResult"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "bufferCrit": {
+                    "type": "integer"
+                },
+                "bufferWarn": {
+                    "type": "integer"
+                },
+                "riskCrit": {
+                    "type": "integer"
+                },
+                "riskWarn": {
+                    "type": "integer"
+                },
+                "thermalCrit": {
+                    "type": "integer"
+                },
+                "thermalWarn": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ThresholdsResult": {
+            "type": "object",
+            "properties": {
+                "thresholds": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TimelineEventResult": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TimelineResult": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TimelineEventResult"
+                    }
+                },
+                "hasMore": {
+                    "type": "boolean"
+                },
+                "nextCursor": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TopOperatorStat": {
+            "type": "object",
+            "properties": {
+                "active_key_count": {
+                    "type": "integer"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "operator_name": {
+                    "type": "string"
+                },
+                "total_requests": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateAPIKeyRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateAdminClientRequest": {
+            "type": "object",
+            "properties": {
+                "allowed_origins": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowed_paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateCancelPushResult": {
+            "type": "object",
+            "properties": {
+                "cancelledAt": {
+                    "type": "integer"
+                },
+                "cancelledBy": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateChangelogEntryResult": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateChangelogResult": {
+            "type": "object",
+            "properties": {
+                "changelog": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateChangelogEntryResult"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateCheckerResult": {
+            "type": "object",
+            "properties": {
+                "current_version": {
+                    "type": "string"
+                },
+                "latest_version": {
+                    "type": "string"
+                },
+                "release_name": {
+                    "type": "string"
+                },
+                "release_url": {
+                    "type": "string"
+                },
+                "update_available": {
+                    "type": "boolean"
+                },
+                "usage_stats": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UsageStatsSnapshot"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateClientCredentialRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateDeviceSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "customName": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "thresholds": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateDeviceStatusInfo": {
+            "type": "object",
+            "properties": {
+                "currentVersion": {
+                    "type": "string"
+                },
+                "needsUpdate": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateExportResult": {
+            "type": "object",
+            "properties": {
+                "changelog": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateChangelogEntryResult"
+                    }
+                },
+                "exportedAt": {
+                    "type": "integer"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateVersionResponse"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateFailedDevice": {
+            "type": "object",
+            "properties": {
+                "deviceId": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateInboxEntryRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateLatestVersionInfo": {
+            "type": "object",
+            "properties": {
+                "apkFilename": {
+                    "type": "string"
+                },
+                "apkSize": {
+                    "type": "integer"
+                },
+                "releaseType": {
+                    "type": "string"
+                },
+                "releasedAt": {
+                    "type": "integer"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateMemberRoleRequest": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateNameRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateOperatorRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "mfa_enabled": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateOrganizationRequest": {
+            "type": "object",
+            "properties": {
+                "isActive": {
+                    "type": "boolean"
+                },
+                "maxMembers": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateOrganizationSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "alertCooldownMinutes": {
+                    "type": "integer"
+                },
+                "dateFormat": {
+                    "type": "string"
+                },
+                "defaultThresholds": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OperatorThresholds"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushDetailDevice": {
+            "type": "object",
+            "properties": {
+                "acknowledgedAt": {
+                    "type": "integer"
+                },
+                "deviceId": {
+                    "type": "string"
+                },
+                "deviceName": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "sentAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushDetailResult": {
+            "type": "object",
+            "properties": {
+                "cancelledAt": {
+                    "type": "integer"
+                },
+                "completedAt": {
+                    "type": "integer"
+                },
+                "devices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushDetailDevice"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "initiatedAt": {
+                    "type": "integer"
+                },
+                "initiatedBy": {
+                    "type": "string"
+                },
+                "installType": {
+                    "type": "string"
+                },
+                "scheduledAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushDeviceCounts": {
+            "type": "object",
+            "properties": {
+                "acknowledged": {
+                    "type": "integer"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "pending": {
+                    "type": "integer"
+                },
+                "sent": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushHistoryDeviceCounts": {
+            "type": "object",
+            "properties": {
+                "acknowledged": {
+                    "type": "integer"
+                },
+                "failed": {
+                    "type": "integer"
+                },
+                "pending": {
+                    "type": "integer"
+                },
+                "sent": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushHistoryEntry": {
+            "type": "object",
+            "properties": {
+                "cancelledAt": {
+                    "type": "integer"
+                },
+                "completedAt": {
+                    "type": "integer"
+                },
+                "deviceCount": {
+                    "type": "integer"
+                },
+                "devices": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushHistoryDeviceCounts"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "initiatedAt": {
+                    "type": "integer"
+                },
+                "initiatedBy": {
+                    "type": "string"
+                },
+                "installType": {
+                    "type": "string"
+                },
+                "scheduledAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushHistoryListResult": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
+                },
+                "pushes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushHistoryEntry"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushRequest": {
+            "type": "object",
+            "properties": {
+                "deviceIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "installType": {
+                    "type": "string"
+                },
+                "scheduledAt": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushResult": {
+            "type": "object",
+            "properties": {
+                "deviceIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "devices": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdatePushDeviceCounts"
+                },
+                "failedDevices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateFailedDevice"
+                    }
+                },
+                "initiatedAt": {
+                    "type": "integer"
+                },
+                "initiatedBy": {
+                    "type": "string"
+                },
+                "installType": {
+                    "type": "string"
+                },
+                "pushId": {
+                    "type": "string"
+                },
+                "scheduledAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "client": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientSettings"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "reset": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateStatusResult": {
+            "type": "object",
+            "properties": {
+                "device": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateDeviceStatusInfo"
+                },
+                "latest": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateLatestVersionInfo"
+                },
+                "sync": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSyncStatusInfo"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSyncResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "startedAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "versionsFound": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSyncStatusInfo": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "lastSyncAt": {
+                    "type": "integer"
+                },
+                "nextSyncAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "versionsFound": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateSyncStatusResult": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "lastSyncAt": {
+                    "type": "integer"
+                },
+                "nextSyncAt": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "versionsFound": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateVersionListResult": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateVersionResponse"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateVersionResponse": {
+            "type": "object",
+            "properties": {
+                "apkFilename": {
+                    "type": "string"
+                },
+                "apkSize": {
+                    "type": "integer"
+                },
+                "isLatest": {
+                    "type": "boolean"
+                },
+                "releaseNotes": {
+                    "type": "string"
+                },
+                "releaseType": {
+                    "type": "string"
+                },
+                "releasedAt": {
+                    "type": "integer"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdaterCheckResult": {
+            "type": "object",
+            "properties": {
+                "apk_filename": {
+                    "type": "string"
+                },
+                "apk_sha256": {
+                    "type": "string"
+                },
+                "apk_size_bytes": {
+                    "type": "integer"
+                },
+                "release_notes": {
+                    "type": "string"
+                },
+                "update_available": {
+                    "type": "boolean"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "version_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdaterVersionManifestResult": {
+            "type": "object",
+            "properties": {
+                "apk_filename": {
+                    "type": "string"
+                },
+                "apk_sha256": {
+                    "type": "string"
+                },
+                "apk_size_bytes": {
+                    "type": "integer"
+                },
+                "release_notes": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "version_code": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UsageStatsCounts": {
+            "type": "object",
+            "properties": {
+                "alert_rules": {
+                    "type": "integer"
+                },
+                "annotations": {
+                    "type": "integer"
+                },
+                "contact_points": {
+                    "type": "integer"
+                },
+                "devices": {
+                    "type": "integer"
+                },
+                "operators": {
+                    "type": "integer"
+                },
+                "organizations": {
+                    "type": "integer"
+                },
+                "service_accounts": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UsageStatsSnapshot": {
+            "type": "object",
+            "properties": {
+                "collected_at": {
+                    "type": "string"
+                },
+                "counts": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UsageStatsCounts"
+                },
+                "toggles": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookNotifications": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "secret": {
+                    "type": "string"
+                },
+                "types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookSecretResult": {
+            "type": "object",
+            "properties": {
+                "secret": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookTestRequest": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.WebhookTestResult": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "responseTime": {
+                    "type": "integer"
+                },
+                "statusCode": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         }

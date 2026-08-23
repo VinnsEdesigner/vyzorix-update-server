@@ -12,10 +12,10 @@ import (
 
 	keys "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 	infranotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/worker"
 )
 
 // Injectors from wire_gen.go:.
@@ -61,7 +61,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	emailService := ProvideEmailService()
 	metrics := ProvideMetrics()
 	notifier := ProvideFCMNotifier(logger, cfg, db)
-fcmRetryWorker := worker.NewFCMRetryWorker(db, notifier, logger, 30*time.Second)
+	fcmRetryWorker := worker.NewFCMRetryWorker(db, notifier, logger, 30*time.Second)
 	appCheckVerifier, err := ProvideAppCheckVerifier(logger, cfg)
 	if err != nil {
 		return nil, err

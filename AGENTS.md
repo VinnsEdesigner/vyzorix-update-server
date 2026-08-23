@@ -1,5 +1,55 @@
 # AGENTS.md — vyzorix-update-server
 
+## Generated SDK migration (2026-08-23)
+- **The hand-rolled REST endpoints in `packages/API_Client/src/vyzorServer/rest/` are DELETED.**
+  All operator-facing REST now goes through the orval-generated SDK at
+  `packages/API_Client/src/generated/` (tags-split, axios via `generated/rest-bridge.ts` →
+  `restClient`). Root barrel exports `getAuth()`, `getMfa()`, `getDevices()`, `getCommands()`,
+  `getUpdates()`, `getInbox()`, `getOrganizations()`, `getMembers()`, `getInvitations()`,
+  `getSettings()`, `getSessions()`, `getAdmin()`, `getApiKeys()`, `getClientCredentials()`,
+  `getServiceAccounts()`, `getContactPoints()`, `getAlerts()`, `getDashboard()`,
+  `getDiagnostics()`, `getConnections()`, `getTelemetry()`, `getUpdater()`.
+- **What remains in `vyzorServer/rest/`**: `_shared/` (restClient transport: circuit breaker,
+  HMAC signing, token refresh, idempotency, batching), `_batching/`, `_connectivity/`,
+  `health/`, `oauth/` (browser OAuth helpers — no OpenAPI counterpart). Everything else was
+  superseded by the generated SDK and removed.
+- **CSRF**: the restClient request interceptor lazily fetches `/v1/auth/csrf-token` before any
+  mutating request to `/v1/auth/*` when no token is cached (replaces the old per-endpoint
+  `ensureCSRFToken()` preflight).
+- **Domain layer** (`src/domain/*/`): re-exports the generated wire types PLUS hook-facing
+  normalized types (camelCase, `Date` timestamps) where the GraphQL fallbacks/UI need them:
+  `LogEntry`/`LogListResult`/`LogStats` (logs), `Command`/`CommandListItem` (commands),
+  `UpdateVersion`/`UpdatePush`/`SyncState`/`ChangelogEntry`/`UpdateStatusResponse` (updates),
+  `DeviceInspection`/`TimelineResult`/`TimelineEvent` + `getEventCategory`/`timelineEventTypeLabel`
+  (diagnostics), `InboxEntry`/`InboxEntriesResult`/`CreateInboxRequest` (registration),
+  `CreateApiKeyInput`/`UpdateApiKeyInput` (apikey). Wire-vs-domain normalization lives in the
+  web hooks' `_graphql-fallback.ts` files (e.g. `normalizeWireInspection`, `normalizeInboxEntry`,
+  `normalizeWireVersionList`).
+- **Server-authoritative constants**: alert metrics are `device_offline_count` /
+  `device_offline_percent` / `command_failure_rate` (NOT riskScore/thermalTemp); alert states are
+  `inactive|pending|firing|no_data|error`; log event types are the 9-value union from
+  `internal/domain/logs`; release types are `major|minor|patch`.
+- **OpenAPI drift fixed on the server** (annotations now match real routes): inbox is
+  `/v1/device/inbox*` (list/entry/ack/resend, create is public POST /v1/device/inbox);
+  dashboard-group endpoints are `/v1/dashboard/device/{imei}/{logs,events,metrics,telemetry,commands}`
+  + `/v1/dashboard/events/{recent,types/{type},{id}}` + `/v1/dashboard/stats`; operator settings
+  are `/v1/me/{settings,preferences,invitations,thresholds,notifications*}`; contact-points are
+  `/v1/notifications/contact-points*`; api-keys are `/v1/auth/api-keys*`; updater is
+  `/v1/{version,changelog,check-update,download-progress,apk/{name},bin/{name}}`;
+  diagnostics are `/v1/device/{imei}/{inspect,timeline}`; `DELETE /organizations/{id}` and member
+  `suspend`/`reinstate`/`transfer` are now annotated. The `/v1/me/thresholds` +
+  `/v1/me/notifications*` routes are newly MOUNTED (handlers existed but were never wired).
+- **Codegen pipeline** (run from repo root): `swag init -g cmd/api/api_main.go --parseDependency
+  --output apps/api/swag` (cwd: apps/api; swag at /workspace/.toolchain/gopath/bin) →
+  `python3 tooling/codegen/build_openapi3.py` → `python3 tooling/codegen/build_zod.py` →
+  `npx orval --config orval.config.js`. New DTOs go in `internal/api/openapi/schemas.go`;
+  handlers reference them as `openapi.X` in `@Success`/`@Param body` annotations and need a
+  `var _ openapi.X` compile-time reference when the package doesn't otherwise import openapi.
+- **Tests**: 584/584 green. MSW handlers mirror the real server wire shapes (snake_case wire
+  DTOs where the server DTOs are snake_case, camelCase where they are camelCase — follow the
+  Go struct json tags, not intuition). The pre-existing connectivity test mocked
+  `/api/v1/health` but the monitor probes `/health` — now aligned.
+
 ## Spec realignment (documents/)
 - The `documents/*.md` front-end specs predate the **organization model**. When updating one,
   pull correct context from BOTH the server spec (`documents/SERVER_BACKEND_*_API.md`) AND the

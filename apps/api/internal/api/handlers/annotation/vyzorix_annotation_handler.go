@@ -83,7 +83,7 @@ func annotationJSON(a *annotation.Annotation) gin.H {
 
 // List handles GET /v1/annotations.
 // @Summary      List annotations
-// @Description  Returns org-scoped annotations, optionally filtered by tag and time range.
+// @Description  Returns org-scoped annotations, optionally filtered by tag and time range
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
@@ -131,7 +131,7 @@ func (h *Handler) List(c *gin.Context) {
 
 // Create handles POST /v1/annotations.
 // @Summary      Create annotation
-// @Description  Creates a new org-scoped annotation.
+// @Description  Creates a new org-scoped annotation
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
@@ -158,7 +158,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Get handles GET /v1/annotations/:id.
 // @Summary      Get annotation
-// @Description  Returns one annotation by ID.
+// @Description  Returns one annotation by ID
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
@@ -180,7 +180,7 @@ func (h *Handler) Get(c *gin.Context) {
 
 // Update handles PATCH /v1/annotations/:id.
 // @Summary      Update annotation
-// @Description  Replaces an annotation's mutable fields.
+// @Description  Replaces an annotation's mutable fields
 // @Tags         annotations
 // @Accept       json
 // @Produce      json
@@ -208,7 +208,7 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/annotations/:id.
 // @Summary      Delete annotation
-// @Description  Removes an annotation.
+// @Description  Removes an annotation
 // @Tags         annotations
 // @Accept       json
 // @Produce      json

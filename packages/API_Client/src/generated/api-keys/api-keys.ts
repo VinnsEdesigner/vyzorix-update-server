@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  APIKey,
+  APIKeyListResult,
+  APIKeyWithSecret,
+  CreateAPIKeyRequest,
+  GetAuthApiKeysParams,
+  UpdateAPIKeyRequest
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,58 +21,88 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getApiKeys = () => {
-const getApiKeys = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/api-keys`, method: 'GET'
+/**
+ * Returns paginated API keys for the operator with monthly quota usage
+ * @summary List API keys
+ */
+const getAuthApiKeys = (
+    params?: GetAuthApiKeysParams,
+ options?: SecondParameter<typeof customAxios<APIKeyListResult>>,) => {
+      return customAxios<APIKeyListResult>(
+      {url: `/auth/api-keys`, method: 'GET',
+        params
     },
       options);
     }
-  const postApiKeys = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/api-keys`, method: 'POST'
+  /**
+ * Generates a new API key. The full key is only returned once
+ * @summary Create API key
+ */
+const postAuthApiKeys = (
+    createAPIKeyRequest: CreateAPIKeyRequest,
+ options?: SecondParameter<typeof customAxios<APIKeyWithSecret>>,) => {
+      return customAxios<APIKeyWithSecret>(
+      {url: `/auth/api-keys`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createAPIKeyRequest
     },
       options);
     }
-  const getApiKeysId = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/api-keys/${id}`, method: 'GET'
+  /**
+ * Returns a single API key by ID (without the full secret)
+ * @summary Get API key
+ */
+const getAuthApiKeysKeyId = (
+    keyId: string,
+ options?: SecondParameter<typeof customAxios<APIKey>>,) => {
+      return customAxios<APIKey>(
+      {url: `/auth/api-keys/${keyId}`, method: 'GET'
     },
       options);
     }
-  const deleteApiKeysId = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/api-keys/${id}`, method: 'DELETE'
+  /**
+ * Revokes an API key so it can no longer be used
+ * @summary Revoke API key
+ */
+const deleteAuthApiKeysKeyId = (
+    keyId: string,
+ options?: SecondParameter<typeof customAxios<void>>,) => {
+      return customAxios<void>(
+      {url: `/auth/api-keys/${keyId}`, method: 'DELETE'
     },
       options);
     }
-  const patchApiKeysId = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/api-keys/${id}`, method: 'PATCH'
+  /**
+ * Updates mutable API key fields (name, scope)
+ * @summary Update API key
+ */
+const patchAuthApiKeysKeyId = (
+    keyId: string,
+    updateAPIKeyRequest: UpdateAPIKeyRequest,
+ options?: SecondParameter<typeof customAxios<APIKey>>,) => {
+      return customAxios<APIKey>(
+      {url: `/auth/api-keys/${keyId}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateAPIKeyRequest
     },
       options);
     }
-  const postApiKeysIdRotate = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/api-keys/${id}/rotate`, method: 'POST'
+  /**
+ * Rotates an API key, returning a new full secret (shown only once)
+ * @summary Rotate API key
+ */
+const postAuthApiKeysKeyIdRotate = (
+    keyId: string,
+ options?: SecondParameter<typeof customAxios<APIKeyWithSecret>>,) => {
+      return customAxios<APIKeyWithSecret>(
+      {url: `/auth/api-keys/${keyId}/rotate`, method: 'POST'
     },
       options);
     }
-  return {getApiKeys,postApiKeys,getApiKeysId,deleteApiKeysId,patchApiKeysId,postApiKeysIdRotate}};
-export type GetApiKeysResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['getApiKeys']>>>
-export type PostApiKeysResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['postApiKeys']>>>
-export type GetApiKeysIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['getApiKeysId']>>>
-export type DeleteApiKeysIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['deleteApiKeysId']>>>
-export type PatchApiKeysIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['patchApiKeysId']>>>
-export type PostApiKeysIdRotateResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['postApiKeysIdRotate']>>>
+  return {getAuthApiKeys,postAuthApiKeys,getAuthApiKeysKeyId,deleteAuthApiKeysKeyId,patchAuthApiKeysKeyId,postAuthApiKeysKeyIdRotate}};
+export type GetAuthApiKeysResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['getAuthApiKeys']>>>
+export type PostAuthApiKeysResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['postAuthApiKeys']>>>
+export type GetAuthApiKeysKeyIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['getAuthApiKeysKeyId']>>>
+export type DeleteAuthApiKeysKeyIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['deleteAuthApiKeysKeyId']>>>
+export type PatchAuthApiKeysKeyIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['patchAuthApiKeysKeyId']>>>
+export type PostAuthApiKeysKeyIdRotateResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getApiKeys>['postAuthApiKeysKeyIdRotate']>>>

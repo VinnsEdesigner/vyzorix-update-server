@@ -6,7 +6,11 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  Annotation,
+  AnnotationListResult,
+  AnnotationRequest,
+  DeletedResult,
+  GetAnnotationsParams
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,31 +20,75 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getAnnotations = () => {
+/**
+ * Returns org-scoped annotations, optionally filtered by tag and time range
+ * @summary List annotations
+ */
 const getAnnotations = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/annotations`, method: 'GET'
+    params?: GetAnnotationsParams,
+ options?: SecondParameter<typeof customAxios<AnnotationListResult>>,) => {
+      return customAxios<AnnotationListResult>(
+      {url: `/annotations`, method: 'GET',
+        params
     },
       options);
     }
-  const postAnnotations = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/annotations`, method: 'POST'
+  /**
+ * Creates a new org-scoped annotation
+ * @summary Create annotation
+ */
+const postAnnotations = (
+    annotationRequest: AnnotationRequest,
+ options?: SecondParameter<typeof customAxios<Annotation>>,) => {
+      return customAxios<Annotation>(
+      {url: `/annotations`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: annotationRequest
     },
       options);
     }
-  const deleteAnnotationsId = (
+  /**
+ * Returns one annotation by ID
+ * @summary Get annotation
+ */
+const getAnnotationsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<Annotation>>,) => {
+      return customAxios<Annotation>(
+      {url: `/annotations/${id}`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Removes an annotation
+ * @summary Delete annotation
+ */
+const deleteAnnotationsId = (
+    id: string,
+ options?: SecondParameter<typeof customAxios<DeletedResult>>,) => {
+      return customAxios<DeletedResult>(
       {url: `/annotations/${id}`, method: 'DELETE'
     },
       options);
     }
-  return {getAnnotations,postAnnotations,deleteAnnotationsId}};
+  /**
+ * Replaces an annotation's mutable fields
+ * @summary Update annotation
+ */
+const patchAnnotationsId = (
+    id: string,
+    annotationRequest: AnnotationRequest,
+ options?: SecondParameter<typeof customAxios<Annotation>>,) => {
+      return customAxios<Annotation>(
+      {url: `/annotations/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: annotationRequest
+    },
+      options);
+    }
+  return {getAnnotations,postAnnotations,getAnnotationsId,deleteAnnotationsId,patchAnnotationsId}};
 export type GetAnnotationsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAnnotations>['getAnnotations']>>>
 export type PostAnnotationsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAnnotations>['postAnnotations']>>>
+export type GetAnnotationsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAnnotations>['getAnnotationsId']>>>
 export type DeleteAnnotationsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAnnotations>['deleteAnnotationsId']>>>
+export type PatchAnnotationsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAnnotations>['patchAnnotationsId']>>>

@@ -6,12 +6,23 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.AdminOperatorListResult
+	_ openapi.AdminOperator
+	_ openapi.CreateOperatorRequest
+	_ openapi.UpdateOperatorRequest
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // AdminHandler handles admin endpoints with organization-scoped access control.
@@ -27,7 +38,17 @@ func NewAdminHandler(authService *auth.AuthService, presenter *response.Presente
 }
 
 // ListOperators handles GET /v1/auth/admin/operators.
-// Lists all operators in the system (for super_admin reference).
+// @Summary      List operators
+// @Description  Lists all operators in the system (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.AdminOperatorListResult  "operators"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/admin/operators [get]
 func (h *AdminHandler) ListOperators(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
@@ -52,6 +73,20 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 }
 
 // CreateOperator handles POST /v1/auth/admin/operators.
+// @Summary      Create operator
+// @Description  Creates a new operator (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.CreateOperatorRequest  true  "operator credentials"
+// @Success      201  {object}  openapi.AdminOperator  "created operator"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      409  {object}  openapi.ErrorResponse  "email already in use"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/admin/operators [post]
 func (h *AdminHandler) CreateOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
@@ -106,6 +141,19 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 }
 
 // GetOperator handles GET /v1/auth/admin/operators/:id.
+// @Summary      Get operator
+// @Description  Returns a single operator by ID (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "operator ID"
+// @Success      200  {object}  openapi.AdminOperator  "operator"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/admin/operators/{id} [get]
 func (h *AdminHandler) GetOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
@@ -144,6 +192,22 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 }
 
 // UpdateOperator handles PATCH /v1/auth/admin/operators/:id.
+// @Summary      Update operator
+// @Description  Updates mutable operator fields (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id    path  string  true  "operator ID"
+// @Param        body  body  openapi.UpdateOperatorRequest  true  "operator update"
+// @Success      200  {object}  openapi.AdminOperator  "updated operator"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      409  {object}  openapi.ErrorResponse  "email already in use"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/admin/operators/{id} [patch]
 func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)
@@ -197,6 +261,21 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 }
 
 // DeleteOperator handles DELETE /v1/auth/admin/operators/:id.
+// @Summary      Delete operator
+// @Description  Deletes an operator. Cannot delete yourself or the last super_admin
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "operator ID"
+// @Success      200  {object}  openapi.SuccessResult  "operator deleted"
+// @Failure      400  {object}  openapi.ErrorResponse  "operator id required / cannot delete self"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      409  {object}  openapi.ErrorResponse  "cannot delete last super_admin"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/admin/operators/{id} [delete]
 func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	orgID := middleware.GetOrganizationID(c)

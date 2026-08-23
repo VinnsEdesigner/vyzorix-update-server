@@ -6,10 +6,11 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import {
-  admin,
-  type AdminApiKeyListResult,
-  type GlobalApiKeyStats,
-  type OperatorApiKeyStats,
+  getAdmin,
+  type AdminAPIKeyListResult,
+  type Pagination,
+  type GlobalAPIKeyStatsResult,
+  type OperatorAPIKeyStatsResult,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
@@ -18,6 +19,15 @@ const ADMIN_PAGE_SIZE = 20;
 interface AdminKeyFilters {
   operatorId?: string;
   search?: string;
+}
+
+function normalizePagination(raw: { page?: number; limit?: number; total?: number; total_pages?: number } | undefined, fallbackLimit: number): Pagination {
+  return {
+    page: raw?.page ?? 1,
+    limit: raw?.limit ?? fallbackLimit,
+    total: raw?.total ?? 0,
+    totalPages: raw?.total_pages ?? 0,
+  };
 }
 
 /**
@@ -34,15 +44,16 @@ export function useAdminApiKeys(filters?: AdminKeyFilters) {
       filters ? { ...filters } : {},
     ),
     queryFn: ({ pageParam }) =>
-      admin.listAllKeys({
+      getAdmin().getAdminApiKeys({
         page: pageParam,
         limit: ADMIN_PAGE_SIZE,
-        operatorId: filters?.operatorId,
+        operator_id: filters?.operatorId,
         search: filters?.search,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
+      const page = lastPage.pagination?.page ?? 1;
+      const totalPages = lastPage.pagination?.total_pages ?? 0;
       return page < totalPages ? page + 1 : undefined;
     },
   });
@@ -51,13 +62,8 @@ export function useAdminApiKeys(filters?: AdminKeyFilters) {
   const firstPage = pages[0];
 
   return {
-    keys: pages.flatMap((page: AdminApiKeyListResult) => page.keys),
-    pagination: firstPage?.pagination ?? {
-      page: 1,
-      limit: ADMIN_PAGE_SIZE,
-      total: 0,
-      totalPages: 0,
-    },
+    keys: pages.flatMap((page: AdminAPIKeyListResult) => page.keys ?? []),
+    pagination: normalizePagination(firstPage?.pagination, ADMIN_PAGE_SIZE),
     isLoading: query.isLoading,
     isFetchingNextPage: query.isFetchingNextPage,
     hasNextPage: query.hasNextPage ?? false,
@@ -74,11 +80,11 @@ export function useAdminOperatorKeys(
   operatorId: string | undefined,
   page?: number,
   limit?: number,
-  options?: Omit<UseQueryOptions<AdminApiKeyListResult>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<AdminAPIKeyListResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.adminApiKeysQueryKeys.operatorKeys(operatorId ?? '', page, limit),
-    queryFn: () => admin.getOperatorKeys(operatorId!, page, limit),
+    queryFn: () => getAdmin().getAdminApiKeysOperatorOperatorId(operatorId!, { page, limit }),
     enabled: operatorId !== undefined && operatorId !== '',
     ...options,
   });
@@ -90,11 +96,11 @@ export function useAdminOperatorKeys(
  * (spec §12.5).
  */
 export function useGlobalStats(
-  options?: Omit<UseQueryOptions<GlobalApiKeyStats>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<GlobalAPIKeyStatsResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.adminApiKeysQueryKeys.stats(),
-    queryFn: () => admin.getGlobalKeyStats(),
+    queryFn: () => getAdmin().getAdminApiKeysStats(),
     staleTime: 1000 * 60 * 5,
     ...options,
   });
@@ -105,11 +111,11 @@ export function useGlobalStats(
  */
 export function useAdminOperatorKeyStats(
   operatorId: string | undefined,
-  options?: Omit<UseQueryOptions<OperatorApiKeyStats>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<OperatorAPIKeyStatsResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.adminApiKeysQueryKeys.operatorStats(operatorId ?? ''),
-    queryFn: () => admin.getOperatorKeyStats(operatorId!),
+    queryFn: () => getAdmin().getAdminApiKeysStatsOperatorOperatorId(operatorId!),
     enabled: operatorId !== undefined && operatorId !== '',
     ...options,
   });
@@ -122,11 +128,13 @@ export function useAdminOperatorKeyStats(
 export function useForceRevokeKey() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (keyId: string) => admin.forceRevokeKey(keyId),
+    mutationFn: async (keyId: string): Promise<void> => {
+      await getAdmin().deleteAdminApiKeysKeyId(keyId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.adminApiKeysQueryKeys.all });
     },
   });
 }
 
-export type { AdminApiKeyListResult, GlobalApiKeyStats, OperatorApiKeyStats };
+export type { AdminAPIKeyListResult, GlobalAPIKeyStatsResult, OperatorAPIKeyStatsResult };

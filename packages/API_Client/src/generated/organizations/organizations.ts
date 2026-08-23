@@ -6,7 +6,15 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  CreateOrganizationRequest,
+  MessageResult,
+  Organization,
+  OrganizationListResult,
+  OrganizationSettingsResult,
+  ThresholdUpdateRequest,
+  ThresholdsResult,
+  UpdateOrganizationRequest,
+  UpdateOrganizationSettingsRequest
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,40 +24,132 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getOrganizations = () => {
+/**
+ * Returns all organizations the operator is a member of
+ * @summary List organizations
+ */
 const getOrganizations = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<OrganizationListResult>>,) => {
+      return customAxios<OrganizationListResult>(
       {url: `/organizations`, method: 'GET'
     },
       options);
     }
-  const postOrganizations = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/organizations`, method: 'POST'
+  /**
+ * Creates a new organization and makes the caller its owner
+ * @summary Create organization
+ */
+const postOrganizations = (
+    createOrganizationRequest: CreateOrganizationRequest,
+ options?: SecondParameter<typeof customAxios<Organization>>,) => {
+      return customAxios<Organization>(
+      {url: `/organizations`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createOrganizationRequest
     },
       options);
     }
-  const getOrganizationsId = (
+  /**
+ * Returns one organization by ID with member count
+ * @summary Get organization
+ */
+const getOrganizationsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<Organization>>,) => {
+      return customAxios<Organization>(
       {url: `/organizations/${id}`, method: 'GET'
     },
       options);
     }
-  const patchOrganizationsId = (
+  /**
+ * Deletes an organization. Only super_admin members can delete
+ * @summary Delete organization
+ */
+const deleteOrganizationsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/organizations/${id}`, method: 'PATCH'
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/organizations/${id}`, method: 'DELETE'
     },
       options);
     }
-  return {getOrganizations,postOrganizations,getOrganizationsId,patchOrganizationsId}};
+  /**
+ * Updates mutable organization fields. Sensitive fields (maxMembers, isActive) require super_admin
+ * @summary Update organization
+ */
+const patchOrganizationsId = (
+    id: string,
+    updateOrganizationRequest: UpdateOrganizationRequest,
+ options?: SecondParameter<typeof customAxios<Organization>>,) => {
+      return customAxios<Organization>(
+      {url: `/organizations/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateOrganizationRequest
+    },
+      options);
+    }
+  /**
+ * Returns organization-level settings
+ * @summary Get organization settings
+ */
+const getOrganizationsIdSettings = (
+    id: string,
+ options?: SecondParameter<typeof customAxios<OrganizationSettingsResult>>,) => {
+      return customAxios<OrganizationSettingsResult>(
+      {url: `/organizations/${id}/settings`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Updates organization-level settings
+ * @summary Update organization settings
+ */
+const patchOrganizationsIdSettings = (
+    id: string,
+    updateOrganizationSettingsRequest: UpdateOrganizationSettingsRequest,
+ options?: SecondParameter<typeof customAxios<OrganizationSettingsResult>>,) => {
+      return customAxios<OrganizationSettingsResult>(
+      {url: `/organizations/${id}/settings`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateOrganizationSettingsRequest
+    },
+      options);
+    }
+  /**
+ * Returns organization-level alert thresholds
+ * @summary Get organization thresholds
+ */
+const getOrganizationsIdSettingsThresholds = (
+    id: string,
+ options?: SecondParameter<typeof customAxios<ThresholdsResult>>,) => {
+      return customAxios<ThresholdsResult>(
+      {url: `/organizations/${id}/settings/thresholds`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Updates organization-level alert thresholds
+ * @summary Update organization thresholds
+ */
+const patchOrganizationsIdSettingsThresholds = (
+    id: string,
+    thresholdUpdateRequest: ThresholdUpdateRequest,
+ options?: SecondParameter<typeof customAxios<ThresholdsResult>>,) => {
+      return customAxios<ThresholdsResult>(
+      {url: `/organizations/${id}/settings/thresholds`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: thresholdUpdateRequest
+    },
+      options);
+    }
+  return {getOrganizations,postOrganizations,getOrganizationsId,deleteOrganizationsId,patchOrganizationsId,getOrganizationsIdSettings,patchOrganizationsIdSettings,getOrganizationsIdSettingsThresholds,patchOrganizationsIdSettingsThresholds}};
 export type GetOrganizationsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['getOrganizations']>>>
 export type PostOrganizationsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['postOrganizations']>>>
 export type GetOrganizationsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['getOrganizationsId']>>>
+export type DeleteOrganizationsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['deleteOrganizationsId']>>>
 export type PatchOrganizationsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['patchOrganizationsId']>>>
+export type GetOrganizationsIdSettingsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['getOrganizationsIdSettings']>>>
+export type PatchOrganizationsIdSettingsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['patchOrganizationsIdSettings']>>>
+export type GetOrganizationsIdSettingsThresholdsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['getOrganizationsIdSettingsThresholds']>>>
+export type PatchOrganizationsIdSettingsThresholdsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getOrganizations>['patchOrganizationsIdSettingsThresholds']>>>

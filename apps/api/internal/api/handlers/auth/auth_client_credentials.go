@@ -5,11 +5,22 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.ClientCredential
+	_ openapi.ClientCredentialListResult
+	_ openapi.CreateClientCredentialRequest
+	_ openapi.UpdateClientCredentialRequest
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // ClientCredentialsHandler handles client credentials endpoints.
@@ -42,6 +53,17 @@ func (h *ClientCredentialsHandler) getOperatorFromSession(c *gin.Context) (strin
 }
 
 // Create handles POST /v1/auth/client-credentials.
+// @Summary      Create client credentials
+// @Description  Creates a new OAuth client credential. The secret is only returned once
+// @Tags         client-credentials
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.CreateClientCredentialRequest  true  "client name"
+// @Success      200  {object}  openapi.ClientCredential  "created client with secret"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid request body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/client-credentials [post]
 func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -97,6 +119,15 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 }
 
 // List handles GET /v1/auth/client-credentials.
+// @Summary      List client credentials
+// @Description  Returns all client credentials for the authenticated operator
+// @Tags         client-credentials
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.ClientCredentialListResult  "clients"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/client-credentials [get]
 func (h *ClientCredentialsHandler) List(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -120,6 +151,18 @@ func (h *ClientCredentialsHandler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/auth/client-credentials/:clientId.
+// @Summary      Get client credential
+// @Description  Returns a single client credential by ID
+// @Tags         client-credentials
+// @Accept       json
+// @Produce      json
+// @Param        clientId  path  string  true  "client ID"
+// @Success      200  {object}  openapi.ClientCredential  "client"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "client not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/client-credentials/{clientId} [get]
 func (h *ClientCredentialsHandler) Get(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -149,6 +192,18 @@ func (h *ClientCredentialsHandler) Get(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/auth/client-credentials/:clientId.
+// @Summary      Revoke client credential
+// @Description  Revokes a client credential by ID
+// @Tags         client-credentials
+// @Accept       json
+// @Produce      json
+// @Param        clientId  path  string  true  "client ID"
+// @Success      200  {object}  openapi.SuccessResult  "client revoked"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "client not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/client-credentials/{clientId} [delete]
 func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -185,6 +240,19 @@ func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/auth/client-credentials/:clientId.
+// @Summary      Update client credential
+// @Description  Updates mutable client credential fields (e.g., name)
+// @Tags         client-credentials
+// @Accept       json
+// @Produce      json
+// @Param        clientId  path  string  true  "client ID"
+// @Param        body  body  openapi.UpdateClientCredentialRequest  true  "client update"
+// @Success      200  {object}  openapi.ClientCredential  "updated client"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required / invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "client not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/client-credentials/{clientId} [patch]
 func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -248,6 +316,18 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 }
 
 // RotateSecret handles POST /v1/auth/client-credentials/:clientId/rotate-secret.
+// @Summary      Rotate client secret
+// @Description  Rotates a client credential's secret. The new secret is only returned once
+// @Tags         client-credentials
+// @Accept       json
+// @Produce      json
+// @Param        clientId  path  string  true  "client ID"
+// @Success      200  {object}  openapi.ClientCredential  "client with new secret"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "client not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/client-credentials/{clientId}/rotate-secret [post]
 func (h *ClientCredentialsHandler) RotateSecret(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {

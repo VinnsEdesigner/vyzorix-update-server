@@ -4,10 +4,18 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.UpdatePushRequest
+	_ openapi.UpdatePushResult
+	_ openapi.ErrorResponse
 )
 
 // UpdatesPushHandler handles push-related HTTP requests.
@@ -25,6 +33,19 @@ func NewUpdatesPushHandler(service *updates.Service, auditLogger *audit.Logger) 
 }
 
 // PushUpdate handles POST /v1/updates/push.
+// @Summary      Push update to devices
+// @Description  Pushes an update to one or more devices (admin only)
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.UpdatePushRequest  true  "push request"
+// @Success      202  {object}  openapi.UpdatePushResult  "push accepted"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "admin required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /updates/push [post]
 func (h *UpdatesPushHandler) PushUpdate(c *gin.Context) {
 	var req struct {
 		ScheduledAt *int64   `json:"scheduledAt,omitempty"`

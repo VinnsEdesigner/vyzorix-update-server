@@ -44,11 +44,11 @@ describe('useAdminApiKeys', () => {
     const first = result.current.keys[0];
     expect(first).toBeDefined();
     expect(first?.id).toBe('admin-key-1');
-    expect(first?.operatorId).toBe('op-1');
-    expect(first?.operatorName).toBe('Acme Corp');
+    expect(first?.operator_id).toBe('op-1');
+    expect(first?.operator_name).toBe('Acme Corp');
     expect(first?.scope).toBe('admin');
-    expect(first?.isActive).toBe(true);
-    expect(first?.createdAt).toBeInstanceOf(Date);
+    expect(first?.is_active).toBe(true);
+    expect(typeof first?.created_at).toBe('string');
   });
 
   it('filters by operatorId', async () => {
@@ -58,7 +58,7 @@ describe('useAdminApiKeys', () => {
     await waitFor(() => expect(result.current.keys.length).toBeGreaterThan(0));
     // op-2 owns admin-key-3, admin-key-4, admin-key-8.
     expect(result.current.keys).toHaveLength(3);
-    expect(result.current.keys.every((k) => k.operatorId === 'op-2')).toBe(true);
+    expect(result.current.keys.every((k) => k.operator_id === 'op-2')).toBe(true);
   });
 
   it('filters by search (matches key name and operator name)', async () => {
@@ -68,7 +68,7 @@ describe('useAdminApiKeys', () => {
     await waitFor(() => expect(result.current.keys.length).toBeGreaterThan(0));
     // op-1 "Acme Corp" owns admin-key-1, admin-key-2, admin-key-7.
     expect(result.current.keys).toHaveLength(3);
-    expect(result.current.keys.every((k) => k.operatorName === 'Acme Corp')).toBe(true);
+    expect(result.current.keys.every((k) => k.operator_name === 'Acme Corp')).toBe(true);
   });
 
   it('reports hasNextPage=false when all keys fit one page', async () => {
@@ -103,8 +103,8 @@ describe('useAdminOperatorKeys', () => {
     const { result } = renderHookWithQueryClient(() => useAdminOperatorKeys('op-1'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // op-1 owns admin-key-1, admin-key-2, admin-key-7.
-    expect(result.current.data?.keys).toHaveLength(3);
-    expect(result.current.data?.keys.every((k) => k.operatorId === 'op-1')).toBe(true);
+    expect(result.current.data?.keys ?? []).toHaveLength(3);
+    expect((result.current.data?.keys ?? []).every((k) => k.operator_id === 'op-1')).toBe(true);
   });
 });
 
@@ -112,18 +112,18 @@ describe('useGlobalStats', () => {
   it('fetches global API key statistics', async () => {
     const { result } = renderHookWithQueryClient(() => useGlobalStats());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.totalKeys).toBe(8);
-    expect(result.current.data?.activeKeys).toBe(6);
-    expect(result.current.data?.revokedKeys).toBe(2);
-    expect(result.current.data?.totalOperators).toBe(3);
-    expect(result.current.data?.topOperators.length).toBeGreaterThan(0);
+    expect(result.current.data?.total_keys).toBe(8);
+    expect(result.current.data?.active_keys).toBe(6);
+    expect(result.current.data?.revoked_keys).toBe(2);
+    expect(result.current.data?.total_operators).toBe(3);
+    expect(result.current.data?.top_operators?.length).toBeGreaterThan(0);
   });
 
   it('aggregates requests by scope', async () => {
     const { result } = renderHookWithQueryClient(() => useGlobalStats());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // admin scope: admin-key-1 (142) + admin-key-8 (210) = 352.
-    expect(result.current.data?.requestsByScope.admin).toBe(352);
+    expect(result.current.data?.requests_by_scope?.admin).toBe(352);
   });
 });
 
@@ -136,10 +136,10 @@ describe('useAdminOperatorKeyStats', () => {
   it('fetches per-operator statistics', async () => {
     const { result } = renderHookWithQueryClient(() => useAdminOperatorKeyStats('op-1'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.operatorId).toBe('op-1');
-    expect(result.current.data?.totalKeys).toBe(3);
-    expect(result.current.data?.activeKeys).toBe(3);
-    expect(result.current.data?.monthlyLimit).toBe(20);
+    expect(result.current.data?.operator_id).toBe('op-1');
+    expect(result.current.data?.total_keys).toBe(3);
+    expect(result.current.data?.active_keys).toBe(3);
+    expect(result.current.data?.monthly_limit).toBe(20);
   });
 });
 
@@ -159,8 +159,8 @@ describe('useForceRevokeKey', () => {
     // Poll until the refetched data reflects the mutated state.
     await waitFor(() => {
       const revoked = listHook.result.current.keys.find((k) => k.id === 'admin-key-1');
-      expect(revoked?.isActive).toBe(false);
-      expect(revoked?.revokedAt).toBeInstanceOf(Date);
+      expect(revoked?.is_active).toBe(false);
+      expect(typeof revoked?.revoked_at).toBe('string');
     });
   });
 

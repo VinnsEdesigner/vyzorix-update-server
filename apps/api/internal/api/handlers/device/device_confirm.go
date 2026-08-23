@@ -7,9 +7,16 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceConfirmRequest
+	_ openapi.DeviceConfirmResult
 )
 
 // InboxCleanup defines the interface for cleaning up inbox entries after device confirmation.
@@ -42,8 +49,18 @@ func NewConfirmHandlerWithCleanup(deviceService *device.Service, inboxCleanup In
 	}
 }
 
-// Handle processes the device confirmation request.
-// Device calls this after receiving the commandSecret via FCM to finalize registration.
+// Handle handles POST /v1/device/confirm.
+// @Summary      Confirm device registration
+// @Description  Confirms a device registration from an approved inbox entry
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.DeviceConfirmRequest  true  "confirmation request (imei + commandSecret)"
+// @Success      200  {object}  openapi.DeviceConfirmResult  "confirmed device"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "device/inbox entry not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/confirm [post]
 func (h *ConfirmHandler) Handle(c *gin.Context) {
 	var req struct {
 		IMEI          string `json:"imei" binding:"required"`

@@ -3,10 +3,18 @@ package updates
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	domainupdates "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceUpdateStatusRequest
+	_ openapi.DeviceUpdateStatusResponse
+	_ openapi.ErrorResponse
 )
 
 // DeviceStatusHandler handles device callbacks for update status.
@@ -34,9 +42,17 @@ type DeviceUpdateStatusResponse struct {
 }
 
 // HandleDeviceUpdateStatus handles POST /v1/updates/device-status.
-// This endpoint is called by devices to report update progress.
-// The device_id is included in the request body since the device knows its own ID.
-// from the FCM payload (device_id field).
+// @Summary      Report device update status
+// @Description  Device callback reporting update installation status
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.DeviceUpdateStatusRequest  true  "device status callback"
+// @Success      200  {object}  openapi.DeviceUpdateStatusResponse  "acknowledged"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "push/device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /updates/device-status [post]
 func (h *DeviceStatusHandler) HandleDeviceUpdateStatus(c *gin.Context) {
 	var req DeviceUpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -19,6 +20,14 @@ import (
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.LoginRequest
+	_ openapi.LoginResult
+	_ openapi.LoginWithTokensResult
+	_ openapi.ErrorResponse
 )
 
 // LoginHandler handles POST /v1/auth/login.
@@ -152,10 +161,17 @@ func NewLoginHandler(authService *auth.AuthService, presenter *response.Presente
 	}
 }
 
-// Handle processes the login request.
+// Handle handles POST /v1/auth/login.
+// @Summary      Operator login
+// @Description  Authenticates an operator with email/password and starts a session
 // @Tags         auth
 // @Accept       json
 // @Produce      json
+// @Param        body  body  openapi.LoginRequest  true  "login credentials"
+// @Success      200  {object}  openapi.LoginResult  "login result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "invalid credentials"
+// @Failure      423  {object}  openapi.ErrorResponse  "account locked"
 // @Router       /auth/login [post]
 func (h *LoginHandler) Handle(c *gin.Context) {
 	var req dto.LoginRequest
@@ -276,9 +292,16 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 
 // This endpoint is for non-browser clients that need JWT access tokens and refresh tokens.
 // It does NOT set session cookies - only returns tokens in the response body.
+// HandleWithTokens handles POST /v1/auth/login/tokens.
+// @Summary      Operator login (token response)
+// @Description  Authenticates an operator and returns access/refresh tokens instead of a cookie
 // @Tags         auth
 // @Accept       json
 // @Produce      json
+// @Param        body  body  openapi.LoginRequest  true  "login credentials"
+// @Success      200  {object}  openapi.LoginWithTokensResult  "login result with tokens"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "invalid credentials"
 // @Router       /auth/login/tokens [post]
 func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 	var req dto.LoginRequest

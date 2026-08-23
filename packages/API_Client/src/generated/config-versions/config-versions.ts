@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  ConfigVersion,
+  ConfigVersionListResult,
+  ConfigVersionRestoreResult,
+  GetConfigVersionsResourceParams
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,28 +19,42 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getConfigVersions = () => {
+/**
+ * Returns the version history for a resource type
+ * @summary List config versions
+ */
 const getConfigVersionsResource = (
     resource: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/config-versions/${resource}`, method: 'GET'
+    params?: GetConfigVersionsResourceParams,
+ options?: SecondParameter<typeof customAxios<ConfigVersionListResult>>,) => {
+      return customAxios<ConfigVersionListResult>(
+      {url: `/config-versions/${resource}`, method: 'GET',
+        params
     },
       options);
     }
-  const getConfigVersionsResourceVersion = (
+  /**
+ * Returns one config version snapshot by resource type and version number
+ * @summary Get config version
+ */
+const getConfigVersionsResourceVersion = (
     resource: string,
-    version: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+    version: number,
+ options?: SecondParameter<typeof customAxios<ConfigVersion>>,) => {
+      return customAxios<ConfigVersion>(
       {url: `/config-versions/${resource}/${version}`, method: 'GET'
     },
       options);
     }
-  const postConfigVersionsResourceVersionRestore = (
+  /**
+ * Re-applies the version's snapshot as the live settings
+ * @summary Restore config version
+ */
+const postConfigVersionsResourceVersionRestore = (
     resource: string,
-    version: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+    version: number,
+ options?: SecondParameter<typeof customAxios<ConfigVersionRestoreResult>>,) => {
+      return customAxios<ConfigVersionRestoreResult>(
       {url: `/config-versions/${resource}/${version}/restore`, method: 'POST'
     },
       options);

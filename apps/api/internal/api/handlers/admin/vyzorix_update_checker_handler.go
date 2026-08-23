@@ -7,10 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/gin-gonic/gin"
 
 	usagestats "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/usagestats"
 )
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var _ openapi.UpdateCheckerResult
 
 type UpdateCheckerHandler struct {
 	statsSvc       *usagestats.Service
@@ -33,15 +37,14 @@ type githubRelease struct {
 	HTMLURL string `json:"html_url"`
 }
 
+// Check handles GET /v1/admin/updates/check.
+// @Summary      Check for server updates
+// @Description  Checks GitHub for the latest server release and includes usage stats
 // @Tags         usage-stats
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /admin/updates/check [get]
-// @Tags         usage-stats
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.UpdateCheckerResult  "update check result"
 // @Router       /admin/updates/check [get]
 func (h *UpdateCheckerHandler) Check(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)

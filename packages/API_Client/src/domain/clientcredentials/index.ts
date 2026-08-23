@@ -1,23 +1,7 @@
-
-
+// Client credentials domain — generated types re-exported.
 export type {
   ClientCredential,
-  ClientCredentialWithSecret,
+  ClientCredentialListResult,
   CreateClientCredentialRequest,
   UpdateClientCredentialRequest,
-  ClientCredentialListResponse,
-  Platform,
-} from "./clientcredentials-entity";
-
-export type {
-  RawClientCredentialItem,
-  RawClientCredentialCreated,
-  RawClientCredentialResponse,
-  RawClientCredentialListResponse,
-} from "./clientcredentials-mappers";
-
-export {
-  clientCredentialFromRaw,
-  clientCredentialWithSecretFromRaw,
-  clientCredentialListFromRaw,
-} from "./clientcredentials-mappers";
+} from '../../generated/vyzorixUpdateServerAPI.schemas';

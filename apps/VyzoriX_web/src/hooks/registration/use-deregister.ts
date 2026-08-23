@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { registration, type DeregisterResult } from '@vyzorix/api-client';
+import { getDevices, type DeregisterResult } from '@vyzorix/api-client';
 import { deregisterViaGraphQL } from './_graphql-fallback';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
@@ -14,9 +14,14 @@ export function useDeregisterRegisteredDevice() {
   const organizationId = useCurrentOrganizationId();
   return useMutation({
     mutationFn: async ({ imei, hard }: DeregisterDeviceVariables): Promise<DeregisterResult> => {
-      const org = organizationId ?? undefined;
       try {
-        return await registration.deregisterDevice(imei, org);
+        await getDevices().deleteDevicesImei(imei);
+        return {
+          imei,
+          status: 'deregistered',
+          deregisteredAt: new Date(),
+          retentionUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        };
       } catch (restError) {
         if (!organizationId) throw restError;
         return deregisterViaGraphQL(organizationId, imei, hard);

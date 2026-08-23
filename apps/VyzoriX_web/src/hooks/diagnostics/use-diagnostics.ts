@@ -1,13 +1,17 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  diagnostics,
+import { getDiagnostics,
   type DeviceInspection,
   type TimelineResult,
   type TimelineEventType,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { fetchInspectionViaGraphQL, fetchTimelineViaGraphQL } from './_graphql-fallback';
+import {
+  fetchInspectionViaGraphQL,
+  fetchTimelineViaGraphQL,
+  normalizeWireInspection,
+  normalizeWireTimeline,
+} from './_graphql-fallback';
 
 export interface TimelineParams {
   eventType?: TimelineEventType;
@@ -27,9 +31,9 @@ export function useDeviceInspection(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.inspection(organizationId ?? '', imei ?? ''),
-    queryFn: async () => {
+    queryFn: async (): Promise<DeviceInspection> => {
       try {
-        return await diagnostics.inspectDevice(imei!, organizationId ?? undefined);
+        return normalizeWireInspection(await getDiagnostics().getDeviceImeiInspect(imei!));
       } catch (restErr) {
         if (organizationId) {
           return fetchInspectionViaGraphQL(imei!, organizationId);
@@ -51,16 +55,18 @@ export function useDeviceTimeline(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.timeline(organizationId ?? '', imei ?? '', { ...params }),
-    queryFn: async () => {
+    queryFn: async (): Promise<TimelineResult> => {
       try {
-        return await diagnostics.getTimeline(imei!, {
-          eventType: params?.eventType,
-          startTime: params?.startTime,
-          endTime: params?.endTime,
-          cursor: params?.cursor,
-          limit: params?.limit,
-          organizationId: organizationId ?? undefined,
-        });
+        return normalizeWireTimeline(
+          await getDiagnostics().getDeviceImeiTimeline(imei!, {
+            eventType: params?.eventType,
+            startTime: params?.startTime,
+            endTime: params?.endTime,
+            cursor: params?.cursor,
+            limit: params?.limit,
+          }),
+          imei!,
+        );
       } catch (restErr) {
         if (organizationId) {
           return fetchTimelineViaGraphQL(imei!, organizationId, params);

@@ -10,7 +10,7 @@ import {
   changelogResultFromRaw,
   updateHistoryResultFromRaw,
   updateStatusFromRaw,
-  type UpdateStatusResult,
+  type GraphQLUpdateStatusResult,
 } from './graphql-updates-mappers';
 import type {
   RawVersionConnection,
@@ -97,7 +97,7 @@ export async function queryUpdates(params: { organizationId: string; status?: st
   return versionListResultFromRaw(result.data.updatesVersions);
 }
 
-export async function queryUpdatesStatus(params: { organizationId: string; deviceId?: string }): Promise<UpdateStatusResult> {
+export async function queryUpdatesStatus(params: { organizationId: string; deviceId?: string }): Promise<GraphQLUpdateStatusResult> {
   const result = await graphqlClient.getClient().query<{ updatesStatus: RawUpdateStatusResponse }>({
     query: GET_UPDATES_STATUS,
     variables: params,

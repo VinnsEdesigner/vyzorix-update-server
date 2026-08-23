@@ -4,16 +4,17 @@ import {
   useQueryClient,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import { me, type MeResponse, type OrganizationInfo } from '@vyzorix/api-client';
+import { getAuth, getInvitations } from '@vyzorix/api-client';
+import type { MeResult, OrganizationInfo, SelectOrganizationResult, InvitationListResult } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useAuthStore } from '@/stores';
 
-type MeQueryOptions = Omit<UseQueryOptions<MeResponse>, 'queryKey' | 'queryFn'>;
+type MeQueryOptions = Omit<UseQueryOptions<MeResult>, 'queryKey' | 'queryFn'>;
 
 export function useMe(options?: MeQueryOptions) {
   return useQuery({
     queryKey: queryKeys.me,
-    queryFn: () => me.getMe(),
+    queryFn: () => getAuth().getAuthMe(),
     ...options,
   });
 }
@@ -23,17 +24,20 @@ export function useMyOrganizations(
 ) {
   return useQuery({
     queryKey: queryKeys.myOrganizations,
-    queryFn: () => me.getOrganizations(),
+    queryFn: async () => {
+      const result = await getAuth().getAuthOrganizations();
+      return { organizations: result.organizations ?? [] };
+    },
     ...options,
   });
 }
 
 export function useMyInvitations(
-  options?: UseQueryOptions<Awaited<ReturnType<typeof me.getInvitations>>>,
+  options?: UseQueryOptions<InvitationListResult>,
 ) {
   return useQuery({
     queryKey: queryKeys.myInvitations,
-    queryFn: () => me.getInvitations(),
+    queryFn: () => getInvitations().getMeInvitations(),
     ...options,
   });
 }
@@ -44,9 +48,9 @@ export function useSelectOrganization() {
 
   return useMutation({
     mutationFn: (organizationId: string) =>
-      me.selectOrganization({ organization_id: organizationId }),
-    onSuccess: (org: OrganizationInfo) => {
-      setOrganization(org.id);
+      getAuth().postAuthOrganizationsSelect({ organization_id: organizationId }),
+    onSuccess: (org: SelectOrganizationResult) => {
+      setOrganization(org.organization_id ?? null);
       queryClient.invalidateQueries({ queryKey: queryKeys.me });
       queryClient.removeQueries({ queryKey: ['devices'] });
       queryClient.removeQueries({ queryKey: ['dashboard'] });

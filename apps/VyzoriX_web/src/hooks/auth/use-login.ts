@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { loginWithTokens, type LoginWithTokensResult } from '@vyzorix/api-client';
+import { getAuth, type LoginWithTokensResult } from '@vyzorix/api-client';
 import { useAuthStore, type MfaChallenge } from '@/stores/auth-store';
 
 export interface LoginInput {
@@ -12,33 +12,23 @@ export interface LoginMutationResult {
   mfaChallenge: MfaChallenge | null;
 }
 
-/**
- * Login mutation. Uses `loginWithTokens` (API-client flow) so the web app
- * receives JWT + refresh token. On success the response is ingested into
- * `authContext` via the store; on MFA-required the operator is staged as an
- * `MfaChallenge` (status → `mfa_required`) for the MFA form to consume.
- *
- * The hook does NOT navigate — routing is a UI concern. Callers inspect the
- * returned `mfaChallenge` to decide whether to route to `/auth/mfa` or the
- * dashboard.
- */
 export function useLogin() {
   const setFromLoginWithTokens = useAuthStore((s) => s.setFromLoginWithTokens);
   const setMfaChallenge = useAuthStore((s) => s.setMfaChallenge);
 
   return useMutation<LoginMutationResult, Error, LoginInput>({
     mutationFn: async (input) => {
-      const result = await loginWithTokens(input);
+      const result = await getAuth().postAuthLoginTokens(input);
       let mfaChallenge: MfaChallenge | null = null;
-      if ('mfaRequired' in result) {
+      if (result.requires_mfa) {
         mfaChallenge = {
-          operatorId: result.operatorId,
-          email: result.email,
-          name: result.name,
-          mfaEnabled: result.mfaEnabled,
+          operatorId: result.operator_id ?? '',
+          email: result.email ?? '',
+          name: result.name ?? '',
+          mfaEnabled: result.mfa_enabled ?? false,
         };
       } else {
-        setFromLoginWithTokens(result.data);
+        setFromLoginWithTokens(result);
       }
       return { result, mfaChallenge };
     },

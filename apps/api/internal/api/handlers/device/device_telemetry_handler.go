@@ -6,10 +6,17 @@ import (
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.GetTelemetryResponse
+	_ openapi.ErrorResponse
 )
 
 // TelemetryHandler handles device telemetry endpoints.
@@ -29,7 +36,18 @@ func NewTelemetryHandler(metricsSvc *metrics.Service, devRepo device.Repository,
 }
 
 // GetTelemetry handles GET /v1/device/:imei/telemetry.
-// Returns raw telemetry frames.
+// @Summary      Get device telemetry
+// @Description  Returns raw telemetry frames for a device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei   path  string  true  "device IMEI"
+// @Param        limit  query int    false  "max frames (default 100)"
+// @Success      200  {object}  openapi.GetTelemetryResponse  "device telemetry"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /dashboard/device/{imei}/telemetry [get]
 func (h *TelemetryHandler) GetTelemetry(c *gin.Context) {
 	ctx := c.Request.Context()
 

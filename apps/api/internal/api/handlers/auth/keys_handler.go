@@ -5,11 +5,22 @@ import (
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	apikeyapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apikeydomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.APIKey
+	_ openapi.APIKeyWithSecret
+	_ openapi.APIKeyListResult
+	_ openapi.CreateAPIKeyRequest
+	_ openapi.UpdateAPIKeyRequest
+	_ openapi.ErrorResponse
 )
 
 // Handler handles API key management endpoints.
@@ -40,11 +51,18 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 }
 
 // CreateKey creates a new API key.
+// @Summary      Create API key
+// @Description  Generates a new API key. The full key is only returned once
 // @Tags         api-keys
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /api-keys [post]
+// @Param        body  body  openapi.CreateAPIKeyRequest  true  "API key creation request"
+// @Success      201  {object}  openapi.APIKeyWithSecret  "created API key with full secret"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/api-keys [post]
 func (h *Handler) CreateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -107,11 +125,18 @@ func (h *Handler) CreateKey(c *gin.Context) {
 }
 
 // ListKeys lists all API keys for the authenticated operator.
+// @Summary      List API keys
+// @Description  Returns paginated API keys for the operator with monthly quota usage
 // @Tags         api-keys
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /api-keys [get]
+// @Param        page   query int  false  "page number (default 1)"
+// @Param        limit  query int  false  "page size (default 20)"
+// @Success      200  {object}  openapi.APIKeyListResult  "API keys with pagination"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/api-keys [get]
 func (h *Handler) ListKeys(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -148,11 +173,18 @@ func (h *Handler) ListKeys(c *gin.Context) {
 }
 
 // GetKey gets a single API key by ID.
+// @Summary      Get API key
+// @Description  Returns a single API key by ID (without the full secret)
 // @Tags         api-keys
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /api-keys/{id} [get]
+// @Param        keyId  path  string  true  "API key ID"
+// @Success      200  {object}  openapi.APIKey  "API key"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/api-keys/{keyId} [get]
 func (h *Handler) GetKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -183,11 +215,20 @@ func (h *Handler) GetKey(c *gin.Context) {
 }
 
 // UpdateKey updates an API key (rename, change scope).
+// @Summary      Update API key
+// @Description  Updates mutable API key fields (name, scope)
 // @Tags         api-keys
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /api-keys/{id} [patch]
+// @Param        keyId  path  string  true  "API key ID"
+// @Param        body  body  openapi.UpdateAPIKeyRequest  true  "API key update request"
+// @Success      200  {object}  openapi.APIKey  "updated API key"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/api-keys/{keyId} [patch]
 func (h *Handler) UpdateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -247,11 +288,18 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 }
 
 // RevokeKey revokes an API key.
+// @Summary      Revoke API key
+// @Description  Revokes an API key so it can no longer be used
 // @Tags         api-keys
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /api-keys/{id} [delete]
+// @Param        keyId  path  string  true  "API key ID"
+// @Success      204  "no content"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/api-keys/{keyId} [delete]
 func (h *Handler) RevokeKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {
@@ -303,11 +351,18 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 }
 
 // RotateKey rotates an API key, generating a new key and invalidating the old one.
+// @Summary      Rotate API key
+// @Description  Rotates an API key, returning a new full secret (shown only once)
 // @Tags         api-keys
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /api-keys/{id}/rotate [post]
+// @Param        keyId  path  string  true  "API key ID"
+// @Success      200  {object}  openapi.APIKeyWithSecret  "rotated API key with full secret"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/api-keys/{keyId}/rotate [post]
 func (h *Handler) RotateKey(c *gin.Context) {
 	operatorIDVal, exists := c.Get("operator_id")
 	if !exists {

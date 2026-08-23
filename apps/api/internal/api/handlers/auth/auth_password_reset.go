@@ -2,10 +2,20 @@ package auth
 
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.ForgotPasswordRequest
+	_ openapi.ResetPasswordRequest
+	_ openapi.MessageResult
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // PasswordResetHandler handles password reset endpoints.
@@ -25,6 +35,16 @@ func NewPasswordResetHandler(authService *auth.AuthService, emailSvc *emailServi
 }
 
 // ForgotPassword handles POST /v1/auth/forgot-password.
+// @Summary      Forgot password
+// @Description  Sends a password reset link to the email if it exists
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.ForgotPasswordRequest  true  "email"
+// @Success      200  {object}  openapi.MessageResult  "reset link sent (if email exists)"
+// @Failure      400  {object}  openapi.ErrorResponse  "email required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/forgot-password [post]
 func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
@@ -67,6 +87,17 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 }
 
 // ResendPasswordReset handles POST /v1/auth/resend-password-reset.
+// @Summary      Resend password reset
+// @Description  Resends a password reset link with rate limiting
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.ForgotPasswordRequest  true  "email"
+// @Success      200  {object}  openapi.SuccessResult  "reset link sent"
+// @Failure      400  {object}  openapi.ErrorResponse  "email required"
+// @Failure      429  {object}  openapi.ErrorResponse  "rate limited"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/resend-password-reset [post]
 func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
@@ -142,6 +173,17 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 }
 
 // ResetPassword handles POST /v1/auth/reset-password.
+// @Summary      Reset password
+// @Description  Resets a password using a valid reset token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.ResetPasswordRequest  true  "reset token + new password"
+// @Success      200  {object}  openapi.SuccessResult  "password reset"
+// @Failure      400  {object}  openapi.ErrorResponse  "token and newPassword required"
+// @Failure      401  {object}  openapi.ErrorResponse  "invalid or expired reset token"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/reset-password [post]
 func (h *PasswordResetHandler) ResetPassword(c *gin.Context) {
 	var req struct {
 		Token       string `json:"token"`

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  serviceAccounts as api,
+  getServiceAccounts,
   type ServiceAccount,
 } from '@vyzorix/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,21 +16,21 @@ function useServiceAccounts() {
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: saKeys.list(organizationId),
-    queryFn: () => api.list(organizationId ?? undefined),
+    queryFn: async () =>
+      (await getServiceAccounts().getServiceAccounts()).service_accounts ?? [],
     enabled: organizationId !== null,
     refetchInterval: 60_000,
   });
 }
 
 function ServiceAccountCard({ sa }: { sa: ServiceAccount }) {
-  const organizationId = useCurrentOrganizationId();
   const queryClient = useQueryClient();
   const deleteAccount = useMutation({
-    mutationFn: () => api.delete(sa.id, organizationId ?? undefined),
+    mutationFn: () => getServiceAccounts().deleteServiceAccountsId(sa.id ?? ''),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['service-accounts'] }),
   });
   const rotateToken = useMutation({
-    mutationFn: () => api.rotateToken(sa.id, 'any-token-id', organizationId ?? undefined),
+    mutationFn: () => getServiceAccounts().postServiceAccountsIdRotate(sa.id ?? '', {}),
   });
 
   return (
@@ -38,7 +38,7 @@ function ServiceAccountCard({ sa }: { sa: ServiceAccount }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold">{sa.name}</h3>
-          <p className="text-sm text-muted-foreground">ID: {sa.id.slice(0, 8)}…</p>
+          <p className="text-sm text-muted-foreground">ID: {(sa.id ?? '').slice(0, 8)}…</p>
         </div>
         <div className="flex items-center gap-2">
           <span
@@ -68,13 +68,12 @@ function ServiceAccountCard({ sa }: { sa: ServiceAccount }) {
 }
 
 function ServiceAccountsPage() {
-  const organizationId = useCurrentOrganizationId();
   const queryClient = useQueryClient();
   const accounts = useServiceAccounts();
   const [name, setName] = useState('');
 
   const createAccount = useMutation({
-    mutationFn: () => api.create(name, organizationId ?? undefined),
+    mutationFn: () => getServiceAccounts().postServiceAccounts({ name }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-accounts'] });
       setName('');
@@ -115,10 +114,10 @@ function ServiceAccountsPage() {
       {accounts.isError && <p className="text-red-600">Failed to load service accounts.</p>}
 
       <div className="space-y-3">
-        {accounts.data?.map((sa) => (
+        {(accounts.data ?? []).map((sa) => (
           <ServiceAccountCard key={sa.id} sa={sa} />
         ))}
-        {accounts.data?.length === 0 && (
+        {(accounts.data ?? []).length === 0 && (
           <p className="text-muted-foreground">No service accounts yet. Create one above.</p>
         )}
       </div>

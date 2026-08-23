@@ -6,10 +6,20 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.OrganizationMember
+	_ openapi.OrganizationMemberListResult
+	_ openapi.UpdateMemberRoleRequest
+	_ openapi.MessageResult
+	_ openapi.ErrorResponse
 )
 
 // MemberHandler handles organization member-related HTTP requests.
@@ -50,10 +60,17 @@ func (a *MemberServiceAdapter) GetMembership(ctx context.Context, operatorID, or
 }
 
 // List handles GET /v1/organizations/:id/members.
+// @Summary      List organization members
+// @Description  Returns all members of an organization
 // @Tags         members
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "organization ID"
+// @Success      200  {object}  openapi.OrganizationMemberListResult  "members"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations/{id}/members [get]
 func (h *MemberHandler) List(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -113,10 +130,20 @@ func (h *MemberHandler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/organizations/:id/members/:memberId.
+// @Summary      Get organization member
+// @Description  Returns a single organization member by ID
 // @Tags         members
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id        path  string  true  "organization ID"
+// @Param        memberId  path  string  true  "member ID"
+// @Success      200  {object}  openapi.OrganizationMember  "member"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id and member id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "member not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations/{id}/members/{memberId} [get]
 func (h *MemberHandler) Get(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -176,10 +203,21 @@ func (h *MemberHandler) Get(c *gin.Context) {
 }
 
 // UpdateRole handles PATCH /v1/organizations/:id/members/:memberId.
+// @Summary      Update member role
+// @Description  Updates a member's role. Cannot change role to super_admin
 // @Tags         members
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id        path  string  true  "organization ID"
+// @Param        memberId  path  string  true  "member ID"
+// @Param        body  body  openapi.UpdateMemberRoleRequest  true  "new role"
+// @Success      200  {object}  openapi.OrganizationMember  "updated member"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid role / input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied / insufficient role"
+// @Failure      404  {object}  openapi.ErrorResponse  "member not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations/{id}/members/{memberId}/role [patch]
 func (h *MemberHandler) UpdateRole(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -254,10 +292,20 @@ func (h *MemberHandler) UpdateRole(c *gin.Context) {
 }
 
 // Remove handles DELETE /v1/organizations/:id/members/:memberId.
+// @Summary      Remove organization member
+// @Description  Removes a member from an organization. Cannot remove the last super_admin or yourself
 // @Tags         members
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id        path  string  true  "organization ID"
+// @Param        memberId  path  string  true  "member ID"
+// @Success      200  {object}  openapi.MessageResult  "member removed"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id and member id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "cannot remove last super_admin / self / higher role"
+// @Failure      404  {object}  openapi.ErrorResponse  "member not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations/{id}/members/{memberId} [delete]
 func (h *MemberHandler) Remove(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -302,6 +350,21 @@ func (h *MemberHandler) Remove(c *gin.Context) {
 }
 
 // TransferOwnership handles POST /v1/organizations/:id/members/:memberId/transfer.
+// @Summary      Transfer ownership
+// @Description  Transfers organization ownership to another member
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id         path  string  true  "organization ID"
+// @Param        memberId   path  string  true  "member ID"
+// @Success      200  {object}  openapi.MessageResult  "transfer ownership result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "member not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/members/{memberId}/transfer [post]
 func (h *MemberHandler) TransferOwnership(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -337,6 +400,21 @@ func (h *MemberHandler) TransferOwnership(c *gin.Context) {
 }
 
 // Suspend handles POST /v1/organizations/:id/members/:memberId/suspend.
+// @Summary      Suspend member
+// @Description  Suspends an organization member
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id         path  string  true  "organization ID"
+// @Param        memberId   path  string  true  "member ID"
+// @Success      200  {object}  openapi.MessageResult  "suspend member result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "member not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/members/{memberId}/suspend [post]
 func (h *MemberHandler) Suspend(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -380,6 +458,21 @@ func (h *MemberHandler) Suspend(c *gin.Context) {
 }
 
 // Reinstate handles POST /v1/organizations/:id/members/:memberId/reinstate.
+// @Summary      Reinstate member
+// @Description  Reinstates a suspended organization member
+// @Tags         members
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id         path  string  true  "organization ID"
+// @Param        memberId   path  string  true  "member ID"
+// @Success      200  {object}  openapi.MessageResult  "reinstate member result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "member not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/members/{memberId}/reinstate [post]
 func (h *MemberHandler) Reinstate(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

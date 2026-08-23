@@ -87,12 +87,11 @@ describe('vyzor-msw-handlers', () => {
     expect(data.devices[0].imei).toHaveLength(15);
   });
 
-  it('GET /v1/devices/stats returns stats', async () => {
-    const res = await fetch('/v1/devices/stats');
+  it('GET /v1/device/count returns the device count', async () => {
+    const res = await fetch('/v1/device/count');
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.total).toBe(3);
-    expect(data.online + data.offline).toBe(data.total);
+    expect(data.count).toBe(3);
   });
 
   it('GET /v1/devices/:imei returns device detail', async () => {

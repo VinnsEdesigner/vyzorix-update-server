@@ -1,12 +1,10 @@
 /**
  * MSW handlers for the registration REST endpoints.
  *
- * These mirror the Go server contract consumed by
- * `registration` (packages/API_Client/.../rest/registration/registration-endpoints.ts).
- * Field names + timestamp formats match the raw shapes the domain mappers
- * (`inboxEntryFromRaw`, `createInboxResultFromRaw`, `confirmDeviceResultFromRaw`)
- * expect: camelCase fields with numeric epoch-millisecond timestamps and an
- * offset pagination object ({ page, limit, total, totalPages }).
+ * These mirror the Go server contract consumed by the generated SDK inbox
+ * endpoints (`getInbox()`, /v1/device/inbox*). Field names + timestamp formats
+ * match the wire DTOs: camelCase fields with numeric epoch-millisecond
+ * timestamps and an offset pagination object ({ page, limit, total, total_pages }).
  *
  * NOTE: `/v1/devices*` (registered-device list/get/deregister) intentionally
  * live in the devices handlers file because the REST client reuses those exact
@@ -48,7 +46,7 @@ export function createRegistrationHandlers() {
       const limit = Number(url.searchParams.get('limit') ?? '20');
       return HttpResponse.json({
         requests: [INBOX_ENTRY_RAW],
-        pagination: { page, limit, total: 1, totalPages: 1 },
+        pagination: { page, limit, total: 1, total_pages: 1 },
       });
     }),
 
@@ -81,15 +79,15 @@ export function createRegistrationHandlers() {
       });
     }),
 
-    // GET /v1/inbox/:imei — get a single inbox entry
-    http.get('/v1/inbox/:imei', async ({ params }) => {
+    // GET /v1/device/inbox/:imei — get a single inbox entry
+    http.get('/v1/device/inbox/:imei', async ({ params }) => {
       await delay(30);
       const imei = params.imei as string;
       return HttpResponse.json({ ...INBOX_ENTRY_RAW, imei });
     }),
 
-    // POST /v1/inbox/:imei/ack — acknowledge inbox entry
-    http.post('/v1/inbox/:imei/ack', async ({ request, params }) => {
+    // POST /v1/device/inbox/:imei/ack — acknowledge inbox entry
+    http.post('/v1/device/inbox/:imei/ack', async ({ request, params }) => {
       await delay(40);
       const imei = params.imei as string;
       const body = (await request.json()) as { action?: string };
@@ -108,16 +106,11 @@ export function createRegistrationHandlers() {
       });
     }),
 
-    // POST /v1/inbox/:imei/resend — resend inbox approval
-    http.post('/v1/inbox/:imei/resend', async () => {
+    // POST /v1/device/inbox/:imei/resend — resend inbox approval
+    http.post('/v1/device/inbox/:imei/resend', async () => {
       await delay(30);
-      return HttpResponse.json({ success: true, message: 'ok' });
+      return HttpResponse.json({ id: '1', imei: '123', status: 'approved', fcmPushSent: true });
     }),
 
-    // DELETE /v1/inbox/:imei — dismiss inbox entry
-    http.delete('/v1/inbox/:imei', async () => {
-      await delay(30);
-      return HttpResponse.json({ status: 'pending' });
-    }),
   ];
 }

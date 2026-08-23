@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  GetTelemetryHistoryExportParams,
+  GetTelemetryHistoryParams,
+  SuccessResult,
+  TelemetryEntry,
+  TelemetryHistoryQueryResult,
+  TelemetryStatsResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,13 +21,67 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getTelemetry = () => {
-const getTelemetryImei = (
-    imei: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/telemetry/${imei}`, method: 'GET'
+/**
+ * Deletes telemetry entries older than the retention window
+ * @summary Clean up old telemetry
+ */
+const deleteTelemetryCleanup = (
+
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/telemetry/cleanup`, method: 'DELETE'
     },
       options);
     }
-  return {getTelemetryImei}};
-export type GetTelemetryImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTelemetry>['getTelemetryImei']>>>
+  const getTelemetryHistory = (
+    params: GetTelemetryHistoryParams,
+ options?: SecondParameter<typeof customAxios<TelemetryHistoryQueryResult>>,) => {
+      return customAxios<TelemetryHistoryQueryResult>(
+      {url: `/telemetry/history`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Exports telemetry history for a device as JSON
+ * @summary Export telemetry history
+ */
+const getTelemetryHistoryExport = (
+    params: GetTelemetryHistoryExportParams,
+ options?: SecondParameter<typeof customAxios<TelemetryHistoryQueryResult>>,) => {
+      return customAxios<TelemetryHistoryQueryResult>(
+      {url: `/telemetry/history/export`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns the latest telemetry entry for a device
+ * @summary Get latest telemetry
+ */
+const getTelemetryLatestDeviceId = (
+    deviceId: string,
+ options?: SecondParameter<typeof customAxios<TelemetryEntry>>,) => {
+      return customAxios<TelemetryEntry>(
+      {url: `/telemetry/latest/${deviceId}`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Returns aggregated telemetry statistics for a device
+ * @summary Get telemetry stats
+ */
+const getTelemetryStatsDeviceId = (
+    deviceId: string,
+ options?: SecondParameter<typeof customAxios<TelemetryStatsResult>>,) => {
+      return customAxios<TelemetryStatsResult>(
+      {url: `/telemetry/stats/${deviceId}`, method: 'GET'
+    },
+      options);
+    }
+  return {deleteTelemetryCleanup,getTelemetryHistory,getTelemetryHistoryExport,getTelemetryLatestDeviceId,getTelemetryStatsDeviceId}};
+export type DeleteTelemetryCleanupResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTelemetry>['deleteTelemetryCleanup']>>>
+export type GetTelemetryHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTelemetry>['getTelemetryHistory']>>>
+export type GetTelemetryHistoryExportResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTelemetry>['getTelemetryHistoryExport']>>>
+export type GetTelemetryLatestDeviceIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTelemetry>['getTelemetryLatestDeviceId']>>>
+export type GetTelemetryStatsDeviceIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getTelemetry>['getTelemetryStatsDeviceId']>>>

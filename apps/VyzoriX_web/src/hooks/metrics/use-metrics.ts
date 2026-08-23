@@ -1,12 +1,9 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
-  fetchDeviceMetrics,
-  fetchDashboardStats,
-  exportMetrics,
-  type DeviceMetrics,
+  getDevices,
+  getDashboard,
+  type GetTelemetryResponse,
   type DashboardStats,
-  type TimeRange,
-  type MetricResolution,
   type TelemetryFrame,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
@@ -14,27 +11,20 @@ import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import { useDashboardStore, useMetricsRealtimeStore } from '@/stores';
 
 export interface DeviceMetricsParams {
-  range?: TimeRange;
-  startTime?: number;
-  endTime?: number;
-  resolution?: MetricResolution;
+  window?: string;
 }
 
 export function useDeviceMetrics(
   imei: string | undefined,
   params?: DeviceMetricsParams,
-  options?: Omit<UseQueryOptions<DeviceMetrics>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<GetTelemetryResponse>, 'queryKey' | 'queryFn'>,
 ) {
   const organizationId = useCurrentOrganizationId();
   return useQuery({
-    queryKey: queryKeys.deviceMetrics(organizationId ?? '', imei ?? '', params?.range),
+    queryKey: queryKeys.deviceMetrics(organizationId ?? '', imei ?? '', params?.window),
     queryFn: () =>
-      fetchDeviceMetrics(imei!, {
-        range: params?.range,
-        startTime: params?.startTime,
-        endTime: params?.endTime,
-        resolution: params?.resolution,
-        organizationId: organizationId ?? undefined,
+      getDevices().getDashboardDeviceImeiMetrics(imei!, {
+        window: params?.window,
       }),
     enabled: imei !== undefined && imei !== '' && organizationId !== null,
     ...options,
@@ -51,7 +41,7 @@ export function useDashboardStats(
 
   const query = useQuery({
     queryKey: queryKeys.dashboardStats(organizationId ?? ''),
-    queryFn: () => fetchDashboardStats(organizationId ?? undefined),
+    queryFn: () => getDashboard().getDashboardStats(),
     enabled: organizationId !== null,
     refetchInterval: 30_000,
     ...options,
@@ -85,18 +75,12 @@ export function useLiveMetrics(deviceId: string | undefined) {
 export function useExportMetrics() {
   const organizationId = useCurrentOrganizationId();
   return {
-    export: (imei: string, params: {
-      format?: 'json' | 'csv';
-      range?: TimeRange;
-      metrics?: string[];
-    }) =>
-      exportMetrics(imei, {
-        format: params.format,
-        range: params.range,
-        metrics: params.metrics,
-        organizationId: organizationId ?? undefined,
+    export: (imei: string, params?: { format?: 'json' | 'csv' }) =>
+      getDevices().getDashboardDeviceImeiMetricsExport(imei, {
+        format: params?.format,
       }),
+    organizationId,
   };
 }
 
-export type { DeviceMetrics, DashboardStats, TimeRange, MetricResolution };
+export type { GetTelemetryResponse, DashboardStats, DeviceMetricsParams as MetricsParams };

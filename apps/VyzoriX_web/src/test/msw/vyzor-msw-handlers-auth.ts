@@ -161,6 +161,11 @@ export function createAuthHandlers() {
       });
     }),
 
+    // GET /v1/me/invitations — pending invitations for the current operator
+    http.get('/v1/me/invitations', async () => {
+      return HttpResponse.json({ invitations: [] });
+    }),
+
     // GET /v1/auth/organizations
     http.get(`${API_BASE}/organizations`, async () => {
       return HttpResponse.json({ organizations: [MOCK_ORG] });
@@ -243,7 +248,7 @@ export function createAuthHandlers() {
       if (!body.email) {
         return HttpResponse.json({ error: 'email required' }, { status: 400 });
       }
-      return HttpResponse.json({ success: true });
+      return HttpResponse.json({ success: true, message: 'If that email exists, a password reset link has been sent.' });
     }),
 
     http.post(`${API_BASE}/reset-password`, async ({ request }) => {
@@ -251,7 +256,7 @@ export function createAuthHandlers() {
       if (!body.token || !body.newPassword) {
         return HttpResponse.json({ error: 'token and newPassword required' }, { status: 400 });
       }
-      return HttpResponse.json({ success: true });
+      return HttpResponse.json({ success: true, message: 'Password has been reset successfully.' });
     }),
 
     http.post(`${API_BASE}/resend-password-reset`, async ({ request }) => {

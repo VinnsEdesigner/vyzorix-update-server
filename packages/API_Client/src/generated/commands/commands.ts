@@ -6,7 +6,16 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  CommandCancelResult,
+  CommandConfirmRequest,
+  CommandConfirmResult,
+  CommandDispatchResult,
+  CommandHistoryResult,
+  CommandPendingResult,
+  CommandRequest,
+  CommandRetryResult,
+  CommandStatus,
+  GetDashboardDeviceImeiCommandsParams
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,22 +25,103 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getCommands = () => {
-const postCommandsImeiExecute = (
-    imei: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/commands/${imei}/execute`, method: 'POST'
+/**
+ * Cancels a pending or in-flight command by dispatch ID
+ * @summary Cancel command
+ */
+const deleteCommandDispatchId = (
+    dispatchId: string,
+ options?: SecondParameter<typeof customAxios<CommandCancelResult>>,) => {
+      return customAxios<CommandCancelResult>(
+      {url: `/command/${dispatchId}`, method: 'DELETE'
     },
       options);
     }
-  const getCommandsImeiHistory = (
-    imei: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/commands/${imei}/history`, method: 'GET'
+  /**
+ * Retries a failed command by dispatch ID, issuing a new dispatch
+ * @summary Retry command
+ */
+const postCommandDispatchIdRetry = (
+    dispatchId: string,
+ options?: SecondParameter<typeof customAxios<CommandRetryResult>>,) => {
+      return customAxios<CommandRetryResult>(
+      {url: `/command/${dispatchId}/retry`, method: 'POST'
     },
       options);
     }
-  return {postCommandsImeiExecute,getCommandsImeiHistory}};
-export type PostCommandsImeiExecuteResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['postCommandsImeiExecute']>>>
-export type GetCommandsImeiHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['getCommandsImeiHistory']>>>
+  /**
+ * Returns the dispatch and command status for a command
+ * @summary Get command status
+ */
+const getCommandDispatchIdStatus = (
+    dispatchId: string,
+ options?: SecondParameter<typeof customAxios<CommandStatus>>,) => {
+      return customAxios<CommandStatus>(
+      {url: `/command/${dispatchId}/status`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Returns paginated command history for a device
+ * @summary List command history
+ */
+const getDashboardDeviceImeiCommands = (
+    imei: string,
+    params?: GetDashboardDeviceImeiCommandsParams,
+ options?: SecondParameter<typeof customAxios<CommandHistoryResult>>,) => {
+      return customAxios<CommandHistoryResult>(
+      {url: `/dashboard/device/${imei}/commands`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Dispatches a command to a device. Risk-gated commands may require a confirmation token
+ * @summary Execute command
+ */
+const postDeviceImeiCommand = (
+    imei: string,
+    commandRequest: CommandRequest,
+ options?: SecondParameter<typeof customAxios<CommandDispatchResult>>,) => {
+      return customAxios<CommandDispatchResult>(
+      {url: `/device/${imei}/command`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: commandRequest
+    },
+      options);
+    }
+  /**
+ * Returns commands pending delivery for a device
+ * @summary List pending commands
+ */
+const getDeviceImeiCommandsPending = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<CommandPendingResult>>,) => {
+      return customAxios<CommandPendingResult>(
+      {url: `/device/${imei}/commands/pending`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Issues a single-use confirmation token for a risky device command
+ * @summary Request command confirmation
+ */
+const postDevicesImeiCommandConfirm = (
+    imei: string,
+    commandConfirmRequest: CommandConfirmRequest,
+ options?: SecondParameter<typeof customAxios<CommandConfirmResult>>,) => {
+      return customAxios<CommandConfirmResult>(
+      {url: `/devices/${imei}/command/confirm`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: commandConfirmRequest
+    },
+      options);
+    }
+  return {deleteCommandDispatchId,postCommandDispatchIdRetry,getCommandDispatchIdStatus,getDashboardDeviceImeiCommands,postDeviceImeiCommand,getDeviceImeiCommandsPending,postDevicesImeiCommandConfirm}};
+export type DeleteCommandDispatchIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['deleteCommandDispatchId']>>>
+export type PostCommandDispatchIdRetryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['postCommandDispatchIdRetry']>>>
+export type GetCommandDispatchIdStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['getCommandDispatchIdStatus']>>>
+export type GetDashboardDeviceImeiCommandsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['getDashboardDeviceImeiCommands']>>>
+export type PostDeviceImeiCommandResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['postDeviceImeiCommand']>>>
+export type GetDeviceImeiCommandsPendingResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['getDeviceImeiCommandsPending']>>>
+export type PostDevicesImeiCommandConfirmResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getCommands>['postDevicesImeiCommandConfirm']>>>

@@ -119,7 +119,7 @@ function ContactPointCard({ point }: { point: ContactPoint }) {
         <div>
           <h3 className="font-semibold">{point.name}</h3>
           <p className="text-sm text-muted-foreground">
-            {CHANNEL_LABELS[point.channel]}
+            {CHANNEL_LABELS[point.channel as keyof typeof CHANNEL_LABELS] ?? point.channel}
             {point.secret && ' (signed)'}
           </p>
         </div>
@@ -127,21 +127,21 @@ function ContactPointCard({ point }: { point: ContactPoint }) {
           <span
             className="rounded-full px-2 py-1 text-xs font-semibold"
             style={{
-              backgroundColor: `${CHANNEL_COLORS[point.channel] ?? '#6b7280'}20`,
-              color: CHANNEL_COLORS[point.channel] ?? '#6b7280',
+              backgroundColor: `${CHANNEL_COLORS[point.channel ?? ''] ?? '#6b7280'}20`,
+              color: CHANNEL_COLORS[point.channel ?? ''] ?? '#6b7280',
             }}
           >
             {point.channel}
           </span>
           <button
-            onClick={() => testPoint.mutate(point.id)}
+            onClick={() => point.id && testPoint.mutate(point.id)}
             className="rounded border px-2 py-1 text-xs"
             title="Send test notification"
           >
             Test
           </button>
           <button
-            onClick={() => deletePoint.mutate(point.id)}
+            onClick={() => point.id && deletePoint.mutate(point.id)}
             className="rounded border px-2 py-1 text-xs text-red-600"
             title="Delete"
           >
@@ -150,7 +150,7 @@ function ContactPointCard({ point }: { point: ContactPoint }) {
         </div>
       </div>
       <div className="mt-2 text-xs text-muted-foreground">
-        {Object.entries(point.config).map(([k, v]) => (
+        {Object.entries(point.config ?? {}).map(([k, v]) => (
           <div key={k}>
             <strong>{k}:</strong> {v.length > 40 ? v.slice(0, 40) + '…' : v}
           </div>
@@ -177,10 +177,10 @@ function NotificationsPage() {
       {points.isError && <p className="text-red-600">Failed to load contact points.</p>}
 
       <div className="space-y-3">
-        {points.data?.map((point) => (
+        {(points.data?.contact_points ?? []).map((point) => (
           <ContactPointCard key={point.id} point={point} />
         ))}
-        {points.data?.length === 0 && (
+        {(points.data?.contact_points ?? []).length === 0 && (
           <p className="text-muted-foreground">No contact points yet. Create one above.</p>
         )}
       </div>

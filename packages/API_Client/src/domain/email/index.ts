@@ -1,22 +1,12 @@
-
-
+// Email verification domain — generated types re-exported.
 export type {
-  VerifyEmailResponse,
-  ResendVerificationResponse,
-  CancelVerificationResponse,
-  PollVerificationResponse,
-} from "./email-entity";
-
-export type {
-  RawVerifyEmailResponse,
-  RawResendVerificationResponse,
-  RawCancelVerificationResponse,
-  RawPollVerificationResponse,
-} from "./email-mappers";
-
-export {
-  verifyEmailFromRaw,
-  resendVerificationFromRaw,
-  cancelVerificationFromRaw,
-  pollVerificationFromRaw,
-} from "./email-mappers";
+  EmailVerifyRequest,
+  EmailVerifyResult,
+  PollVerificationResult,
+  ResendVerificationRequest,
+  CancelVerificationRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  SuccessResult,
+  MessageResult,
+} from '../../generated/vyzorixUpdateServerAPI.schemas';

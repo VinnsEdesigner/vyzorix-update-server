@@ -5,11 +5,15 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appdiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
 	domaindiagnostics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/diagnostics"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 )
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var _ openapi.DeviceInspectionResult
 
 // Handler combines all diagnostics handlers for backwards compatibility.
 type Handler struct {
@@ -32,12 +36,20 @@ func NewInspectHandler(service *appdiagnostics.Service, rateLimiter func(c *gin.
 }
 
 // GetDeviceInspection handles GET /v1/device/:imei/inspect.
-// Returns full device inspection data for the Diagnostics Inspector.
+// @Summary      Get device inspection
+// @Description  Returns full device inspection data for the Diagnostics Inspector
 // @Tags         diagnostics
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /diagnostics/{id} [get]
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.DeviceInspectionResult  "device inspection"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/{imei}/inspect [get]
 func (h *InspectHandler) GetDeviceInspection(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {

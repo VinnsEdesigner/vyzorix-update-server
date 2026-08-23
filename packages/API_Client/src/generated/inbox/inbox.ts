@@ -6,7 +6,14 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  GetDeviceInboxParams,
+  InboxAckRequest,
+  InboxAckResult,
+  InboxEntryResponse,
+  InboxListResult,
+  InboxRequest,
+  InboxResendResult,
+  UpdateInboxEntryRequest
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,62 +23,91 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getInbox = () => {
-const getInboxImei = (
-    imei: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/inbox/${imei}`, method: 'GET'
+/**
+ * Returns paginated inbox entries for the authenticated operator within the organization
+ * @summary List inbox entries
+ */
+const getDeviceInbox = (
+    params?: GetDeviceInboxParams,
+ options?: SecondParameter<typeof customAxios<InboxListResult>>,) => {
+      return customAxios<InboxListResult>(
+      {url: `/device/inbox`, method: 'GET',
+        params
     },
       options);
     }
-  const postInboxImeiRequests = (
-    imei: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/inbox/${imei}/requests`, method: 'POST'
+  /**
+ * Submits a device registration request to the operator inbox. Requires device attestation when configured
+ * @summary Create inbox request
+ */
+const postDeviceInbox = (
+    inboxRequest: InboxRequest,
+ options?: SecondParameter<typeof customAxios<InboxEntryResponse>>,) => {
+      return customAxios<InboxEntryResponse>(
+      {url: `/device/inbox`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: inboxRequest
     },
       options);
     }
-  const getInboxImeiEntryId = (
+  /**
+ * Returns a single inbox entry by IMEI within the organization
+ * @summary Get inbox entry
+ */
+const getDeviceInboxImei = (
     imei: string,
-    entryId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/inbox/${imei}/${entryId}`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<InboxEntryResponse>>,) => {
+      return customAxios<InboxEntryResponse>(
+      {url: `/device/inbox/${imei}`, method: 'GET'
     },
       options);
     }
-  const postInboxImeiEntryId = (
+  /**
+ * Updates an inbox entry (e.g., add operator notes) within the organization
+ * @summary Update inbox entry
+ */
+const patchDeviceInboxImei = (
     imei: string,
-    entryId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/inbox/${imei}/${entryId}`, method: 'POST'
+    updateInboxEntryRequest: UpdateInboxEntryRequest,
+ options?: SecondParameter<typeof customAxios<InboxEntryResponse>>,) => {
+      return customAxios<InboxEntryResponse>(
+      {url: `/device/inbox/${imei}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateInboxEntryRequest
     },
       options);
     }
-  const patchInboxImeiEntryId = (
+  /**
+ * Acknowledges (approves or rejects) an inbox entry within the organization
+ * @summary Acknowledge inbox entry
+ */
+const postDeviceInboxImeiAck = (
     imei: string,
-    entryId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/inbox/${imei}/${entryId}`, method: 'PATCH'
+    inboxAckRequest: InboxAckRequest,
+ options?: SecondParameter<typeof customAxios<InboxAckResult>>,) => {
+      return customAxios<InboxAckResult>(
+      {url: `/device/inbox/${imei}/ack`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: inboxAckRequest
     },
       options);
     }
-  const postInboxImeiEntryIdResend = (
+  /**
+ * Resends the FCM notification to a device that was approved but may have missed the notification
+ * @summary Resend approval notification
+ */
+const postDeviceInboxImeiResend = (
     imei: string,
-    entryId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/inbox/${imei}/${entryId}/resend`, method: 'POST'
+ options?: SecondParameter<typeof customAxios<InboxResendResult>>,) => {
+      return customAxios<InboxResendResult>(
+      {url: `/device/inbox/${imei}/resend`, method: 'POST'
     },
       options);
     }
-  return {getInboxImei,postInboxImeiRequests,getInboxImeiEntryId,postInboxImeiEntryId,patchInboxImeiEntryId,postInboxImeiEntryIdResend}};
-export type GetInboxImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['getInboxImei']>>>
-export type PostInboxImeiRequestsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['postInboxImeiRequests']>>>
-export type GetInboxImeiEntryIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['getInboxImeiEntryId']>>>
-export type PostInboxImeiEntryIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['postInboxImeiEntryId']>>>
-export type PatchInboxImeiEntryIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['patchInboxImeiEntryId']>>>
-export type PostInboxImeiEntryIdResendResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['postInboxImeiEntryIdResend']>>>
+  return {getDeviceInbox,postDeviceInbox,getDeviceInboxImei,patchDeviceInboxImei,postDeviceInboxImeiAck,postDeviceInboxImeiResend}};
+export type GetDeviceInboxResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['getDeviceInbox']>>>
+export type PostDeviceInboxResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['postDeviceInbox']>>>
+export type GetDeviceInboxImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['getDeviceInboxImei']>>>
+export type PatchDeviceInboxImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['patchDeviceInboxImei']>>>
+export type PostDeviceInboxImeiAckResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['postDeviceInboxImeiAck']>>>
+export type PostDeviceInboxImeiResendResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getInbox>['postDeviceInboxImeiResend']>>>

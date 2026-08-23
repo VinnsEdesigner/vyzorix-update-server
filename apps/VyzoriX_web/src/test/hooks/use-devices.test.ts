@@ -46,13 +46,13 @@ describe('useDevices', () => {
     setOrg('org-1');
     const { result } = renderHookWithQueryClient(() => useDevices());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.devices).toHaveLength(3);
-    expect(result.current.data?.pagination.total).toBe(3);
+    expect(result.current.data?.devices ?? []).toHaveLength(3);
+    expect(result.current.data?.total).toBe(3);
   });
 
   it('passes status param to the API', async () => {
     setOrg('org-1');
-    const { result } = renderHookWithQueryClient(() => useDevices({ status: 'online' }));
+    const { result } = renderHookWithQueryClient(() => useDevices({ search: 'online' }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // MSW returns all 3 devices regardless of filter, but the hook should succeed
     expect(result.current.data?.devices).toBeDefined();
@@ -62,7 +62,7 @@ describe('useDevices', () => {
     setOrg('org-1');
     const { result } = renderHookWithQueryClient(() => useDevices());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    const first = result.current.data?.devices[0];
+    const first = (result.current.data?.devices ?? [])[0];
     expect(first).toBeDefined();
     expect(first?.imei).toBeDefined();
     expect(['online', 'offline']).toContain(first?.status);
@@ -139,7 +139,7 @@ describe('useDeviceThresholds', () => {
     const { result } = renderHookWithQueryClient(() => useDeviceThresholds('111111111111111'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.thresholds).toBeDefined();
-    expect(result.current.data?.thresholds.riskWarn).toBe(70);
+    expect(result.current.data?.thresholds?.riskWarn).toBe(70);
   });
 });
 
@@ -152,7 +152,7 @@ describe('useUpdateDeviceThresholds', () => {
     const { result } = renderHookWithQueryClient(() => useUpdateDeviceThresholds('111111111111111'));
     result.current.mutate({ riskWarn: 75 });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.thresholds.riskWarn).toBe(75);
+    expect(result.current.data?.thresholds?.riskWarn).toBe(75);
   });
 });
 

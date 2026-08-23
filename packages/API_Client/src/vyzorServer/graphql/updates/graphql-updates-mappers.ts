@@ -122,7 +122,7 @@ export function syncStateFromRaw(raw: RawSyncStatus): SyncState {
   };
 }
 
-export interface UpdateStatusResult {
+export interface GraphQLUpdateStatusResult {
   version: string;
   sync: SyncState;
   latest?: UpdateVersion;
@@ -131,7 +131,7 @@ export interface UpdateStatusResult {
   sha256?: string;
 }
 
-export function updateStatusFromRaw(raw: RawUpdateStatusResponse): UpdateStatusResult {
+export function updateStatusFromRaw(raw: RawUpdateStatusResponse): GraphQLUpdateStatusResult {
   return {
     version: raw.version,
     sync: syncStateFromRaw(raw.sync),

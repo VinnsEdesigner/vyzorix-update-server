@@ -10,6 +10,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -17,6 +18,23 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.OperatorSettingsResult
+	_ openapi.SettingsResponseResult
+	_ openapi.OperatorSettingsResultLegacy
+	_ openapi.UpdateNameRequest
+	_ openapi.UpdateSettingsRequest
+	_ openapi.ThresholdsResult
+	_ openapi.ThresholdUpdateRequest
+	_ openapi.NotificationSettings
+	_ openapi.NotificationUpdateRequest
+	_ openapi.PreferencesResult
+	_ openapi.WebhookTestResult
+	_ openapi.WebhookSecretResult
+	_ openapi.ErrorResponse
 )
 
 // SettingsAuditEvent represents an audit event for settings changes.
@@ -128,6 +146,15 @@ func (h *SettingsHandler) getOperatorFromSession(c *gin.Context) (string, error)
 }
 
 // GetSettings handles GET /v1/auth/me/settings.
+// @Summary      Get operator settings
+// @Description  Returns the current operator's settings
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.OperatorSettingsResult  "operator settings"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "failed to get settings"
+// @Router       /me/settings [get]
 func (h *SettingsHandler) GetSettings(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -149,6 +176,17 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 }
 
 // UpdateName handles PATCH /v1/auth/me.
+// @Summary      Update operator name
+// @Description  Updates the current operator's display name
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.UpdateNameRequest  true  "new name"
+// @Success      200  {object}  openapi.OperatorSettingsResultLegacy  "updated operator"
+// @Failure      400  {object}  openapi.ErrorResponse  "name required / invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/me [patch]
 func (h *SettingsHandler) UpdateName(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -206,6 +244,17 @@ func (h *SettingsHandler) getOperatorRole(c *gin.Context, op *operator.Operator)
 }
 
 // UpdateSettings handles PATCH /v1/auth/me/settings.
+// @Summary      Update operator settings
+// @Description  Updates the current operator's settings
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.UpdateSettingsRequest  true  "settings updates"
+// @Success      200  {object}  openapi.SettingsResponseResult  "updated settings"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/settings [patch]
 func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -252,6 +301,15 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 }
 
 // GetThresholds handles GET /v1/auth/me/thresholds.
+// @Summary      Get operator thresholds
+// @Description  Returns the current operator's alert thresholds
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.ThresholdsResult  "thresholds"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/thresholds [get]
 func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -282,6 +340,17 @@ type ThresholdUpdateRequest struct {
 }
 
 // UpdateThresholds handles PATCH /v1/auth/me/thresholds.
+// @Summary      Update operator thresholds
+// @Description  Updates the current operator's alert thresholds
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.ThresholdUpdateRequest  true  "threshold updates"
+// @Success      200  {object}  openapi.ThresholdsResult  "updated thresholds"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/thresholds [patch]
 func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -360,6 +429,15 @@ func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 }
 
 // GetNotifications handles GET /v1/auth/me/notifications.
+// @Summary      Get notification settings
+// @Description  Returns the current operator's notification settings
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.NotificationSettings  "notification settings"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/notifications [get]
 func (h *SettingsHandler) GetNotifications(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -389,6 +467,17 @@ type NotificationUpdateRequest struct {
 }
 
 // UpdateNotifications handles PATCH /v1/auth/me/notifications.
+// @Summary      Update notification settings
+// @Description  Updates the current operator's notification settings
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.NotificationUpdateRequest  true  "notification updates"
+// @Success      200  {object}  openapi.NotificationSettings  "updated notification settings"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/notifications [patch]
 func (h *SettingsHandler) UpdateNotifications(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -471,6 +560,16 @@ type WebhookTestRequest struct {
 }
 
 // TestWebhook handles POST /v1/auth/me/notifications/webhook/test.
+// @Summary      Test webhook
+// @Description  Sends a test payload to the configured webhook URL and reports the result
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.WebhookTestRequest  true  "webhook URL to test"
+// @Success      200  {object}  openapi.WebhookTestResult  "webhook test result"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/notifications/webhook/test [post]
 func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -566,6 +665,15 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 }
 
 // RotateWebhookSecret handles POST /v1/auth/me/notifications/webhook/rotate.
+// @Summary      Rotate webhook secret
+// @Description  Generates a new webhook signing secret. The new secret is only returned once
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.WebhookSecretResult  "new webhook secret"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/notifications/webhook/rotate [post]
 func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 	operatorID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -600,6 +708,16 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 	})
 }
 
+// GetPreferences handles GET /v1/auth/me/preferences.
+// @Summary      Get operator preferences
+// @Description  Returns the current operator's UI preferences
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.PreferencesResult  "preferences"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/preferences [get]
 func (h *SettingsHandler) GetPreferences(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -614,6 +732,18 @@ func (h *SettingsHandler) GetPreferences(c *gin.Context) {
 	h.presenter.OK(c, gin.H{"preferences": prefs})
 }
 
+// UpdatePreferences handles PATCH /v1/auth/me/preferences.
+// @Summary      Update operator preferences
+// @Description  Updates the current operator's UI preferences
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.PreferencesResult  true  "preference updates"
+// @Success      200  {object}  openapi.PreferencesResult  "updated preferences"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/preferences [patch]
 func (h *SettingsHandler) UpdatePreferences(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

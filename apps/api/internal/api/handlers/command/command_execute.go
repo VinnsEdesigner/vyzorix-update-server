@@ -34,6 +34,7 @@ var (
 	_ openapi.CommandRetryResult
 	_ openapi.CommandCancelResult
 	_ openapi.CommandPendingResult
+	_ openapi.CommandResponse
 	_ openapi.ErrorResponse
 )
 
@@ -94,7 +95,7 @@ type commandRequest struct {
 
 // Handle handles POST /v1/device/:imei/command.
 // @Summary      Execute command
-// @Description  Dispatches a command to a device. Risk-gated commands may require a confirmation token.
+// @Description  Dispatches a command to a device. Risk-gated commands may require a confirmation token
 // @Tags         commands
 // @Accept       json
 // @Produce      json
@@ -106,7 +107,7 @@ type commandRequest struct {
 // @Failure      404  {object}  openapi.ErrorResponse  "device not found"
 // @Failure      425  {object}  openapi.ErrorResponse  "confirmation required"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /commands/{imei}/execute [post]
+// @Router       /device/{imei}/command [post]
 func (h *ExecuteHandler) Handle(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
@@ -381,7 +382,7 @@ func (h *ExecuteHandler) tryFCMWake(c *gin.Context, imei string, cmdResp *dto.Se
 
 // GetStatus handles GET /v1/command/:dispatchId/status.
 // @Summary      Get command status
-// @Description  Returns the dispatch and command status for a command.
+// @Description  Returns the dispatch and command status for a command
 // @Tags         commands
 // @Accept       json
 // @Produce      json
@@ -391,7 +392,7 @@ func (h *ExecuteHandler) tryFCMWake(c *gin.Context, imei string, cmdResp *dto.Se
 // @Failure      400  {object}  openapi.ErrorResponse  "dispatch id required"
 // @Failure      404  {object}  openapi.ErrorResponse  "command not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /commands/{dispatchId}/status [get]
+// @Router       /command/{dispatchId}/status [get]
 func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
@@ -436,7 +437,7 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 
 // Retry handles POST /v1/command/:dispatchId/retry.
 // @Summary      Retry command
-// @Description  Retries a failed command by dispatch ID, issuing a new dispatch.
+// @Description  Retries a failed command by dispatch ID, issuing a new dispatch
 // @Tags         commands
 // @Accept       json
 // @Produce      json
@@ -446,7 +447,7 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 // @Failure      400  {object}  openapi.ErrorResponse  "dispatch id required"
 // @Failure      404  {object}  openapi.ErrorResponse  "command not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /commands/{dispatchId}/retry [post]
+// @Router       /command/{dispatchId}/retry [post]
 func (h *ExecuteHandler) Retry(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {
@@ -499,7 +500,7 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 
 // GetPending handles GET /v1/device/:imei/commands/pending.
 // @Summary      List pending commands
-// @Description  Returns commands pending delivery for a device.
+// @Description  Returns commands pending delivery for a device
 // @Tags         commands
 // @Accept       json
 // @Produce      json
@@ -510,7 +511,7 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 // @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
 // @Failure      404  {object}  openapi.ErrorResponse  "device not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /commands/{imei}/pending [get]
+// @Router       /device/{imei}/commands/pending [get]
 func (h *ExecuteHandler) GetPending(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
@@ -553,7 +554,7 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 
 // Cancel handles DELETE /v1/command/:dispatchId.
 // @Summary      Cancel command
-// @Description  Cancels a pending or in-flight command by dispatch ID.
+// @Description  Cancels a pending or in-flight command by dispatch ID
 // @Tags         commands
 // @Accept       json
 // @Produce      json
@@ -564,7 +565,7 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 // @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
 // @Failure      404  {object}  openapi.ErrorResponse  "command not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /commands/{dispatchId} [delete]
+// @Router       /command/{dispatchId} [delete]
 func (h *ExecuteHandler) Cancel(c *gin.Context) {
 	dispatchID := c.Param("dispatchId")
 	if dispatchID == "" {

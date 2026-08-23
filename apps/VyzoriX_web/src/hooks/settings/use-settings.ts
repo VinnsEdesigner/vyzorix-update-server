@@ -1,33 +1,29 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  settings,
-  type Thresholds,
+import { getSettings,
+  type OperatorThresholds,
   type NotificationSettings,
   type ClientSettings,
+  type SettingsResponseResult,
+  type ThresholdsResult,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
-interface UserSettings {
-  client: ClientSettings;
-  thresholds: Thresholds;
-}
-
 export function useSettings(
-  options?: Omit<UseQueryOptions<UserSettings>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<SettingsResponseResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.settings,
-    queryFn: () => settings.getSettings(),
+    queryFn: () => getSettings().getMeSettings(),
     ...options,
   });
 }
 
 export function useThresholds(
-  options?: Omit<UseQueryOptions<Thresholds>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<ThresholdsResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.thresholds,
-    queryFn: () => settings.getThresholds(),
+    queryFn: () => getSettings().getMeThresholds(),
     ...options,
   });
 }
@@ -37,7 +33,7 @@ export function useNotifications(
 ) {
   return useQuery({
     queryKey: queryKeys.notifications,
-    queryFn: () => settings.getNotifications(),
+    queryFn: () => getSettings().getMeNotifications(),
     ...options,
   });
 }
@@ -45,10 +41,9 @@ export function useNotifications(
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { client?: Partial<ClientSettings> }) => settings.updateSettings(data),
+    mutationFn: (data: { client?: Partial<ClientSettings> }) => getSettings().patchMeSettings(data),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.settings, updated);
-      queryClient.setQueryData(queryKeys.thresholds, updated.thresholds);
     },
   });
 }
@@ -56,7 +51,7 @@ export function useUpdateSettings() {
 export function useUpdateThresholds() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Thresholds>) => settings.updateThresholds(data),
+    mutationFn: (data: Partial<OperatorThresholds>) => getSettings().patchMeThresholds(data),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.thresholds, updated);
       queryClient.invalidateQueries({ queryKey: queryKeys.settings });
@@ -67,7 +62,7 @@ export function useUpdateThresholds() {
 export function useUpdateNotifications() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<NotificationSettings>) => settings.updateNotifications(data),
+    mutationFn: (data: Partial<NotificationSettings>) => getSettings().patchMeNotifications(data),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.notifications, updated);
     },
@@ -76,18 +71,18 @@ export function useUpdateNotifications() {
 
 export function useTestWebhook() {
   return useMutation({
-    mutationFn: (url: string) => settings.testWebhook(url),
+    mutationFn: (url: string) => getSettings().postMeNotificationsWebhookTest({ url }),
   });
 }
 
 export function useRotateWebhookSecret() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => settings.rotateWebhookSecret(),
+    mutationFn: () => getSettings().postMeNotificationsWebhookRotate(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
     },
   });
 }
 
-export type { Thresholds, NotificationSettings, ClientSettings };
+export type { OperatorThresholds, NotificationSettings, ClientSettings };

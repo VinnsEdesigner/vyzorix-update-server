@@ -348,84 +348,7 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	}
 
 	if cfg.DB != nil {
-		s.searchService = searchsvc.NewService(cfg.DB.DB())
-		s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
-
-		annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
-		annotationService := appannotation.NewService(annotationRepo)
-		s.AnnotationHandler = annotationhandlers.NewHandler(annotationService)
-		if s.AlertEvaluator != nil {
-			s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
-		}
-		if cfg.UpdatesService != nil && cfg.UpdatesService.GetPushService() != nil {
-			cfg.UpdatesService.GetPushService().SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
-			if s.cache != nil {
-				cfg.UpdatesService.GetPushService().SetDashboardCache(s.cache.Section("dashboard"))
-			}
-		}
-
-		configVersionRepo := storage.NewConfigVersionRepository(cfg.DB.DB())
-		configVersionSvc := appconfigversion.NewService(configVersionRepo)
-		if cfg.OrgSettingsService != nil {
-			cfg.OrgSettingsService.SetVersionService(configVersionSvc)
-		}
-		if cfg.DeviceSettingsService != nil {
-			cfg.DeviceSettingsService.SetVersionService(configVersionSvc)
-		}
-		s.configVersionHandler = cvhandlers.NewHandler(configVersionSvc, cfg.OrgSettingsService)
-
-		alertRules := storage.NewAlertRuleRepository(cfg.DB.DB())
-		alertStates := storage.NewAlertStateRepository(cfg.DB.DB())
-		alertHistory := storage.NewAlertHistoryRepository(cfg.DB.DB())
-		alertService := alertapp.NewService(alertRules, alertStates, alertHistory)
-		cpRepo := storage.NewContactPointRepository(cfg.DB.DB())
-		cpDeliveries := storage.NewDeliveryRepository(cfg.DB.DB())
-		notificationSvc := appnotification.NewService(cpRepo)
-		channels := map[notificationdomain.ChannelType]notificationdomain.Channel{
-			notificationdomain.ChannelTypeEmail:   appnotification.NewEmailChannel(emailService.NewService()),
-			notificationdomain.ChannelTypeWebhook: appnotification.NewWebhookChannel(infrawebhook.NewClient(10 * time.Second)),
-			notificationdomain.ChannelTypeSlack:   appnotification.NewSlackChannel(infrawebhook.NewClient(10 * time.Second)),
-		}
-		dispatcher := appnotification.NewDispatcher(cpRepo, cpDeliveries, channels, cfg.Log)
-		alertNotifier := appnotification.NewAlertNotifierAdapter(dispatcher)
-
-		s.AlertEvaluator = alertapp.NewEvaluator(
-			alertRules,
-			alertStates,
-			alertHistory,
-			alertapp.NewMetricSource(cfg.DB.DB(), int64(cfg.AlertConfig.MetricWindowSecs)),
-			alertNotifier,
-			cfg.Hub,
-			cfg.Log,
-		)
-		if s.cache != nil {
-			s.AlertEvaluator.SetDashboardCache(s.cache.Section("dashboard"))
-		}
-		channelMgr := wschannel.NewManager(wschannel.NewMembershipAuthorizer(storage.NewMemberStorage(cfg.DB.DB())))
-		adapter := wschannel.NewMessageMapAdapter(channelMgr)
-		s.AlertEvaluator.SetStreamPublisher(adapter)
-		s.alertHandler = alerthandlers.NewHandler(alertService, s.AlertEvaluator)
-		hubBridge := wschannel.NewHubBridge(channelMgr, cfg.Hub)
-		s.channelHandler = channelhandlers.NewHandler(hubBridge, presenter)
-
-		s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
-
-		saRepo := storage.NewServiceAccountRepository(cfg.DB.DB())
-		saTokenRepo := storage.NewServiceAccountTokenRepository(cfg.DB.DB())
-		saService := saapp.NewService(saRepo, saTokenRepo)
-		saService.SetAuditLogger(cfg.AuditLogger)
-		if cfg.DB != nil {
-			saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
-		}
-		if limit := os.Getenv("SA_TOKEN_LIMIT"); limit != "" {
-			if n, err := strconv.Atoi(limit); err == nil && n > 0 {
-				saService.SetMaxTokens(n)
-			}
-		}
-		s.ServiceAccountHandler = sahandlers.NewHandler(saService)
-		if s.tenantAPIKeyAuth != nil {
-			s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
-		}
+		s.wireFeatureHandlers(cfg, presenter)
 	}
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
@@ -462,6 +385,90 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 // Routes returns the Gin engine for serving.
 func (s *Server) Routes() http.Handler {
 	return s.engine
+}
+
+// wireFeatureHandlers wires the DB-backed feature handlers: search, support
+// bundles, annotations, config versions, alerts + notifications, and service
+// accounts.
+func (s *Server) wireFeatureHandlers(cfg *ServerConfig, presenter *response.Presenter) {
+	s.searchService = searchsvc.NewService(cfg.DB.DB())
+	s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
+
+	annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
+	annotationService := appannotation.NewService(annotationRepo)
+	s.AnnotationHandler = annotationhandlers.NewHandler(annotationService)
+	if s.AlertEvaluator != nil {
+		s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+	}
+	if cfg.UpdatesService != nil && cfg.UpdatesService.GetPushService() != nil {
+		cfg.UpdatesService.GetPushService().SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
+		if s.cache != nil {
+			cfg.UpdatesService.GetPushService().SetDashboardCache(s.cache.Section("dashboard"))
+		}
+	}
+
+	configVersionRepo := storage.NewConfigVersionRepository(cfg.DB.DB())
+	configVersionSvc := appconfigversion.NewService(configVersionRepo)
+	if cfg.OrgSettingsService != nil {
+		cfg.OrgSettingsService.SetVersionService(configVersionSvc)
+	}
+	if cfg.DeviceSettingsService != nil {
+		cfg.DeviceSettingsService.SetVersionService(configVersionSvc)
+	}
+	s.configVersionHandler = cvhandlers.NewHandler(configVersionSvc, cfg.OrgSettingsService)
+
+	alertRules := storage.NewAlertRuleRepository(cfg.DB.DB())
+	alertStates := storage.NewAlertStateRepository(cfg.DB.DB())
+	alertHistory := storage.NewAlertHistoryRepository(cfg.DB.DB())
+	alertService := alertapp.NewService(alertRules, alertStates, alertHistory)
+	cpRepo := storage.NewContactPointRepository(cfg.DB.DB())
+	cpDeliveries := storage.NewDeliveryRepository(cfg.DB.DB())
+	notificationSvc := appnotification.NewService(cpRepo)
+	channels := map[notificationdomain.ChannelType]notificationdomain.Channel{
+		notificationdomain.ChannelTypeEmail:   appnotification.NewEmailChannel(emailService.NewService()),
+		notificationdomain.ChannelTypeWebhook: appnotification.NewWebhookChannel(infrawebhook.NewClient(10 * time.Second)),
+		notificationdomain.ChannelTypeSlack:   appnotification.NewSlackChannel(infrawebhook.NewClient(10 * time.Second)),
+	}
+	dispatcher := appnotification.NewDispatcher(cpRepo, cpDeliveries, channels, cfg.Log)
+	alertNotifier := appnotification.NewAlertNotifierAdapter(dispatcher)
+
+	s.AlertEvaluator = alertapp.NewEvaluator(
+		alertRules,
+		alertStates,
+		alertHistory,
+		alertapp.NewMetricSource(cfg.DB.DB(), int64(cfg.AlertConfig.MetricWindowSecs)),
+		alertNotifier,
+		cfg.Hub,
+		cfg.Log,
+	)
+	if s.cache != nil {
+		s.AlertEvaluator.SetDashboardCache(s.cache.Section("dashboard"))
+	}
+	channelMgr := wschannel.NewManager(wschannel.NewMembershipAuthorizer(storage.NewMemberStorage(cfg.DB.DB())))
+	adapter := wschannel.NewMessageMapAdapter(channelMgr)
+	s.AlertEvaluator.SetStreamPublisher(adapter)
+	s.alertHandler = alerthandlers.NewHandler(alertService, s.AlertEvaluator)
+	hubBridge := wschannel.NewHubBridge(channelMgr, cfg.Hub)
+	s.channelHandler = channelhandlers.NewHandler(hubBridge, presenter)
+
+	s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
+
+	saRepo := storage.NewServiceAccountRepository(cfg.DB.DB())
+	saTokenRepo := storage.NewServiceAccountTokenRepository(cfg.DB.DB())
+	saService := saapp.NewService(saRepo, saTokenRepo)
+	saService.SetAuditLogger(cfg.AuditLogger)
+	if cfg.DB != nil {
+		saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
+	}
+	if limit := os.Getenv("SA_TOKEN_LIMIT"); limit != "" {
+		if n, err := strconv.Atoi(limit); err == nil && n > 0 {
+			saService.SetMaxTokens(n)
+		}
+	}
+	s.ServiceAccountHandler = sahandlers.NewHandler(saService)
+	if s.tenantAPIKeyAuth != nil {
+		s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
+	}
 }
 
 // wireDashboardHandlers creates and assigns dashboard command handler instances.

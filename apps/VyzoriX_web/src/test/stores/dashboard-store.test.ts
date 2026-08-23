@@ -3,9 +3,10 @@ import { useDashboardStore } from '@/stores/dashboard-store';
 import type { DashboardStats } from '@vyzorix/api-client';
 
 const STATS: DashboardStats = {
-  devices: { total: 10, online: 8, offline: 2 },
-  commands: { totalToday: 50, pending: 3, failed: 1 },
-  activity: { last24h: { commands: 50, registrations: 2, deregistrations: 1 } },
+  total_devices: 10,
+  online_devices: 8,
+  offline_devices: 2,
+  pending_devices: 1,
 };
 
 describe('useDashboardStore', () => {

@@ -57,11 +57,11 @@ describe('useApiKeys', () => {
     const first = result.current.keys[0];
     expect(first).toBeDefined();
     expect(first?.id).toBe('key-1');
-    expect(first?.keyPrefix).toBe('vxyz_abcd');
+    expect(first?.key_prefix).toBe('vxyz_abcd');
     expect(first?.scope).toBe('admin');
-    expect(first?.isActive).toBe(true);
-    expect(first?.createdAt).toBeInstanceOf(Date);
-    expect(first?.expiresAt).toBeInstanceOf(Date);
+    expect(first?.is_active).toBe(true);
+    expect(typeof first?.created_at).toBe('string');
+    expect(typeof first?.expires_at).toBe('string');
   });
 
   it('exposes monthly stats from the server response', async () => {
@@ -103,7 +103,7 @@ describe('useCreateApiKey', () => {
       result.current.createKey({ name: 'New Key', scope: 'write' });
     });
     await waitFor(() => expect(result.current.createdKey).not.toBeNull());
-    expect(result.current.createdKey?.apiKey).toMatch(/^vxyz_secret_/);
+    expect(result.current.createdKey?.api_key).toMatch(/^vxyz_secret_/);
     expect(result.current.createdKey?.name).toBe('New Key');
     expect(result.current.createdKey?.scope).toBe('write');
   });
@@ -208,7 +208,7 @@ describe('useRotateApiKey', () => {
       result.current.rotateKey('key-1');
     });
     await waitFor(() => expect(result.current.rotatedKey).not.toBeNull());
-    expect(result.current.rotatedKey?.apiKey).toMatch(/^vxyz_secret_rotated_/);
+    expect(result.current.rotatedKey?.api_key).toMatch(/^vxyz_secret_rotated_/);
     expect(result.current.rotatedKey?.id).toBe('key-1');
   });
 

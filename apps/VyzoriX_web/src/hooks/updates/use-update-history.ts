@@ -1,12 +1,14 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  updates,
-  type UpdateHistoryResult,
-  type HistoryParams,
-} from '@vyzorix/api-client';
+import { getUpdates, type UpdateHistoryResult } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { fetchUpdateHistoryViaGraphQL } from './_graphql-fallback';
+import { fetchUpdateHistoryViaGraphQL, normalizeWireHistoryList } from './_graphql-fallback';
+
+export interface HistoryParams {
+  status?: string;
+  page?: number;
+  limit?: number;
+}
 
 export function useUpdateHistory(
   params?: HistoryParams,
@@ -15,9 +17,11 @@ export function useUpdateHistory(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.updateHistory({ ...params, organizationId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<UpdateHistoryResult> => {
       try {
-        return await updates.getHistory(params);
+        return normalizeWireHistoryList(
+          await getUpdates().getUpdatesHistory({ page: params?.page, limit: params?.limit }),
+        );
       } catch {
         if (!organizationId) throw new Error('No organization selected');
         return fetchUpdateHistoryViaGraphQL(organizationId, {
@@ -31,3 +35,5 @@ export function useUpdateHistory(
     ...options,
   });
 }
+
+export type { UpdateHistoryResult };

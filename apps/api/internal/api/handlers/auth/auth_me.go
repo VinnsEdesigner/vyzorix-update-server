@@ -3,11 +3,15 @@ package auth
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
 	"github.com/gin-gonic/gin"
 )
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var _ openapi.MeResult
 
 // MeHandler handles GET /v1/auth/me.
 type MeHandler struct {
@@ -20,8 +24,16 @@ func NewMeHandler(authService *auth.AuthService, presenter *response.Presenter) 
 	return &MeHandler{authService: authService, presenter: presenter}
 }
 
-// Handle processes the me request.
-// Note: Authentication is handled by cookieAuth middleware which sets the operator in context.
+// Handle handles GET /v1/auth/me.
+// @Summary      Get current operator
+// @Description  Returns the authenticated operator's profile and organization context
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.MeResult  "current operator"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "failed to get organizations"
+// @Router       /auth/me [get]
 func (h *MeHandler) Handle(c *gin.Context) {
 	// Get operator from context (set by cookieAuth middleware).
 	op := middleware.GetOperatorFromContext(c)

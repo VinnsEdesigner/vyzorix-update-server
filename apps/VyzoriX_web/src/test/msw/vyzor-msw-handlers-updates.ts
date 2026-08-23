@@ -7,32 +7,52 @@ import {
   resetFixtureCounter,
 } from '../fixtures/vyzor-test-fixtures';
 import type {
-  RawVersion,
-  RawSyncState,
-  RawUpdatePush,
-  RawVersionListResult,
-  RawUpdateHistoryResult,
+  UpdateVersionResponse,
+  UpdatePushHistoryEntry,
+  UpdateVersionListResult,
+  UpdatePushHistoryListResult,
+  UpdatePushDetailResult,
+  UpdatePushResult,
+  UpdateCancelPushResult,
+  UpdateSyncResponse,
+  UpdateStatusResult,
+  UpdateChangelogResult,
 } from '@vyzorix/api-client';
 
 const API_BASE = '/v1/updates';
 
-function toRawVersion(v: ReturnType<typeof buildVersion>): RawVersion {
+function toWireVersion(v: ReturnType<typeof buildVersion>): UpdateVersionResponse {
   return {
-    ...v,
-    releaseDate: v.releaseDate.toISOString(),
-    createdAt: v.createdAt.toISOString(),
-    updatedAt: v.updatedAt.toISOString(),
-  } as unknown as RawVersion;
+    version: v.version,
+    apkFilename: v.apkFilename,
+    apkSize: v.apkSize,
+    sha256: v.sha256,
+    releaseType: v.releaseType,
+    releaseNotes: v.releaseNotes,
+    releasedAt: v.releaseDate.getTime(),
+    isLatest: v.isLatest,
+  };
 }
 
-function toRawPush(p: ReturnType<typeof buildPush>): RawUpdatePush {
+function toWireHistoryEntry(p: ReturnType<typeof buildPush>): UpdatePushHistoryEntry {
   return {
-    ...p,
-    initiatedAt: p.initiatedAt.toISOString(),
-    scheduledAt: p.scheduledAt?.toISOString(),
-    completedAt: p.completedAt?.toISOString(),
-    cancelledAt: p.cancelledAt?.toISOString(),
-  } as unknown as RawUpdatePush;
+    id: p.id,
+    version: p.version,
+    installType: p.installType,
+    status: p.status,
+    initiatedBy: p.initiatedBy,
+    initiatedAt: p.initiatedAt.getTime(),
+    scheduledAt: p.scheduledAt?.getTime(),
+    completedAt: p.completedAt?.getTime(),
+    cancelledAt: p.cancelledAt?.getTime(),
+    deviceCount: p.devices.total,
+    devices: {
+      pending: p.devices.pending,
+      sent: p.devices.sent,
+      acknowledged: p.devices.acknowledged,
+      failed: p.devices.failed,
+    },
+  };
 }
 
 export function createUpdatesHandlers() {
@@ -48,14 +68,18 @@ export function createUpdatesHandlers() {
   return [
     http.get(`${API_BASE}/status`, async () => {
       await delay(50);
-      const syncState: RawSyncState = {
-        ...buildSyncState(),
-        lastSyncAt: buildSyncState().lastSyncAt?.toISOString(),
-      } as unknown as RawSyncState;
-      return HttpResponse.json({
-        sync: syncState,
-        latest: toRawVersion(version1),
-      });
+      const sync = buildSyncState();
+      const result: UpdateStatusResult = {
+        sync: {
+          status: sync.status,
+          lastSyncAt: sync.lastSyncAt?.getTime(),
+          nextSyncAt: sync.nextSyncAt?.getTime(),
+          versionsFound: sync.versionsFound,
+          error: sync.error,
+        },
+        latest: toWireVersion(version1),
+      };
+      return HttpResponse.json(result);
     }),
 
     http.get(`${API_BASE}/versions`, async ({ request }) => {
@@ -64,28 +88,29 @@ export function createUpdatesHandlers() {
       const page = Number(url.searchParams.get('page') ?? '1');
       const limit = Number(url.searchParams.get('limit') ?? '20');
 
-      const result: RawVersionListResult = {
-        versions: versions.map(toRawVersion),
+      const result: UpdateVersionListResult = {
+        versions: versions.map(toWireVersion),
         pagination: {
           page,
           limit,
           total: versions.length,
-          totalPages: 1,
+          total_pages: 1,
         },
-      } as unknown as RawVersionListResult;
+      };
       return HttpResponse.json(result);
     }),
 
     http.get(`${API_BASE}/changelog`, async () => {
       await delay(30);
-      return HttpResponse.json({
+      const result: UpdateChangelogResult = {
         changelog: versions.map((v) => ({
           version: v.version,
           date: v.releaseDate.toISOString(),
           type: v.releaseType,
           notes: v.releaseNotes ?? '',
         })),
-      });
+      };
+      return HttpResponse.json(result);
     }),
 
     http.get(`${API_BASE}/history`, async ({ request }) => {
@@ -94,15 +119,15 @@ export function createUpdatesHandlers() {
       const page = Number(url.searchParams.get('page') ?? '1');
       const limit = Number(url.searchParams.get('limit') ?? '20');
 
-      const result: RawUpdateHistoryResult = {
-        pushes: [push1, push2].map(toRawPush),
+      const result: UpdatePushHistoryListResult = {
+        pushes: [push1, push2].map(toWireHistoryEntry),
         pagination: {
           page,
           limit,
           total: 2,
-          totalPages: 1,
+          total_pages: 1,
         },
-      } as unknown as RawUpdateHistoryResult;
+      };
       return HttpResponse.json(result);
     }),
 
@@ -116,46 +141,63 @@ export function createUpdatesHandlers() {
           { status: 404 },
         );
       }
-      return HttpResponse.json(toRawPush(found));
+      const result: UpdatePushDetailResult = {
+        id: found.id,
+        version: found.version,
+        installType: found.installType,
+        status: found.status,
+        initiatedBy: found.initiatedBy,
+        initiatedAt: found.initiatedAt.getTime(),
+        scheduledAt: found.scheduledAt?.getTime(),
+        completedAt: found.completedAt?.getTime(),
+        cancelledAt: found.cancelledAt?.getTime(),
+        devices: [],
+      };
+      return HttpResponse.json(result);
     }),
 
     http.post(`${API_BASE}/push`, async ({ request }) => {
       await delay(100);
       const body = (await request.json()) as ReturnType<typeof buildPushRequest>;
-      const newPush = buildPush({
+      const result: UpdatePushResult = {
+        pushId: 'push-test-new',
         version: body.version,
+        deviceIds: body.deviceIds,
         installType: body.installType,
+        scheduledAt: body.scheduledAt,
         status: 'pending',
+        initiatedBy: 'operator-test-1',
+        initiatedAt: Date.now(),
         devices: {
-          total: body.deviceIds.length,
-          pending: body.deviceIds.length,
+          total: body.deviceIds?.length ?? 0,
+          pending: body.deviceIds?.length ?? 0,
           sent: 0,
           acknowledged: 0,
           failed: 0,
         },
-      });
-      return HttpResponse.json(toRawPush(newPush), { status: 201 });
+      };
+      return HttpResponse.json(result, { status: 201 });
     }),
 
     http.post(`${API_BASE}/history/:pushId/cancel`, async ({ params }) => {
       await delay(80);
-      const pushId = params.pushId as string;
-      const cancelled = buildPush({
-        id: pushId,
+      const result: UpdateCancelPushResult = {
+        id: params.pushId as string,
         status: 'cancelled',
-        cancelledAt: new Date(),
+        cancelledAt: Date.now(),
         cancelledBy: 'operator-test-1',
-      });
-      return HttpResponse.json(toRawPush(cancelled));
+      };
+      return HttpResponse.json(result);
     }),
 
     http.post(`${API_BASE}/sync`, async () => {
       await delay(200);
-      return HttpResponse.json({
+      const result: UpdateSyncResponse = {
         status: 'started',
-        startedAt: new Date().toISOString(),
+        startedAt: Date.now(),
         versionsFound: 3,
-      });
+      };
+      return HttpResponse.json(result);
     }),
   ];
 }

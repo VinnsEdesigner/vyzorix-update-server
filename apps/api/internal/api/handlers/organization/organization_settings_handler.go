@@ -5,10 +5,20 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.OrganizationSettingsResult
+	_ openapi.UpdateOrganizationSettingsRequest
+	_ openapi.ThresholdsResult
+	_ openapi.ThresholdUpdateRequest
+	_ openapi.ErrorResponse
 )
 
 // SettingsHandler handles organization settings HTTP requests.
@@ -32,6 +42,19 @@ func NewSettingsHandler(
 }
 
 // GetSettings handles GET /v1/organizations/:id/settings.
+// @Summary      Get organization settings
+// @Description  Returns organization-level settings
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "organization ID"
+// @Success      200  {object}  openapi.OrganizationSettingsResult  "organization settings"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/settings [get]
 func (h *SettingsHandler) GetSettings(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -65,6 +88,21 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 }
 
 // UpdateSettings handles PATCH /v1/organizations/:id/settings.
+// @Summary      Update organization settings
+// @Description  Updates organization-level settings
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id    path  string  true  "organization ID"
+// @Param        body  body  openapi.UpdateOrganizationSettingsRequest  true  "settings updates"
+// @Success      200  {object}  openapi.OrganizationSettingsResult  "updated organization settings"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id required / invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "settings not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/settings [patch]
 func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -108,6 +146,19 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 }
 
 // GetThresholds handles GET /v1/organizations/:id/settings/thresholds.
+// @Summary      Get organization thresholds
+// @Description  Returns organization-level alert thresholds
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "organization ID"
+// @Success      200  {object}  openapi.ThresholdsResult  "thresholds"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/settings/thresholds [get]
 func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -143,6 +194,20 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 }
 
 // UpdateThresholds handles PATCH /v1/organizations/:id/settings/thresholds.
+// @Summary      Update organization thresholds
+// @Description  Updates organization-level alert thresholds
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id    path  string  true  "organization ID"
+// @Param        body  body  openapi.ThresholdUpdateRequest  true  "threshold updates"
+// @Success      200  {object}  openapi.ThresholdsResult  "updated thresholds"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id required / invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/settings/thresholds [patch]
 func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

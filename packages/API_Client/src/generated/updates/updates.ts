@@ -6,7 +6,23 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  DeviceUpdateStatusRequest,
+  DeviceUpdateStatusResponse,
+  GetUpdatesChangelogParams,
+  GetUpdatesExportParams,
+  GetUpdatesHistoryParams,
+  GetUpdatesVersionsParams,
+  UpdateCancelPushResult,
+  UpdateChangelogResult,
+  UpdateExportResult,
+  UpdatePushDetailResult,
+  UpdatePushHistoryListResult,
+  UpdatePushRequest,
+  UpdatePushResult,
+  UpdateStatusResult,
+  UpdateSyncResponse,
+  UpdateSyncStatusResult,
+  UpdateVersionListResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,40 +32,168 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getUpdates = () => {
+/**
+ * Returns the changelog for a version (or all versions when omitted)
+ * @summary Get update changelog
+ */
+const getUpdatesChangelog = (
+    params?: GetUpdatesChangelogParams,
+ options?: SecondParameter<typeof customAxios<UpdateChangelogResult>>,) => {
+      return customAxios<UpdateChangelogResult>(
+      {url: `/updates/changelog`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Device callback reporting update installation status
+ * @summary Report device update status
+ */
+const postUpdatesDeviceStatus = (
+    deviceUpdateStatusRequest: DeviceUpdateStatusRequest,
+ options?: SecondParameter<typeof customAxios<DeviceUpdateStatusResponse>>,) => {
+      return customAxios<DeviceUpdateStatusResponse>(
+      {url: `/updates/device-status`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: deviceUpdateStatusRequest
+    },
+      options);
+    }
+  /**
+ * Exports versions as JSON or CSV
+ * @summary Export versions
+ */
+const getUpdatesExport = (
+    params?: GetUpdatesExportParams,
+ options?: SecondParameter<typeof customAxios<UpdateExportResult>>,) => {
+      return customAxios<UpdateExportResult>(
+      {url: `/updates/export`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns paginated push update history
+ * @summary List update push history
+ */
+const getUpdatesHistory = (
+    params?: GetUpdatesHistoryParams,
+ options?: SecondParameter<typeof customAxios<UpdatePushHistoryListResult>>,) => {
+      return customAxios<UpdatePushHistoryListResult>(
+      {url: `/updates/history`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns details for a specific push update including per-device status
+ * @summary Get push detail
+ */
+const getUpdatesHistoryPushId = (
+    pushId: string,
+ options?: SecondParameter<typeof customAxios<UpdatePushDetailResult>>,) => {
+      return customAxios<UpdatePushDetailResult>(
+      {url: `/updates/history/${pushId}`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Cancels a pending or in-progress push update
+ * @summary Cancel push
+ */
+const postUpdatesHistoryPushIdCancel = (
+    pushId: string,
+ options?: SecondParameter<typeof customAxios<UpdateCancelPushResult>>,) => {
+      return customAxios<UpdateCancelPushResult>(
+      {url: `/updates/history/${pushId}/cancel`, method: 'POST'
+    },
+      options);
+    }
+  /**
+ * Pushes an update to one or more devices (admin only)
+ * @summary Push update to devices
+ */
+const postUpdatesPush = (
+    updatePushRequest: UpdatePushRequest,
+ options?: SecondParameter<typeof customAxios<UpdatePushResult>>,) => {
+      return customAxios<UpdatePushResult>(
+      {url: `/updates/push`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: updatePushRequest
+    },
+      options);
+    }
+  /**
+ * Returns the current GitHub-release sync status
+ * @summary Get update sync status
+ */
 const getUpdatesStatus = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<UpdateStatusResult>>,) => {
+      return customAxios<UpdateStatusResult>(
       {url: `/updates/status`, method: 'GET'
     },
       options);
     }
-  const getUpdatesVersions = (
+  /**
+ * Triggers a GitHub-release sync (admin only)
+ * @summary Sync versions from GitHub
+ */
+const postUpdatesSync = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updates/versions`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<UpdateSyncResponse>>,) => {
+      return customAxios<UpdateSyncResponse>(
+      {url: `/updates/sync`, method: 'POST'
     },
       options);
     }
-  const getUpdatesVersionsIdChangelog = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updates/versions/${id}/changelog`, method: 'GET'
+  /**
+ * Returns the current GitHub-release sync status
+ * @summary Get sync status
+ */
+const getUpdatesSyncStatus = (
+
+ options?: SecondParameter<typeof customAxios<UpdateSyncStatusResult>>,) => {
+      return customAxios<UpdateSyncStatusResult>(
+      {url: `/updates/sync/status`, method: 'GET'
     },
       options);
     }
-  const getUpdatesIdStatus = (
+  /**
+ * Returns a paginated list of synced update versions
+ * @summary List update versions
+ */
+const getUpdatesVersions = (
+    params?: GetUpdatesVersionsParams,
+ options?: SecondParameter<typeof customAxios<UpdateVersionListResult>>,) => {
+      return customAxios<UpdateVersionListResult>(
+      {url: `/updates/versions`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Alias for GET /updates/status
+ * @summary Get update status (alias)
+ */
+const getUpdatesIdStatus = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<UpdateStatusResult>>,) => {
+      return customAxios<UpdateStatusResult>(
       {url: `/updates/${id}/status`, method: 'GET'
     },
       options);
     }
-  return {getUpdatesStatus,getUpdatesVersions,getUpdatesVersionsIdChangelog,getUpdatesIdStatus}};
+  return {getUpdatesChangelog,postUpdatesDeviceStatus,getUpdatesExport,getUpdatesHistory,getUpdatesHistoryPushId,postUpdatesHistoryPushIdCancel,postUpdatesPush,getUpdatesStatus,postUpdatesSync,getUpdatesSyncStatus,getUpdatesVersions,getUpdatesIdStatus}};
+export type GetUpdatesChangelogResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesChangelog']>>>
+export type PostUpdatesDeviceStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['postUpdatesDeviceStatus']>>>
+export type GetUpdatesExportResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesExport']>>>
+export type GetUpdatesHistoryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesHistory']>>>
+export type GetUpdatesHistoryPushIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesHistoryPushId']>>>
+export type PostUpdatesHistoryPushIdCancelResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['postUpdatesHistoryPushIdCancel']>>>
+export type PostUpdatesPushResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['postUpdatesPush']>>>
 export type GetUpdatesStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesStatus']>>>
+export type PostUpdatesSyncResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['postUpdatesSync']>>>
+export type GetUpdatesSyncStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesSyncStatus']>>>
 export type GetUpdatesVersionsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesVersions']>>>
-export type GetUpdatesVersionsIdChangelogResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesVersionsIdChangelog']>>>
 export type GetUpdatesIdStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdates>['getUpdatesIdStatus']>>>

@@ -3,10 +3,18 @@ package device
 import (
 	"net/http"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceFCMTokenRequest
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // UpdaterHandler handles device update endpoints.
@@ -20,6 +28,17 @@ func NewUpdaterHandler(deviceService *device.Service) *UpdaterHandler {
 }
 
 // UpdateFCMToken handles PATCH /v1/device/:imei/fcm-token.
+// @Summary      Update FCM token
+// @Description  Updates a device's FCM push notification token
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.DeviceFCMTokenRequest  true  "FCM token"
+// @Success      200  {object}  openapi.SuccessResult  "token updated"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid IMEI / body"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/{imei}/fcm-token [patch]
 func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {
@@ -46,6 +65,16 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/device/:imei.
+// @Summary      Delete device
+// @Description  Deletes a device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.SuccessResult  "device deleted"
+// @Failure      400  {object}  openapi.ErrorResponse  "device ID required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/{imei} [delete]
 func (h *UpdaterHandler) Delete(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {

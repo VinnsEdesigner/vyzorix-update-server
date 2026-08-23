@@ -35,7 +35,7 @@ func NewHandler(bridge *wschannel.HubBridge, presenter *response.Presenter) *Han
 
 // Status returns active channel streams for the org.
 // @Summary      Channel status
-// @Description  Returns active channel streams for the org.
+// @Description  Returns active channel streams for the org
 // @Tags         channels
 // @Accept       json
 // @Produce      json
@@ -52,7 +52,7 @@ func (h *Handler) Status(c *gin.Context) {
 // Subscribe registers a logical subscription to a channel scope for the
 // operator. Events arrive on the operator's existing websocket.
 // @Summary      Subscribe to channel
-// @Description  Registers a logical subscription to a channel scope for the operator.
+// @Description  Registers a logical subscription to a channel scope for the operator
 // @Tags         channels
 // @Accept       json
 // @Produce      json
@@ -98,7 +98,7 @@ func (h *Handler) Subscribe(c *gin.Context) {
 
 // Unsubscribe removes a logical subscription.
 // @Summary      Unsubscribe from channel
-// @Description  Removes a logical subscription to a channel scope.
+// @Description  Removes a logical subscription to a channel scope
 // @Tags         channels
 // @Accept       json
 // @Produce      json

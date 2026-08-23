@@ -3,6 +3,7 @@ import {
   queryCommand,
   type Command,
   type CommandListItem,
+  type CommandResponse,
 } from '@vyzorix/api-client';
 
 interface RawCommandFields {
@@ -85,4 +86,21 @@ export async function fetchCommandViaGraphQL(
   const raw = extractObject<RawCommandFields>(response, 'command');
   if (!raw?.dispatchId) return null;
   return normalizeCommand(raw);
+}
+
+/** Maps the REST wire DTO onto the domain Command shape so hook consumers get
+ * one type regardless of the data path. */
+export function normalizeWireCommand(raw: CommandResponse): Command {
+  const createdAt = toDate(raw.serverTime ? String(raw.serverTime) : undefined);
+  return {
+    id: raw.id ?? raw.command ?? '',
+    dispatchId: raw.dispatchId ?? '',
+    deviceId: raw.deviceId ?? '',
+    command: raw.command ?? '',
+    status: (raw.status ?? 'pending') as Command['status'],
+    failureReason: '',
+    args: {},
+    createdAt,
+    updatedAt: createdAt,
+  };
 }

@@ -2,7 +2,7 @@
  * Integration tests for useConnectivityStore.
  *
  * The store wraps the REAL connectivity monitor (@vyzorix/api-client), which
- * probes /api/v1/health via fetch and tracks online/offline state. MSW serves
+ * probes /health via fetch and tracks online/offline state. MSW serves
  * the health endpoint so the real checkConnectivity() code path runs end-to-end.
  * No module mocking — real store + real monitor logic.
  */
@@ -66,7 +66,7 @@ describe('useConnectivityStore', () => {
   });
 
   it('checkConnectivity reports offline when the health probe fails', async () => {
-    server.use(http.head('/api/v1/health', () => HttpResponse.json({}, { status: 503 })));
+    server.use(http.head('/health', () => HttpResponse.json({}, { status: 503 })));
     const result = await useConnectivityStore.getState().checkConnectivity();
     expect(result).toBe(false);
     expect(useConnectivityStore.getState().isOnline).toBe(false);
@@ -74,7 +74,7 @@ describe('useConnectivityStore', () => {
 
   it('checkConnectivity resets isChecking even when the probe errors', async () => {
     server.use(
-      http.head('/api/v1/health', () => HttpResponse.error()),
+      http.head('/health', () => HttpResponse.error()),
     );
     const result = await useConnectivityStore.getState().checkConnectivity();
     // The monitor falls back to navigator.onLine when the probe errors, which

@@ -1,29 +1,28 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  sessions,
-  type SessionListResponse,
-  type ConcurrentSessionsResponse,
-  type RevokeSessionResponse,
-  type RevokeAllSessionsResponse,
+import { getSessions,
+  type SessionListResult,
+  type ConcurrentSessionsResult,
+  type SuccessResult,
+  type RevokeResult,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
 export function useSessions(
-  options?: Omit<UseQueryOptions<SessionListResponse>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<SessionListResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.sessions,
-    queryFn: () => sessions.listSessions(),
+    queryFn: () => getSessions().getAuthSessions(),
     ...options,
   });
 }
 
 export function useConcurrentSessions(
-  options?: Omit<UseQueryOptions<ConcurrentSessionsResponse>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<ConcurrentSessionsResult>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: queryKeys.concurrentSessions,
-    queryFn: () => sessions.getConcurrent(),
+    queryFn: () => getSessions().getAuthSessionsConcurrent(),
     ...options,
   });
 }
@@ -31,7 +30,7 @@ export function useConcurrentSessions(
 export function useRevokeSession() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (sessionId: string) => sessions.revokeSession(sessionId),
+    mutationFn: (sessionId: string) => getSessions().deleteAuthSessionsId(sessionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       queryClient.invalidateQueries({ queryKey: queryKeys.concurrentSessions });
@@ -42,7 +41,7 @@ export function useRevokeSession() {
 export function useRevokeAllSessions() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => sessions.revokeAllExceptCurrent(),
+    mutationFn: () => getSessions().deleteAuthSessions(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
     },
@@ -52,7 +51,7 @@ export function useRevokeAllSessions() {
 export function useRevokeAllDevices() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => sessions.revokeAllDevices(),
+    mutationFn: () => getSessions().postAuthSessionsRevokeAll(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       queryClient.invalidateQueries({ queryKey: queryKeys.concurrentSessions });
@@ -60,4 +59,4 @@ export function useRevokeAllDevices() {
   });
 }
 
-export type { SessionListResponse, ConcurrentSessionsResponse, RevokeSessionResponse, RevokeAllSessionsResponse };
+export type { SessionListResult, ConcurrentSessionsResult, SuccessResult, RevokeResult };

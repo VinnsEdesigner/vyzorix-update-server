@@ -3,9 +3,17 @@ package auth
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.LockoutStatusResult
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // LockoutHandler handles account lockout endpoints.
@@ -31,6 +39,14 @@ func (h *LockoutHandler) Middleware() gin.HandlerFunc {
 }
 
 // GetLockoutStatus handles GET /v1/auth/lockout/status.
+// @Summary      Get lockout status
+// @Description  Returns the current account lockout status for the authenticated operator
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.LockoutStatusResult  "lockout status"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Router       /auth/lockout/status [get]
 func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -52,7 +68,19 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 }
 
 // UnlockAccount handles POST /v1/admin/lockout/unlock/:operator_id.
-// Requires org-scoped super_admin access.
+// @Summary      Unlock account
+// @Description  Clears an operator's account lockout. Requires org-scoped super_admin
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        operator_id  path  string  true  "operator ID to unlock"
+// @Success      200  {object}  openapi.SuccessResult  "account unlocked"
+// @Failure      400  {object}  openapi.ErrorResponse  "operator_id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      404  {object}  openapi.ErrorResponse  "operator not found"
+// @Router       /auth/admin/lockout/unlock/{operator_id} [post]
 func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

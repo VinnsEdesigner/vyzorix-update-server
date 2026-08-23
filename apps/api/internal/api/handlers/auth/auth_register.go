@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -17,6 +18,13 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.RegisterRequest
+	_ openapi.RegisterResult
+	_ openapi.ErrorResponse
 )
 
 // RegisterHandler handles POST /v1/auth/register.
@@ -42,7 +50,18 @@ func NewRegisterHandler(authService *auth.AuthService, emailSvc *emailService.Se
 	}
 }
 
-// Handle processes the register request.
+// Handle handles POST /v1/auth/register.
+// @Summary      Register operator
+// @Description  Registers a new operator account and sends a verification email
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.RegisterRequest  true  "registration credentials"
+// @Success      201  {object}  openapi.RegisterResult  "created operator"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      409  {object}  openapi.ErrorResponse  "account exists"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/register [post]
 func (h *RegisterHandler) Handle(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

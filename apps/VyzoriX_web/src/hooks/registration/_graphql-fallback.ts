@@ -5,7 +5,7 @@ import {
   mutateDeregisterDevice,
   type InboxEntry,
   type RegisteredDevice,
-  type InboxListResult,
+  type InboxEntriesResult,
   type RegisteredDeviceListResult,
   type AckResult,
   type DeregisterResult,
@@ -15,8 +15,8 @@ import {
 } from '@vyzorix/api-client';
 
 interface RawInboxEntryFields {
-  id: string;
-  imei: string;
+  id?: string;
+  imei?: string;
   deviceName?: string;
   deviceClass?: string;
   model?: string;
@@ -25,14 +25,14 @@ interface RawInboxEntryFields {
   appVersion?: string;
   fcmToken?: string;
   firebaseInstallId?: string;
-  status: InboxStatus;
+  status?: InboxStatus | string;
   acknowledgedAt?: number | null;
   approvingAt?: number | null;
   approvedAt?: number | null;
   rejectedAt?: number | null;
   notes?: string | null;
   operatorId?: string | null;
-  createdAt: number;
+  createdAt?: number;
 }
 
 interface RawPaginationFields {
@@ -50,8 +50,8 @@ function toDate(value: number | null | undefined): Date | null {
 
 function normalizeInboxEntry(raw: RawInboxEntryFields): InboxEntry {
   return {
-    id: raw.id,
-    imei: raw.imei,
+    id: raw.id ?? '',
+    imei: raw.imei ?? '',
     deviceName: raw.deviceName ?? '',
     deviceClass: raw.deviceClass ?? '',
     model: raw.model ?? '',
@@ -60,7 +60,7 @@ function normalizeInboxEntry(raw: RawInboxEntryFields): InboxEntry {
     appVersion: raw.appVersion ?? '',
     fcmToken: raw.fcmToken ?? '',
     firebaseInstallId: raw.firebaseInstallId ?? '',
-    status: raw.status,
+    status: (raw.status ?? 'pending') as InboxStatus,
     acknowledgedAt: toDate(raw.acknowledgedAt),
     approvingAt: toDate(raw.approvingAt),
     approvedAt: toDate(raw.approvedAt),
@@ -99,7 +99,7 @@ function extractData<T>(response: unknown, primary: string, fallback?: string): 
 export async function fetchInboxViaGraphQL(
   organizationId: string,
   params?: { status?: InboxStatus | 'all'; page?: number; limit?: number },
-): Promise<InboxListResult> {
+): Promise<InboxEntriesResult> {
   const response = await queryInboxEntries({
     organizationId,
     status: params?.status === 'all' ? undefined : params?.status,
@@ -215,6 +215,59 @@ export async function deregisterViaGraphQL(
     status: result.status,
     deregisteredAt: toDate(result.deregisteredAt) ?? new Date(),
     retentionUntil: toDate(result.retentionUntil) ?? new Date(),
+  };
+}
+
+export function normalizeRegisteredDevice(raw: {
+  id?: string;
+  imei?: string;
+  device_name?: string;
+  model?: string;
+  manufacturer?: string;
+  app_version?: string;
+  status?: string;
+  registered_at?: number;
+  last_seen?: number;
+  online?: boolean;
+}): RegisteredDevice {
+  return {
+    id: raw.id ?? '',
+    imei: raw.imei ?? '',
+    deviceName: raw.device_name ?? '',
+    model: raw.model ?? '',
+    manufacturer: raw.manufacturer ?? '',
+    osVersion: '',
+    appVersion: raw.app_version ?? '',
+    status: (raw.status ?? 'offline') as RegisteredDevice['status'],
+    registeredAt: toDate(raw.registered_at),
+    lastSeen: toDate(raw.last_seen),
+    online: raw.online ?? false,
+  };
+}
+
+export function normalizeAckResult(raw: {
+  id?: string;
+  imei?: string;
+  status?: string;
+  acknowledgedAt?: number | null;
+  approvingAt?: number | null;
+  approvedAt?: number | null;
+  rejectedAt?: number | null;
+  commandSecret?: string | null;
+  fcmPushSent?: boolean;
+  notes?: string | null;
+}): AckResult {
+  return {
+    id: raw.id ?? '',
+    imei: raw.imei ?? '',
+    status: (raw.status ?? 'pending') as InboxStatus,
+    acknowledgedAt: toDate(raw.acknowledgedAt),
+    approvingAt: toDate(raw.approvingAt),
+    approvedAt: toDate(raw.approvedAt),
+    rejectedAt: toDate(raw.rejectedAt),
+    commandSecret: raw.commandSecret ?? null,
+    fcmPushSent: raw.fcmPushSent ?? false,
+    notes: raw.notes ?? null,
   };
 }
 

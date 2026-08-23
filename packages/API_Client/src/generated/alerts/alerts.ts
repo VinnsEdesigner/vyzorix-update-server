@@ -6,9 +6,13 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances,
-  GetAlertsRulesIdHistoryParams,
-  RuleRequest
+  AlertEvaluateResult,
+  AlertHistoryResult,
+  AlertRule,
+  AlertRuleListResult,
+  AlertRuleRequest,
+  DeletedResult,
+  GetAlertsRulesIdHistoryParams
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -19,91 +23,91 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
   export const getAlerts = () => {
 /**
- * Returns all org-scoped alert rules with their current instance states.
+ * Returns all org-scoped alert rules with their current instance states
  * @summary List alert rules
  */
 const getAlertsRules = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<AlertRuleListResult>>,) => {
+      return customAxios<AlertRuleListResult>(
       {url: `/alerts/rules`, method: 'GET'
     },
       options);
     }
   /**
- * Creates a new org-scoped alert rule. Validated before persistence.
+ * Creates a new org-scoped alert rule. Validated before persistence
  * @summary Create alert rule
  */
 const postAlertsRules = (
-    ruleRequest: RuleRequest,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+    alertRuleRequest: AlertRuleRequest,
+ options?: SecondParameter<typeof customAxios<AlertRule>>,) => {
+      return customAxios<AlertRule>(
       {url: `/alerts/rules`, method: 'POST',
       headers: {'Content-Type': 'application/json', },
-      data: ruleRequest
+      data: alertRuleRequest
     },
       options);
     }
   /**
- * Returns one alert rule with its current instance states.
+ * Returns one alert rule with its current instance states
  * @summary Get alert rule
  */
 const getAlertsRulesId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<AlertRule>>,) => {
+      return customAxios<AlertRule>(
       {url: `/alerts/rules/${id}`, method: 'GET'
     },
       options);
     }
   /**
- * Removes the rule and its instances.
+ * Removes the rule and its instances
  * @summary Delete alert rule
  */
 const deleteAlertsRulesId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<DeletedResult>>,) => {
+      return customAxios<DeletedResult>(
       {url: `/alerts/rules/${id}`, method: 'DELETE'
     },
       options);
     }
   /**
- * Replaces a rule's mutable fields. Disabling clears its instances.
+ * Replaces a rule's mutable fields. Disabling clears its instances
  * @summary Update alert rule
  */
 const patchAlertsRulesId = (
     id: string,
-    ruleRequest: RuleRequest,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+    alertRuleRequest: AlertRuleRequest,
+ options?: SecondParameter<typeof customAxios<AlertRule>>,) => {
+      return customAxios<AlertRule>(
       {url: `/alerts/rules/${id}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
-      data: ruleRequest
+      data: alertRuleRequest
     },
       options);
     }
   /**
- * Triggers evaluation on the rule's metric immediately.
+ * Triggers evaluation on the rule's metric immediately
  * @summary Manually evaluate a rule
  */
 const postAlertsRulesIdEvaluate = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<AlertEvaluateResult>>,) => {
+      return customAxios<AlertEvaluateResult>(
       {url: `/alerts/rules/${id}/evaluate`, method: 'POST'
     },
       options);
     }
   /**
- * Transition events for an org, optionally narrowed to one rule.
+ * Transition events for an org, optionally narrowed to one rule
  * @summary Alert history
  */
 const getAlertsRulesIdHistory = (
     id: string,
     params?: GetAlertsRulesIdHistoryParams,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<AlertHistoryResult>>,) => {
+      return customAxios<AlertHistoryResult>(
       {url: `/alerts/rules/${id}/history`, method: 'GET',
         params
     },

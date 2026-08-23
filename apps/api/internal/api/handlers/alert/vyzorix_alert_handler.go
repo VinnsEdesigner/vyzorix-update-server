@@ -112,7 +112,7 @@ func ruleJSON(v *alertapp.RuleView) gin.H {
 
 // List handles GET /v1/alerts/rules.
 // @Summary      List alert rules
-// @Description  Returns all org-scoped alert rules with their current instance states.
+// @Description  Returns all org-scoped alert rules with their current instance states
 // @Tags         alerts
 // @Accept       json
 // @Produce      json
@@ -137,7 +137,7 @@ func (h *Handler) List(c *gin.Context) {
 
 // Create handles POST /v1/alerts/rules.
 // @Summary      Create alert rule
-// @Description  Creates a new org-scoped alert rule. Validated before persistence.
+// @Description  Creates a new org-scoped alert rule. Validated before persistence
 // @Tags         alerts
 // @Accept       json
 // @Produce      json
@@ -169,7 +169,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Get handles GET /v1/alerts/rules/:id.
 // @Summary      Get alert rule
-// @Description  Returns one alert rule with its current instance states.
+// @Description  Returns one alert rule with its current instance states
 // @Tags         alerts
 // @Accept       json
 // @Produce      json
@@ -191,7 +191,7 @@ func (h *Handler) Get(c *gin.Context) {
 
 // Update handles PATCH /v1/alerts/rules/:id.
 // @Summary      Update alert rule
-// @Description  Replaces a rule's mutable fields. Disabling clears its instances.
+// @Description  Replaces a rule's mutable fields. Disabling clears its instances
 // @Tags         alerts
 // @Accept       json
 // @Produce      json
@@ -224,7 +224,7 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/alerts/rules/:id.
 // @Summary      Delete alert rule
-// @Description  Removes the rule and its instances.
+// @Description  Removes the rule and its instances
 // @Tags         alerts
 // @Accept       json
 // @Produce      json
@@ -246,7 +246,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // History handles GET /v1/alerts/history (org-wide) and
 // GET /v1/alerts/rules/:id/history (single rule).
 // @Summary      Alert history
-// @Description  Transition events for an org, optionally narrowed to one rule.
+// @Description  Transition events for an org, optionally narrowed to one rule
 // @Tags         alerts
 // @Accept       json
 // @Produce      json
@@ -287,7 +287,7 @@ func (h *Handler) History(c *gin.Context) {
 // Evaluate handles POST /v1/alerts/rules/:id/evaluate — a manual, on-demand
 // evaluation useful for testing rule definitions before they go live.
 // @Summary      Manually evaluate a rule
-// @Description  Triggers evaluation on the rule's metric immediately.
+// @Description  Triggers evaluation on the rule's metric immediately
 // @Tags         alerts
 // @Accept       json
 // @Produce      json

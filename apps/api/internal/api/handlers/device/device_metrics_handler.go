@@ -9,10 +9,17 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.GetTelemetryResponse
+	_ openapi.ErrorResponse
 )
 
 // MetricsHandler handles device metrics endpoints.
@@ -32,7 +39,18 @@ func NewMetricsHandler(metricsSvc *metrics.Service, devRepo device.Repository, l
 }
 
 // GetMetrics handles GET /v1/device/:imei/metrics.
-// Returns aggregated metrics for chart visualization.
+// @Summary      Get device metrics
+// @Description  Returns aggregated metrics for chart visualization
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei    path  string  true  "device IMEI"
+// @Param        window  query string false  "time window (e.g. 1h, 24h)"
+// @Success      200  {object}  openapi.GetTelemetryResponse  "device metrics"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /dashboard/device/{imei}/metrics [get]
 func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -115,7 +133,18 @@ func (h *MetricsHandler) GetMetrics(c *gin.Context) {
 }
 
 // ExportMetrics handles GET /v1/device/:imei/metrics/export.
-// Exports metrics data in JSON or CSV format.
+// @Summary      Export device metrics
+// @Description  Exports metrics data in JSON or CSV format
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei    path  string  true  "device IMEI"
+// @Param        format  query string false  "json or csv (default json)"
+// @Success      200  {object}  openapi.GetTelemetryResponse  "exported metrics"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /dashboard/device/{imei}/metrics/export [get]
 func (h *MetricsHandler) ExportMetrics(c *gin.Context) {
 	ctx := c.Request.Context()
 

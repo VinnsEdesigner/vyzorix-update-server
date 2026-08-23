@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { registration, type RegisteredDevice } from '@vyzorix/api-client';
-import { fetchRegisteredDeviceViaGraphQL } from './_graphql-fallback';
+import { getDevices, type RegisteredDevice } from '@vyzorix/api-client';
+import { fetchRegisteredDeviceViaGraphQL, normalizeRegisteredDevice } from './_graphql-fallback';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
@@ -11,11 +11,10 @@ export function useRegisteredDevice(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.registrationDevice(imei ?? ''),
-    queryFn: async () => {
+    queryFn: async (): Promise<RegisteredDevice | null> => {
       if (!imei) return null;
-      const org = organizationId ?? undefined;
       try {
-        return await registration.getDevice(imei, org);
+        return normalizeRegisteredDevice(await getDevices().getDevicesImei(imei));
       } catch (restError) {
         if (!organizationId) throw restError;
         return fetchRegisteredDeviceViaGraphQL(organizationId, imei);

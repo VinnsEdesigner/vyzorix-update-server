@@ -3,10 +3,14 @@ package auth
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
 	"github.com/gin-gonic/gin"
 )
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var _ openapi.MessageResult
 
 // LogoutHandler handles POST /v1/auth/logout.
 type LogoutHandler struct {
@@ -32,6 +36,17 @@ func NewLogoutHandler(authService *auth.AuthService, presenter *response.Present
 // and is NOT the plaintext session ID the database stores. Reading the raw.
 // cookie passed an opaque ciphertext to sessionRepo.Delete, which matched zero.
 // rows, returned ErrNotFound, and caused every logout to 500.
+// Handle handles POST /v1/auth/logout.
+// @Summary      Logout
+// @Description  Ends the current session and clears the session cookie
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.LogoutRequest  false  "logout options"
+// @Success      200  {object}  openapi.MessageResult  "logged out"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "logout failed"
+// @Router       /auth/logout [post]
 func (h *LogoutHandler) Handle(c *gin.Context) {
 	sessionID := middleware.GetCurrentSessionID(c)
 	if sessionID == "" {

@@ -80,14 +80,14 @@ func contactPointJSON(cp *notificationdomain.ContactPoint) gin.H {
 
 // List handles GET /v1/notifications/contact-points.
 // @Summary      List contact points
-// @Description  Returns all org-scoped contact points.
+// @Description  Returns all org-scoped contact points
 // @Tags         contact-points
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Success      200  {object}  openapi.ContactPointListResult  "contact points"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /contact-points [get]
+// @Router       /notifications/contact-points [get]
 func (h *Handler) List(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	points, err := h.service.List(c.Request.Context(), orgID)
@@ -104,7 +104,7 @@ func (h *Handler) List(c *gin.Context) {
 
 // Create handles POST /v1/notifications/contact-points.
 // @Summary      Create contact point
-// @Description  Creates a new org-scoped contact point.
+// @Description  Creates a new org-scoped contact point
 // @Tags         contact-points
 // @Accept       json
 // @Produce      json
@@ -113,7 +113,7 @@ func (h *Handler) List(c *gin.Context) {
 // @Success      201  {object}  openapi.ContactPoint  "created contact point"
 // @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /contact-points [post]
+// @Router       /notifications/contact-points [post]
 func (h *Handler) Create(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req contactPointRequest
@@ -131,7 +131,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Get handles GET /v1/notifications/contact-points/:id.
 // @Summary      Get contact point
-// @Description  Returns one contact point by ID.
+// @Description  Returns one contact point by ID
 // @Tags         contact-points
 // @Accept       json
 // @Produce      json
@@ -140,7 +140,7 @@ func (h *Handler) Create(c *gin.Context) {
 // @Success      200  {object}  openapi.ContactPoint  "contact point"
 // @Failure      400  {object}  openapi.ErrorResponse  "not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /contact-points/{id} [get]
+// @Router       /notifications/contact-points/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	cp, err := h.service.Get(c.Request.Context(), orgID, c.Param("id"))
@@ -153,7 +153,7 @@ func (h *Handler) Get(c *gin.Context) {
 
 // Update handles PATCH /v1/notifications/contact-points/:id.
 // @Summary      Update contact point
-// @Description  Replaces a contact point's mutable fields.
+// @Description  Replaces a contact point's mutable fields
 // @Tags         contact-points
 // @Accept       json
 // @Produce      json
@@ -163,7 +163,7 @@ func (h *Handler) Get(c *gin.Context) {
 // @Success      200  {object}  openapi.ContactPoint  "updated contact point"
 // @Failure      400  {object}  openapi.ErrorResponse  "invalid input / not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /contact-points/{id} [patch]
+// @Router       /notifications/contact-points/{id} [patch]
 func (h *Handler) Update(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	var req contactPointRequest
@@ -181,7 +181,7 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Delete handles DELETE /v1/notifications/contact-points/:id.
 // @Summary      Delete contact point
-// @Description  Removes a contact point.
+// @Description  Removes a contact point
 // @Tags         contact-points
 // @Accept       json
 // @Produce      json
@@ -190,7 +190,7 @@ func (h *Handler) Update(c *gin.Context) {
 // @Success      200  {object}  openapi.DeletedResult  "deleted confirmation"
 // @Failure      400  {object}  openapi.ErrorResponse  "not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /contact-points/{id} [delete]
+// @Router       /notifications/contact-points/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if err := h.service.Delete(c.Request.Context(), orgID, c.Param("id")); err != nil {
@@ -203,7 +203,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // Test handles POST /v1/notifications/contact-points/:id/test.
 // Sends a one-off test notification through the contact point.
 // @Summary      Test contact point
-// @Description  Sends a one-off test notification through the contact point.
+// @Description  Sends a one-off test notification through the contact point
 // @Tags         contact-points
 // @Accept       json
 // @Produce      json
@@ -212,7 +212,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // @Success      200  {object}  openapi.ContactPointTestResult  "test result"
 // @Failure      400  {object}  openapi.ErrorResponse  "not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "delivery failed"
-// @Router       /contact-points/{id}/test [post]
+// @Router       /notifications/contact-points/{id}/test [post]
 func (h *Handler) Test(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	cp, err := h.service.Get(c.Request.Context(), orgID, c.Param("id"))

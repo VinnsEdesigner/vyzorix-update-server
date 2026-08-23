@@ -12,10 +12,19 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.UpdaterVersionManifestResult
+	_ openapi.UpdaterCheckResult
+	_ openapi.DownloadProgressResult
+	_ openapi.ErrorResponse
 )
 
 // VersionManifest represents the OTA version manifest served to Android clients.
@@ -74,36 +83,43 @@ func (h *Handler) ensureManifestLoaded() {
 }
 
 // Version handles GET /api/v1/version.
-// Returns the version manifest for OTA updates.
+// @Summary      OTA version manifest
+// @Description  Returns the current OTA version manifest for Android clients
 // @Tags         updater
 // @Accept       json
 // @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /updater/version [get]
+// @Success      200  {object}  openapi.UpdaterVersionManifestResult  "version manifest"
+// @Failure      404  {object}  openapi.ErrorResponse  "manifest not found"
+// @Router       /version [get]
 func (h *Handler) Version(c *gin.Context) {
 	h.log.Info("ota version request", "path", c.Request.URL.Path)
 	h.serveJSON(c, filepath.Join(h.dataDir, "version.json"))
 }
 
 // Changelog handles GET /api/v1/changelog.
-// Returns the release changelog.
+// @Summary      OTA changelog
+// @Description  Returns the release changelog served to Android clients
 // @Tags         updater
 // @Accept       json
 // @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /updater/changelog [get]
+// @Success      200  {object}  openapi.UpdateChangelogResult  "changelog"
+// @Failure      404  {object}  openapi.ErrorResponse  "changelog not found"
+// @Router       /changelog [get]
 func (h *Handler) Changelog(c *gin.Context) {
 	h.log.Info("ota changelog request", "path", c.Request.URL.Path)
 	h.serveJSON(c, filepath.Join(h.dataDir, "changelog.json"))
 }
 
 // APK handles GET /api/v1/apk/:filename.
-// Serves APK files with optional Range support for resume.
+// @Summary      Download APK
+// @Description  Serves APK files with optional Range support for resume
 // @Tags         updater
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /updater/{name}/apk [get]
+// @Produce      octet-stream
+// @Param        name  path  string  true  "APK filename"
+// @Success      200  {file}  binary  "APK binary"
+// @Failure      400  {object}  openapi.ErrorResponse  "filename required"
+// @Failure      404  {object}  openapi.ErrorResponse  "file not found"
+// @Router       /apk/{name} [get]
 func (h *Handler) APK(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
@@ -116,12 +132,15 @@ func (h *Handler) APK(c *gin.Context) {
 }
 
 // Bin handles GET /bin/:filename.
-// Serves binary artifacts (same as APK but different path prefix).
+// @Summary      Download binary artifact
+// @Description  Serves binary artifacts (same as APK but different path prefix)
 // @Tags         updater
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /updater/{name}/bin [get]
+// @Produce      octet-stream
+// @Param        name  path  string  true  "binary filename"
+// @Success      200  {file}  binary  "binary artifact"
+// @Failure      400  {object}  openapi.ErrorResponse  "filename required"
+// @Failure      404  {object}  openapi.ErrorResponse  "file not found"
+// @Router       /bin/{name} [get]
 func (h *Handler) Bin(c *gin.Context) {
 	filename := c.Param("filename")
 	if filename == "" {
@@ -134,12 +153,15 @@ func (h *Handler) Bin(c *gin.Context) {
 }
 
 // CheckUpdate handles GET /api/v1/check-update.
-// Checks if an update is available for a device.
+// @Summary      Check for update
+// @Description  Checks if an update is available for a device by version code
 // @Tags         updater
 // @Accept       json
 // @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /updater/check [post]
+// @Param        version_code  query int  false  "client version code"
+// @Success      200  {object}  openapi.UpdaterCheckResult  "update check result"
+// @Failure      500  {object}  openapi.ErrorResponse  "manifest not loaded"
+// @Router       /check-update [get]
 func (h *Handler) CheckUpdate(c *gin.Context) {
 	versionCode := c.Query("version_code")
 	h.log.Info("update check", "version_code", versionCode)
@@ -178,12 +200,15 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 }
 
 // DownloadProgress handles POST /api/v1/download-progress.
-// Tracks download progress for analytics.
+// @Summary      Report download progress
+// @Description  Tracks download progress for analytics
 // @Tags         updater
 // @Accept       json
 // @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /updater/progress [get]
+// @Param        body  body  openapi.DownloadProgressRequest  true  "download progress"
+// @Success      200  {object}  openapi.DownloadProgressResult  "recorded"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid request"
+// @Router       /download-progress [post]
 func (h *Handler) DownloadProgress(c *gin.Context) {
 	var req struct {
 		DeviceID    string `json:"deviceId"`

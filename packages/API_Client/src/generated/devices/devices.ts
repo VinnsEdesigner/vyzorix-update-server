@@ -6,7 +6,41 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  ConnectionStatusResult,
+  DeleteDevicesImeiParams,
+  DeviceConfirmRequest,
+  DeviceConfirmResult,
+  DeviceCountResult,
+  DeviceDetailResult,
+  DeviceDisconnectResult,
+  DeviceEvent,
+  DeviceEventListResult,
+  DeviceFCMTokenRequest,
+  DeviceListResult,
+  DeviceLogEventListResult,
+  DeviceSettingsResult,
+  DeviceStatus,
+  DeviceTagAddedResult,
+  DeviceTagRemovedResult,
+  DeviceTagsResult,
+  DeviceTransferRequest,
+  DeviceTransferResult,
+  GetDashboardDeviceImeiEventsParams,
+  GetDashboardDeviceImeiLogsParams,
+  GetDashboardDeviceImeiMetricsExportParams,
+  GetDashboardDeviceImeiMetricsParams,
+  GetDashboardDeviceImeiTelemetryParams,
+  GetDashboardDevicesOperatorParams,
+  GetDashboardDevicesParams,
+  GetDashboardEventsRecentParams,
+  GetDashboardEventsTypesTypeParams,
+  GetDevicesParams,
+  GetTelemetryResponse,
+  SetDeviceTagsRequest,
+  SuccessResult,
+  ThresholdUpdateRequest,
+  ThresholdsResult,
+  UpdateDeviceSettingsRequest
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,50 +50,432 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getDevices = () => {
-const getDevicesStatus = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/devices/status`, method: 'GET'
+/**
+ * Returns event history for a device with filtering and pagination
+ * @summary List device events
+ */
+const getDashboardDeviceImeiEvents = (
+    imei: string,
+    params?: GetDashboardDeviceImeiEventsParams,
+ options?: SecondParameter<typeof customAxios<DeviceEventListResult>>,) => {
+      return customAxios<DeviceEventListResult>(
+      {url: `/dashboard/device/${imei}/events`, method: 'GET',
+        params
     },
       options);
     }
-  const getDevicesIdEvents = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/devices/${id}/events`, method: 'GET'
+  /**
+ * Returns event logs for a device with cursor-based pagination
+ * @summary List device logs
+ */
+const getDashboardDeviceImeiLogs = (
+    imei: string,
+    params?: GetDashboardDeviceImeiLogsParams,
+ options?: SecondParameter<typeof customAxios<DeviceLogEventListResult>>,) => {
+      return customAxios<DeviceLogEventListResult>(
+      {url: `/dashboard/device/${imei}/logs`, method: 'GET',
+        params
     },
       options);
     }
-  const getDevicesIdEventsRecent = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/devices/${id}/events/recent`, method: 'GET'
+  /**
+ * Returns aggregated metrics for chart visualization
+ * @summary Get device metrics
+ */
+const getDashboardDeviceImeiMetrics = (
+    imei: string,
+    params?: GetDashboardDeviceImeiMetricsParams,
+ options?: SecondParameter<typeof customAxios<GetTelemetryResponse>>,) => {
+      return customAxios<GetTelemetryResponse>(
+      {url: `/dashboard/device/${imei}/metrics`, method: 'GET',
+        params
     },
       options);
     }
-  const getDevicesIdEventsType = (
-    id: string,
+  /**
+ * Exports metrics data in JSON or CSV format
+ * @summary Export device metrics
+ */
+const getDashboardDeviceImeiMetricsExport = (
+    imei: string,
+    params?: GetDashboardDeviceImeiMetricsExportParams,
+ options?: SecondParameter<typeof customAxios<GetTelemetryResponse>>,) => {
+      return customAxios<GetTelemetryResponse>(
+      {url: `/dashboard/device/${imei}/metrics/export`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns raw telemetry frames for a device
+ * @summary Get device telemetry
+ */
+const getDashboardDeviceImeiTelemetry = (
+    imei: string,
+    params?: GetDashboardDeviceImeiTelemetryParams,
+ options?: SecondParameter<typeof customAxios<GetTelemetryResponse>>,) => {
+      return customAxios<GetTelemetryResponse>(
+      {url: `/dashboard/device/${imei}/telemetry`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns paginated devices for the dashboard with cursor pagination
+ * @summary List dashboard devices
+ */
+const getDashboardDevices = (
+    params?: GetDashboardDevicesParams,
+ options?: SecondParameter<typeof customAxios<DeviceListResult>>,) => {
+      return customAxios<DeviceListResult>(
+      {url: `/dashboard/devices`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns devices assigned to a specific operator
+ * @summary List devices by operator
+ */
+const getDashboardDevicesOperator = (
+    params?: GetDashboardDevicesOperatorParams,
+ options?: SecondParameter<typeof customAxios<DeviceListResult>>,) => {
+      return customAxios<DeviceListResult>(
+      {url: `/dashboard/devices/operator`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns most recent events across all accessible devices
+ * @summary List recent device events
+ */
+const getDashboardEventsRecent = (
+    params?: GetDashboardEventsRecentParams,
+ options?: SecondParameter<typeof customAxios<DeviceEventListResult>>,) => {
+      return customAxios<DeviceEventListResult>(
+      {url: `/dashboard/events/recent`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns events of a specific type across all accessible devices
+ * @summary List device events by type
+ */
+const getDashboardEventsTypesType = (
     type: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/devices/${id}/events/${type}`, method: 'GET'
+    params?: GetDashboardEventsTypesTypeParams,
+ options?: SecondParameter<typeof customAxios<DeviceEventListResult>>,) => {
+      return customAxios<DeviceEventListResult>(
+      {url: `/dashboard/events/types/${type}`, method: 'GET',
+        params
     },
       options);
     }
-  const getDevicesIdLogs = (
+  /**
+ * Returns a single device event by ID
+ * @summary Get event by ID
+ */
+const getDashboardEventsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/devices/${id}/logs`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<DeviceEvent>>,) => {
+      return customAxios<DeviceEvent>(
+      {url: `/dashboard/events/${id}`, method: 'GET'
     },
       options);
     }
-  return {getDevicesStatus,getDevicesIdEvents,getDevicesIdEventsRecent,getDevicesIdEventsType,getDevicesIdLogs}};
-export type GetDevicesStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesStatus']>>>
-export type GetDevicesIdEventsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdEvents']>>>
-export type GetDevicesIdEventsRecentResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdEventsRecent']>>>
-export type GetDevicesIdEventsTypeResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdEventsType']>>>
-export type GetDevicesIdLogsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesIdLogs']>>>
+  /**
+ * Confirms a device registration from an approved inbox entry
+ * @summary Confirm device registration
+ */
+const postDeviceConfirm = (
+    deviceConfirmRequest: DeviceConfirmRequest,
+ options?: SecondParameter<typeof customAxios<DeviceConfirmResult>>,) => {
+      return customAxios<DeviceConfirmResult>(
+      {url: `/device/confirm`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: deviceConfirmRequest
+    },
+      options);
+    }
+  /**
+ * Returns the device count for the current organization
+ * @summary Count devices
+ */
+const getDeviceCount = (
+
+ options?: SecondParameter<typeof customAxios<DeviceCountResult>>,) => {
+      return customAxios<DeviceCountResult>(
+      {url: `/device/count`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Returns a single device by IMEI
+ * @summary Get device
+ */
+const getDeviceImei = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceDetailResult>>,) => {
+      return customAxios<DeviceDetailResult>(
+      {url: `/device/${imei}`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Deletes a device
+ * @summary Delete device
+ */
+const deleteDeviceImei = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/device/${imei}`, method: 'DELETE'
+    },
+      options);
+    }
+  /**
+ * Returns the WebSocket connection status for a specific device
+ * @summary Get device connection status
+ */
+const getDeviceImeiConnectionStatus = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<ConnectionStatusResult>>,) => {
+      return customAxios<ConnectionStatusResult>(
+      {url: `/device/${imei}/connection-status`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Forcefully disconnects a device's WebSocket connection within the organization
+ * @summary Disconnect device
+ */
+const postDeviceImeiDisconnect = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceDisconnectResult>>,) => {
+      return customAxios<DeviceDisconnectResult>(
+      {url: `/device/${imei}/disconnect`, method: 'POST'
+    },
+      options);
+    }
+  /**
+ * Updates a device's FCM push notification token
+ * @summary Update FCM token
+ */
+const patchDeviceImeiFcmToken = (
+    imei: string,
+    deviceFCMTokenRequest: DeviceFCMTokenRequest,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/device/${imei}/fcm-token`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: deviceFCMTokenRequest
+    },
+      options);
+    }
+  /**
+ * Returns paginated devices for the organization
+ * @summary List devices
+ */
+const getDevices = (
+    params?: GetDevicesParams,
+ options?: SecondParameter<typeof customAxios<DeviceListResult>>,) => {
+      return customAxios<DeviceListResult>(
+      {url: `/devices`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns a single device by IMEI within the organization
+ * @summary Get device detail
+ */
+const getDevicesImei = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceDetailResult>>,) => {
+      return customAxios<DeviceDetailResult>(
+      {url: `/devices/${imei}`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Deregisters a device from the organization. Use ?hard=true for permanent deletion
+ * @summary Deregister device
+ */
+const deleteDevicesImei = (
+    imei: string,
+    params?: DeleteDevicesImeiParams,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/devices/${imei}`, method: 'DELETE',
+        params
+    },
+      options);
+    }
+  /**
+ * Returns device-level settings
+ * @summary Get device settings
+ */
+const getDevicesImeiSettings = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceSettingsResult>>,) => {
+      return customAxios<DeviceSettingsResult>(
+      {url: `/devices/${imei}/settings`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Updates device-level settings
+ * @summary Update device settings
+ */
+const patchDevicesImeiSettings = (
+    imei: string,
+    updateDeviceSettingsRequest: UpdateDeviceSettingsRequest,
+ options?: SecondParameter<typeof customAxios<DeviceSettingsResult>>,) => {
+      return customAxios<DeviceSettingsResult>(
+      {url: `/devices/${imei}/settings`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateDeviceSettingsRequest
+    },
+      options);
+    }
+  /**
+ * Returns the effective thresholds using hierarchy: device → org → default
+ * @summary Get device thresholds
+ */
+const getDevicesImeiSettingsThresholds = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<ThresholdsResult>>,) => {
+      return customAxios<ThresholdsResult>(
+      {url: `/devices/${imei}/settings/thresholds`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Updates device-level alert thresholds
+ * @summary Update device thresholds
+ */
+const patchDevicesImeiSettingsThresholds = (
+    imei: string,
+    thresholdUpdateRequest: ThresholdUpdateRequest,
+ options?: SecondParameter<typeof customAxios<ThresholdsResult>>,) => {
+      return customAxios<ThresholdsResult>(
+      {url: `/devices/${imei}/settings/thresholds`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: thresholdUpdateRequest
+    },
+      options);
+    }
+  /**
+ * Returns the live status (online, last_seen, app version) for a device
+ * @summary Get device status
+ */
+const getDevicesImeiStatus = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceStatus>>,) => {
+      return customAxios<DeviceStatus>(
+      {url: `/devices/${imei}/status`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Returns the tags for a device
+ * @summary Get device tags
+ */
+const getDevicesImeiTags = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceTagsResult>>,) => {
+      return customAxios<DeviceTagsResult>(
+      {url: `/devices/${imei}/tags`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Replaces all tags for a device
+ * @summary Set device tags
+ */
+const putDevicesImeiTags = (
+    imei: string,
+    setDeviceTagsRequest: SetDeviceTagsRequest,
+ options?: SecondParameter<typeof customAxios<DeviceTagsResult>>,) => {
+      return customAxios<DeviceTagsResult>(
+      {url: `/devices/${imei}/tags`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: setDeviceTagsRequest
+    },
+      options);
+    }
+  /**
+ * Adds a single tag to a device
+ * @summary Add device tag
+ */
+const postDevicesImeiTagsTag = (
+    imei: string,
+    tag: string,
+ options?: SecondParameter<typeof customAxios<DeviceTagAddedResult>>,) => {
+      return customAxios<DeviceTagAddedResult>(
+      {url: `/devices/${imei}/tags/${tag}`, method: 'POST'
+    },
+      options);
+    }
+  /**
+ * Removes a single tag from a device
+ * @summary Remove device tag
+ */
+const deleteDevicesImeiTagsTag = (
+    imei: string,
+    tag: string,
+ options?: SecondParameter<typeof customAxios<DeviceTagRemovedResult>>,) => {
+      return customAxios<DeviceTagRemovedResult>(
+      {url: `/devices/${imei}/tags/${tag}`, method: 'DELETE'
+    },
+      options);
+    }
+  /**
+ * Transfers a device to another organization. Requires super_admin in source org and membership in target org
+ * @summary Transfer device
+ */
+const postOrganizationsIdDevicesImeiTransfer = (
+    id: string,
+    imei: string,
+    deviceTransferRequest: DeviceTransferRequest,
+ options?: SecondParameter<typeof customAxios<DeviceTransferResult>>,) => {
+      return customAxios<DeviceTransferResult>(
+      {url: `/organizations/${id}/devices/${imei}/transfer`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: deviceTransferRequest
+    },
+      options);
+    }
+  return {getDashboardDeviceImeiEvents,getDashboardDeviceImeiLogs,getDashboardDeviceImeiMetrics,getDashboardDeviceImeiMetricsExport,getDashboardDeviceImeiTelemetry,getDashboardDevices,getDashboardDevicesOperator,getDashboardEventsRecent,getDashboardEventsTypesType,getDashboardEventsId,postDeviceConfirm,getDeviceCount,getDeviceImei,deleteDeviceImei,getDeviceImeiConnectionStatus,postDeviceImeiDisconnect,patchDeviceImeiFcmToken,getDevices,getDevicesImei,deleteDevicesImei,getDevicesImeiSettings,patchDevicesImeiSettings,getDevicesImeiSettingsThresholds,patchDevicesImeiSettingsThresholds,getDevicesImeiStatus,getDevicesImeiTags,putDevicesImeiTags,postDevicesImeiTagsTag,deleteDevicesImeiTagsTag,postOrganizationsIdDevicesImeiTransfer}};
+export type GetDashboardDeviceImeiEventsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDeviceImeiEvents']>>>
+export type GetDashboardDeviceImeiLogsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDeviceImeiLogs']>>>
+export type GetDashboardDeviceImeiMetricsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDeviceImeiMetrics']>>>
+export type GetDashboardDeviceImeiMetricsExportResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDeviceImeiMetricsExport']>>>
+export type GetDashboardDeviceImeiTelemetryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDeviceImeiTelemetry']>>>
+export type GetDashboardDevicesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDevices']>>>
+export type GetDashboardDevicesOperatorResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardDevicesOperator']>>>
+export type GetDashboardEventsRecentResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardEventsRecent']>>>
+export type GetDashboardEventsTypesTypeResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardEventsTypesType']>>>
+export type GetDashboardEventsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDashboardEventsId']>>>
+export type PostDeviceConfirmResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['postDeviceConfirm']>>>
+export type GetDeviceCountResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDeviceCount']>>>
+export type GetDeviceImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDeviceImei']>>>
+export type DeleteDeviceImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['deleteDeviceImei']>>>
+export type GetDeviceImeiConnectionStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDeviceImeiConnectionStatus']>>>
+export type PostDeviceImeiDisconnectResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['postDeviceImeiDisconnect']>>>
+export type PatchDeviceImeiFcmTokenResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['patchDeviceImeiFcmToken']>>>
+export type GetDevicesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevices']>>>
+export type GetDevicesImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesImei']>>>
+export type DeleteDevicesImeiResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['deleteDevicesImei']>>>
+export type GetDevicesImeiSettingsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesImeiSettings']>>>
+export type PatchDevicesImeiSettingsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['patchDevicesImeiSettings']>>>
+export type GetDevicesImeiSettingsThresholdsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesImeiSettingsThresholds']>>>
+export type PatchDevicesImeiSettingsThresholdsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['patchDevicesImeiSettingsThresholds']>>>
+export type GetDevicesImeiStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesImeiStatus']>>>
+export type GetDevicesImeiTagsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['getDevicesImeiTags']>>>
+export type PutDevicesImeiTagsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['putDevicesImeiTags']>>>
+export type PostDevicesImeiTagsTagResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['postDevicesImeiTagsTag']>>>
+export type DeleteDevicesImeiTagsTagResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['deleteDevicesImeiTagsTag']>>>
+export type PostOrganizationsIdDevicesImeiTransferResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDevices>['postOrganizationsIdDevicesImeiTransfer']>>>

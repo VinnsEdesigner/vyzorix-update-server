@@ -44,11 +44,11 @@ describe('vyzor-test-fixtures', () => {
     expect(s.versionsFound).toBe(3);
   });
 
-  it('buildDevice returns valid Device', () => {
+  it('buildDevice returns valid DeviceDetailResult', () => {
     const d = buildDevice();
     expect(d.imei).toHaveLength(15);
     expect(d.status).toBe('online');
-    expect(d.fcm_token_valid).toBe(true);
+    expect(typeof d.last_seen).toBe('number');
   });
 
   it('buildDeviceListItem returns valid DeviceListItem', () => {
@@ -57,10 +57,10 @@ describe('vyzor-test-fixtures', () => {
     expect(d.status).toBe('online');
   });
 
-  it('buildDeviceStats returns valid DeviceStats', () => {
+  it('buildDeviceStats returns valid DashboardStats', () => {
     const s = buildDeviceStats();
-    expect(s.total).toBe(10);
-    expect(s.online + s.offline).toBe(s.total);
+    expect(s.total_devices).toBe(10);
+    expect((s.online_devices ?? 0) + (s.offline_devices ?? 0)).toBe(s.total_devices);
   });
 
   it('buildPushRequest returns valid PushUpdateRequest', () => {

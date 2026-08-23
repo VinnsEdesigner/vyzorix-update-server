@@ -6,10 +6,19 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appdevice "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceSettingsResult
+	_ openapi.UpdateDeviceSettingsRequest
+	_ openapi.ThresholdsResult
+	_ openapi.ErrorResponse
 )
 
 // SettingsHandler handles device settings HTTP requests.
@@ -47,6 +56,20 @@ func (h *SettingsHandler) getOperator(c *gin.Context) string {
 }
 
 // GetSettings handles GET /v1/devices/:imei/settings.
+// @Summary      Get device settings
+// @Description  Returns device-level settings
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.DeviceSettingsResult  "device settings"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required / org context required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/settings [get]
 func (h *SettingsHandler) GetSettings(c *gin.Context) {
 	operatorID := h.getOperator(c)
 	if operatorID == "" {
@@ -88,6 +111,21 @@ func (h *SettingsHandler) GetSettings(c *gin.Context) {
 }
 
 // UpdateSettings handles PATCH /v1/devices/:imei/settings.
+// @Summary      Update device settings
+// @Description  Updates device-level settings
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.UpdateDeviceSettingsRequest  true  "settings updates"
+// @Success      200  {object}  openapi.DeviceSettingsResult  "updated device settings"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required / invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "settings not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/settings [patch]
 func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 	operatorID := h.getOperator(c)
 	if operatorID == "" {
@@ -139,7 +177,19 @@ func (h *SettingsHandler) UpdateSettings(c *gin.Context) {
 }
 
 // GetThresholds handles GET /v1/devices/:imei/settings/thresholds.
-// Returns the effective thresholds using hierarchy: device → org → default.
+// @Summary      Get device thresholds
+// @Description  Returns the effective thresholds using hierarchy: device → org → default
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.ThresholdsResult  "thresholds"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required / org context required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/settings/thresholds [get]
 func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 	operatorID := h.getOperator(c)
 	if operatorID == "" {
@@ -183,6 +233,20 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 }
 
 // UpdateThresholds handles PATCH /v1/devices/:imei/settings/thresholds.
+// @Summary      Update device thresholds
+// @Description  Updates device-level alert thresholds
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.ThresholdUpdateRequest  true  "threshold updates"
+// @Success      200  {object}  openapi.ThresholdsResult  "updated thresholds"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required / invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/settings/thresholds [patch]
 func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 	operatorID := h.getOperator(c)
 	if operatorID == "" {

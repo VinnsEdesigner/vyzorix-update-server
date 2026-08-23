@@ -5,10 +5,21 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.SessionListResult
+	_ openapi.SessionInfo
+	_ openapi.ConcurrentSessionsResult
+	_ openapi.RevokeResult
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // SessionsHandler handles session management endpoints.
@@ -41,6 +52,15 @@ func (h *SessionsHandler) getOperatorID(c *gin.Context) (string, error) {
 }
 
 // ListSessions handles GET /v1/auth/sessions - List all active sessions for the operator.
+// @Summary      List sessions
+// @Description  Returns all active sessions for the authenticated operator
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.SessionListResult  "sessions"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/sessions [get]
 func (h *SessionsHandler) ListSessions(c *gin.Context) {
 	operatorID, err := h.getOperatorID(c)
 	if err != nil {
@@ -77,6 +97,15 @@ func (h *SessionsHandler) ListSessions(c *gin.Context) {
 }
 
 // CheckConcurrent handles GET /v1/auth/sessions/concurrent - Check for concurrent logins.
+// @Summary      Check concurrent sessions
+// @Description  Returns whether the operator has concurrent active logins
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.ConcurrentSessionsResult  "concurrent session info"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/sessions/concurrent [get]
 func (h *SessionsHandler) CheckConcurrent(c *gin.Context) {
 	operatorID, err := h.getOperatorID(c)
 	if err != nil {
@@ -113,6 +142,18 @@ func (h *SessionsHandler) CheckConcurrent(c *gin.Context) {
 }
 
 // RevokeSession handles DELETE /v1/auth/sessions/:id - Revoke a specific session.
+// @Summary      Revoke session
+// @Description  Revokes a specific session by ID. Cannot revoke the current session
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Param        id  path  string  true  "session ID"
+// @Success      200  {object}  openapi.SuccessResult  "session revoked"
+// @Failure      400  {object}  openapi.ErrorResponse  "session id required / cannot revoke current"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "session not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/sessions/{id} [delete]
 func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 	operatorID, err := h.getOperatorID(c)
 	if err != nil {
@@ -163,6 +204,15 @@ func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 }
 
 // RevokeAllExceptCurrent handles DELETE /v1/auth/sessions - Revoke all sessions except current.
+// @Summary      Revoke other sessions
+// @Description  Revokes all sessions except the current one
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.RevokeResult  "sessions revoked"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/sessions [delete]
 func (h *SessionsHandler) RevokeAllExceptCurrent(c *gin.Context) {
 	operatorID, err := h.getOperatorID(c)
 	if err != nil {
@@ -197,6 +247,15 @@ func (h *SessionsHandler) RevokeAllExceptCurrent(c *gin.Context) {
 }
 
 // RevokeAllDevices handles POST /v1/auth/sessions/revoke-all - Logout from all devices.
+// @Summary      Revoke all sessions (all devices)
+// @Description  Revokes all sessions including the current one and clears the session cookie
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.RevokeResult  "all sessions revoked"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/sessions/revoke-all [post]
 func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 	operatorID, err := h.getOperatorID(c)
 	if err != nil {
@@ -230,6 +289,18 @@ func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 }
 
 // GetSession handles GET /v1/auth/sessions/:id - Get a specific session by ID.
+// @Summary      Get session
+// @Description  Returns a single session by ID
+// @Tags         sessions
+// @Accept       json
+// @Produce      json
+// @Param        id  path  string  true  "session ID"
+// @Success      200  {object}  openapi.SessionInfo  "session"
+// @Failure      400  {object}  openapi.ErrorResponse  "session id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "session not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/sessions/{id} [get]
 func (h *SessionsHandler) GetSession(c *gin.Context) {
 	operatorID, err := h.getOperatorID(c)
 	if err != nil {

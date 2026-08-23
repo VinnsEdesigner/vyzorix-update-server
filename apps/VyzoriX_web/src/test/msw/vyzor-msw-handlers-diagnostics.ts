@@ -1,14 +1,15 @@
 import { http, HttpResponse, delay } from 'msw';
 import type {
-  RawDeviceInspection,
-  RawTimelineResult,
+  DeviceInspectionResult,
+  WireTimelineResult,
+  WireTimelineEventResult,
 } from '@vyzorix/api-client';
 
 const API_BASE = '/v1/device';
 
 const now = Date.now();
 
-const inspection: RawDeviceInspection = {
+const inspection: DeviceInspectionResult = {
   identity: { imei: '123', deviceName: 'Test Device', model: 'Model X', manufacturer: 'Acme' },
   software: { osVersion: '14.0', appVersion: 'v1.1.0', securityPatch: '2025-01-01', buildId: 'build-1' },
   registration: {
@@ -35,29 +36,26 @@ const inspection: RawDeviceInspection = {
   },
 };
 
-const timeline: RawTimelineResult = {
-  events: [
-    {
-      id: 'evt-1',
-      deviceId: '123',
-      type: 'TELEMETRY',
-      timestamp: now - 60_000,
-      data: { riskScore: 5, bufferLevel: 42 },
-    },
-    {
-      id: 'evt-2',
-      deviceId: '123',
-      type: 'CONNECTION_OPEN',
-      timestamp: now - 3_600_000,
-      data: { ip: '10.0.0.1' },
-    },
-  ],
-  pagination: { limit: 25, hasMore: false, nextCursor: undefined },
-};
+const timelineEvents: WireTimelineEventResult[] = [
+  {
+    id: 'evt-1',
+    deviceId: '123',
+    type: 'TELEMETRY',
+    timestamp: new Date(now - 60_000).toISOString(),
+    data: { riskScore: 5, bufferLevel: 42 },
+  },
+  {
+    id: 'evt-2',
+    deviceId: '123',
+    type: 'CONNECTION_OPEN',
+    timestamp: new Date(now - 3_600_000).toISOString(),
+    data: { ip: '10.0.0.1' },
+  },
+];
 
 export function createDiagnosticsHandlers() {
   return [
-    // GET /v1/device/:imei/inspect — device inspection (RawDeviceInspection)
+    // GET /v1/device/:imei/inspect — device inspection
     http.get(`${API_BASE}/:imei/inspect`, async ({ params }) => {
       await delay(30);
       const imei = params.imei as string;
@@ -67,21 +65,17 @@ export function createDiagnosticsHandlers() {
       });
     }),
 
-    // GET /v1/device/:imei/timeline — timeline (RawTimelineResult)
-    http.get(`${API_BASE}/:imei/timeline`, async ({ params, request }) => {
+    // GET /v1/device/:imei/timeline — timeline
+    http.get(`${API_BASE}/:imei/timeline`, async ({ params }) => {
       await delay(30);
       const imei = params.imei as string;
-      const url = new URL(request.url);
-      const limit = url.searchParams.get('limit');
-      const events = timeline.events.map((e) => ({ ...e, deviceId: imei }));
-      return HttpResponse.json({
+      const events = timelineEvents.map((e) => ({ ...e, deviceId: imei }));
+      const result: WireTimelineResult = {
         events,
-        pagination: {
-          limit: limit ? Number(limit) : 25,
-          hasMore: false,
-          nextCursor: undefined,
-        },
-      });
+        hasMore: false,
+        nextCursor: undefined,
+      };
+      return HttpResponse.json(result);
     }),
   ];
 }

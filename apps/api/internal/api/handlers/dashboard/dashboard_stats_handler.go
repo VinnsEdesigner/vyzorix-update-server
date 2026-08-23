@@ -34,7 +34,7 @@ func NewStatsHandler(dashboardSvc *dashboard.Service, logger *slog.Logger) *Stat
 // GetStats handles GET /v1/dashboard/stats.
 // Returns aggregated dashboard statistics for the organization.
 // @Summary      Get dashboard stats
-// @Description  Returns aggregated dashboard statistics for the organization.
+// @Description  Returns aggregated dashboard statistics for the organization
 // @Tags         dashboard
 // @Accept       json
 // @Produce      json

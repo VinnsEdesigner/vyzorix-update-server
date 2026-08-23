@@ -771,6 +771,12 @@ func (s *Server) setupOrganizationRoutes(r *gin.RouterGroup) {
 	me.Use(s.cookieAuth.Middleware())
 	{
 		me.GET("/invitations", s.invitationHandler.ListPendingForEmail)
+		me.GET("/thresholds", s.authHandlers.Settings.GetThresholds)
+		me.PATCH("/thresholds", s.authHandlers.Settings.UpdateThresholds)
+		me.GET("/notifications", s.authHandlers.Settings.GetNotifications)
+		me.PATCH("/notifications", s.authHandlers.Settings.UpdateNotifications)
+		me.POST("/notifications/webhook/test", s.authHandlers.Settings.TestWebhook)
+		me.POST("/notifications/webhook/rotate", s.authHandlers.Settings.RotateWebhookSecret)
 	}
 
 	// Operator settings routes (under /v1/me/settings for simpler UX).

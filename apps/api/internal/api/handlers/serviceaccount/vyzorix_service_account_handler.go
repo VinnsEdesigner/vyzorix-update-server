@@ -98,7 +98,7 @@ func parseExpiresAt(s *string) *time.Time {
 
 // List handles GET /v1/service-accounts.
 // @Summary      List service accounts
-// @Description  Returns all org-scoped service accounts.
+// @Description  Returns all org-scoped service accounts
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
@@ -122,7 +122,7 @@ func (h *Handler) List(c *gin.Context) {
 
 // Create handles POST /v1/service-accounts.
 // @Summary      Create service account
-// @Description  Creates a new org-scoped service account.
+// @Description  Creates a new org-scoped service account
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
@@ -149,7 +149,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Delete handles DELETE /v1/service-accounts/:id.
 // @Summary      Delete service account
-// @Description  Removes a service account and its tokens.
+// @Description  Removes a service account and its tokens
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
@@ -170,7 +170,7 @@ func (h *Handler) Delete(c *gin.Context) {
 
 // ListTokens handles GET /v1/service-accounts/:id/tokens.
 // @Summary      List service account tokens
-// @Description  Returns all tokens for a service account.
+// @Description  Returns all tokens for a service account
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
@@ -200,7 +200,7 @@ func (h *Handler) ListTokens(c *gin.Context) {
 // CreateToken handles POST /v1/service-accounts/:id/tokens. Returns the full
 // key once — never stored or returned again.
 // @Summary      Create service account token
-// @Description  Creates a new token for a service account. Returns the full key once.
+// @Description  Creates a new token for a service account. Returns the full key once
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
@@ -237,7 +237,7 @@ func (h *Handler) CreateToken(c *gin.Context) {
 
 // RevokeToken handles DELETE /v1/service-accounts/:id/tokens/:token_id.
 // @Summary      Revoke service account token
-// @Description  Revokes a single token by ID.
+// @Description  Revokes a single token by ID
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json
@@ -263,7 +263,7 @@ func (h *Handler) RevokeToken(c *gin.Context) {
 
 // RotateToken handles POST /v1/service-accounts/:id/tokens/:token_id/rotate.
 // @Summary      Rotate service account token
-// @Description  Revokes the existing token and issues a new one. Returns the full key once.
+// @Description  Revokes the existing token and issues a new one. Returns the full key once
 // @Tags         service-accounts
 // @Accept       json
 // @Produce      json

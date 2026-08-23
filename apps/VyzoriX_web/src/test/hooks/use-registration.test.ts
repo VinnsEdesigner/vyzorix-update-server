@@ -203,7 +203,7 @@ describe('useAcknowledgeInbox', () => {
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
-    makeRestFail('post', '/v1/inbox/:imei/ack');
+    makeRestFail('post', '/v1/device/inbox/:imei/ack');
     registerGraphQLResponse('AckInbox', () => ({
       ackInbox: {
         __typename: 'AckResult',
@@ -248,7 +248,7 @@ describe('useConfirmDevice', () => {
     const { result } = renderHookWithQueryClient(() => useConfirmDevice());
     result.current.mutate({ imei: '123', commandSecret: 'secret' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.deviceId).toBe('d1');
+    expect(result.current.data?.device_id).toBe('d1');
     expect(result.current.data?.confirmed).toBe(true);
     expect(result.current.data?.imei).toBe('123');
   });
@@ -261,7 +261,7 @@ describe('useDismissInbox', () => {
     const { result } = renderHookWithQueryClient(() => useDismissInbox());
     result.current.mutate('123');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.status).toBe('pending');
+    expect(result.current.data?.status).toBe('rejected');
   });
 });
 
@@ -272,8 +272,8 @@ describe('useResendInboxApproval', () => {
     const { result } = renderHookWithQueryClient(() => useResendInboxApproval());
     result.current.mutate('123');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.success).toBe(true);
-    expect(result.current.data?.message).toBe('ok');
+    expect(result.current.data?.fcmPushSent).toBe(true);
+    expect(result.current.data?.status).toBe('approved');
   });
 });
 
@@ -369,7 +369,7 @@ describe('useRegistrationStatus', () => {
   });
 
   it('returns null when no entry exists', async () => {
-    server.use(http.get('/v1/inbox/:imei', () => HttpResponse.json(null)));
+    server.use(http.get('/v1/device/inbox/:imei', () => HttpResponse.json(null)));
     const { result } = renderHookWithQueryClient(() => useRegistrationStatus('123'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeNull();

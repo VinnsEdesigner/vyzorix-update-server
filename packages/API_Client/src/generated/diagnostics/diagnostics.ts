@@ -6,7 +6,9 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  DeviceInspectionResult,
+  GetDeviceImeiTimelineParams,
+  TimelineResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,13 +18,32 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getDiagnostics = () => {
-const getDiagnosticsId = (
-    id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/diagnostics/${id}`, method: 'GET'
+/**
+ * Returns full device inspection data for the Diagnostics Inspector
+ * @summary Get device inspection
+ */
+const getDeviceImeiInspect = (
+    imei: string,
+ options?: SecondParameter<typeof customAxios<DeviceInspectionResult>>,) => {
+      return customAxios<DeviceInspectionResult>(
+      {url: `/device/${imei}/inspect`, method: 'GET'
     },
       options);
     }
-  return {getDiagnosticsId}};
-export type GetDiagnosticsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDiagnostics>['getDiagnosticsId']>>>
+  /**
+ * Returns chronological event timeline for the Diagnostics Timeline
+ * @summary Get device timeline
+ */
+const getDeviceImeiTimeline = (
+    imei: string,
+    params?: GetDeviceImeiTimelineParams,
+ options?: SecondParameter<typeof customAxios<TimelineResult>>,) => {
+      return customAxios<TimelineResult>(
+      {url: `/device/${imei}/timeline`, method: 'GET',
+        params
+    },
+      options);
+    }
+  return {getDeviceImeiInspect,getDeviceImeiTimeline}};
+export type GetDeviceImeiInspectResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDiagnostics>['getDeviceImeiInspect']>>>
+export type GetDeviceImeiTimelineResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getDiagnostics>['getDeviceImeiTimeline']>>>

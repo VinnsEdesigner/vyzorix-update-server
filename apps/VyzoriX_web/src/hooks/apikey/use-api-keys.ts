@@ -7,12 +7,13 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import {
-  apiKeys,
+  getApiKeys,
   validateCreateApiKeyRequest,
   validateUpdateApiKeyRequest,
-  type ApiKey,
-  type ApiKeyWithSecret,
-  type ApiKeyListResult,
+  type APIKey,
+  type APIKeyWithSecret,
+  type APIKeyListResult,
+  type Pagination,
   type ApiKeyScope,
   type CreateApiKeyInput,
   type UpdateApiKeyInput,
@@ -27,6 +28,15 @@ interface ApiKeyListParams {
   limit?: number;
 }
 
+function normalizePagination(raw: { page?: number; limit?: number; total?: number; total_pages?: number } | undefined, fallbackLimit: number): Pagination {
+  return {
+    page: raw?.page ?? 1,
+    limit: raw?.limit ?? fallbackLimit,
+    total: raw?.total ?? 0,
+    totalPages: raw?.total_pages ?? 0,
+  };
+}
+
 /**
  * List API keys with cursor-style pagination (spec §5.2).
  *
@@ -36,20 +46,17 @@ interface ApiKeyListParams {
  * consumers don't need to know about the infinite-query page structure.
  */
 export function useApiKeys(params?: ApiKeyListParams) {
-  const organizationId = useCurrentOrganizationId();
   const limit = params?.limit ?? PAGE_SIZE;
+  const organizationId = useCurrentOrganizationId();
 
   const query = useInfiniteQuery({
     queryKey: queryKeys.apiKeysQueryKeys.list({ ...params, organizationId, limit }),
     queryFn: ({ pageParam }) =>
-      apiKeys.list({
-        page: pageParam,
-        limit,
-        organizationId: organizationId ?? undefined,
-      }),
+      getApiKeys().getAuthApiKeys({ page: pageParam, limit }),
     initialPageParam: params?.page ?? 1,
     getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
+      const page = lastPage.pagination?.page ?? 1;
+      const totalPages = lastPage.pagination?.total_pages ?? 0;
       return page < totalPages ? page + 1 : undefined;
     },
     enabled: organizationId !== null,
@@ -59,10 +66,10 @@ export function useApiKeys(params?: ApiKeyListParams) {
   const firstPage = pages[0];
 
   return {
-    keys: pages.flatMap((page: ApiKeyListResult) => page.keys),
-    pagination: firstPage?.pagination ?? { page: 1, limit, total: 0, totalPages: 0 },
-    monthlyLimit: firstPage?.stats.monthlyLimit ?? 0,
-    keysCreatedThisMonth: firstPage?.stats.keysCreatedThisMonth ?? 0,
+    keys: pages.flatMap((page: APIKeyListResult) => page.keys ?? []),
+    pagination: normalizePagination(firstPage?.pagination, limit),
+    monthlyLimit: firstPage?.monthly_limit ?? 0,
+    keysCreatedThisMonth: firstPage?.keys_created_this_month ?? 0,
     isLoading: query.isLoading,
     isFetchingNextPage: query.isFetchingNextPage,
     hasNextPage: query.hasNextPage ?? false,
@@ -74,12 +81,11 @@ export function useApiKeys(params?: ApiKeyListParams) {
 
 export function useApiKey(
   id: string | undefined,
-  options?: Omit<UseQueryOptions<ApiKey>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<APIKey>, 'queryKey' | 'queryFn'>,
 ) {
-  const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.apiKeysQueryKeys.detail(id ?? ''),
-    queryFn: () => apiKeys.get(id!, organizationId ?? undefined),
+    queryFn: () => getApiKeys().getAuthApiKeysKeyId(id!),
     enabled: id !== undefined && id !== '',
     ...options,
   });
@@ -94,20 +100,23 @@ export function useApiKey(
  */
 export function useCreateApiKey() {
   const queryClient = useQueryClient();
-  const organizationId = useCurrentOrganizationId();
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const mutation = useMutation({
-    mutationFn: (input: CreateApiKeyInput): Promise<ApiKeyWithSecret> => {
-      const validation = validateCreateApiKeyRequest(
-        input.name,
-        input.scope,
-        input.expiresInDays ?? null,
-      );
-      if (!validation.isValid) {
-        throw { validationErrors: validation.errors };
+    mutationFn: (input: CreateApiKeyInput): Promise<APIKeyWithSecret> => {
+      const validation = validateCreateApiKeyRequest({
+        name: input.name,
+        scope: input.scope,
+        expires_in_days: input.expiresInDays ?? undefined,
+      });
+      if (!validation.success) {
+        throw { validationErrors: zodToValidationErrors(validation.error) };
       }
-      return apiKeys.create(input, organizationId ?? undefined);
+      return getApiKeys().postAuthApiKeys({
+        name: input.name,
+        scope: input.scope,
+        expires_in_days: input.expiresInDays ?? undefined,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysQueryKeys.lists() });
@@ -115,7 +124,7 @@ export function useCreateApiKey() {
   });
 
   const createKey = useCallback(
-    async (input: CreateApiKeyInput): Promise<ApiKeyWithSecret> => {
+    async (input: CreateApiKeyInput): Promise<APIKeyWithSecret> => {
       setValidationErrors({});
       try {
         return await mutation.mutateAsync(input);
@@ -147,16 +156,18 @@ export function useCreateApiKey() {
  */
 export function useUpdateApiKey() {
   const queryClient = useQueryClient();
-  const organizationId = useCurrentOrganizationId();
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateApiKeyInput }): Promise<ApiKey> => {
+    mutationFn: ({ id, input }: { id: string; input: UpdateApiKeyInput }): Promise<APIKey> => {
       const validation = validateUpdateApiKeyRequest(input);
-      if (!validation.isValid) {
-        throw { validationErrors: validation.errors };
+      if (!validation.success) {
+        throw { validationErrors: zodToValidationErrors(validation.error) };
       }
-      return apiKeys.update(id, input, organizationId ?? undefined);
+      return getApiKeys().patchAuthApiKeysKeyId(id, {
+        name: input.name,
+        scope: input.scope,
+      });
     },
     onSuccess: (updated, { id }) => {
       queryClient.setQueryData(queryKeys.apiKeysQueryKeys.detail(id), updated);
@@ -165,7 +176,7 @@ export function useUpdateApiKey() {
   });
 
   const updateKey = useCallback(
-    async (id: string, input: UpdateApiKeyInput): Promise<ApiKey> => {
+    async (id: string, input: UpdateApiKeyInput): Promise<APIKey> => {
       setValidationErrors({});
       try {
         return await mutation.mutateAsync({ id, input });
@@ -199,11 +210,12 @@ export function useUpdateApiKey() {
  */
 export function useRevokeApiKey() {
   const queryClient = useQueryClient();
-  const organizationId = useCurrentOrganizationId();
   const [pendingRevoke, setPendingRevoke] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (id: string) => apiKeys.revoke(id, organizationId ?? undefined),
+    mutationFn: async (id: string): Promise<void> => {
+      await getApiKeys().deleteAuthApiKeysKeyId(id);
+    },
     onMutate: async (keyId: string) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.apiKeysQueryKeys.lists() });
       const previousData = queryClient.getQueriesData({
@@ -211,17 +223,17 @@ export function useRevokeApiKey() {
       });
 
       // The list query is an useInfiniteQuery, so cached data has the shape
-      // { pages: ApiKeyListResult[], pageParams: number[] }. Optimistically
+      // { pages: APIKeyListResult[], pageParams: number[] }. Optimistically
       // remove the revoked key from every loaded page.
       queryClient.setQueriesData(
         { queryKey: queryKeys.apiKeysQueryKeys.lists() },
-        (old: { pages: ApiKeyListResult[]; pageParams: number[] } | undefined) => {
+        (old: { pages: APIKeyListResult[]; pageParams: number[] } | undefined) => {
           if (!old) return old;
           return {
             ...old,
             pages: old.pages.map((page) => ({
               ...page,
-              keys: page.keys.filter((k) => k.id !== keyId),
+              keys: (page.keys ?? []).filter((k) => k.id !== keyId),
             })),
           };
         },
@@ -248,7 +260,7 @@ export function useRevokeApiKey() {
 
   const revokeKey = useCallback(
     async (id: string): Promise<void> => {
-      return mutation.mutateAsync(id);
+      await mutation.mutateAsync(id);
     },
     [mutation],
   );
@@ -267,12 +279,11 @@ export function useRevokeApiKey() {
  */
 export function useRotateApiKey() {
   const queryClient = useQueryClient();
-  const organizationId = useCurrentOrganizationId();
   const [pendingRotate, setPendingRotate] = useState<string | null>(null);
-  const [rotatedKey, setRotatedKey] = useState<ApiKeyWithSecret | null>(null);
+  const [rotatedKey, setRotatedKey] = useState<APIKeyWithSecret | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (id: string) => apiKeys.rotate(id, organizationId ?? undefined),
+    mutationFn: (id: string) => getApiKeys().postAuthApiKeysKeyIdRotate(id),
     onSuccess: (data) => {
       setRotatedKey(data);
       queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysQueryKeys.lists() });
@@ -283,7 +294,7 @@ export function useRotateApiKey() {
   });
 
   const rotateKey = useCallback(
-    async (id: string): Promise<ApiKeyWithSecret> => {
+    async (id: string): Promise<APIKeyWithSecret> => {
       setPendingRotate(id);
       try {
         return await mutation.mutateAsync(id);
@@ -304,6 +315,16 @@ export function useRotateApiKey() {
   };
 }
 
+/** Converts a zod safeParse failure into the field-error map the hooks expose. */
+function zodToValidationErrors(error: { issues: { path: (string | number)[]; message: string }[] }): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const field = String(issue.path[0] ?? '_');
+    (out[field] ??= []).push(issue.message);
+  }
+  return out;
+}
+
 /** Type guard for the synthetic validation-rejection error thrown by the create/update mutations. */
 function isValidationRejection(
   error: unknown,
@@ -316,4 +337,4 @@ function isValidationRejection(
   );
 }
 
-export type { ApiKey, ApiKeyWithSecret, ApiKeyListResult, CreateApiKeyInput, UpdateApiKeyInput, ApiKeyScope };
+export type { APIKey, APIKeyWithSecret, APIKeyListResult, CreateApiKeyInput, UpdateApiKeyInput, ApiKeyScope };

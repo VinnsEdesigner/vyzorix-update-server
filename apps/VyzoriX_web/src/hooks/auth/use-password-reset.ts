@@ -1,12 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import {
-  forgotPassword,
-  resetPassword,
-  resendPasswordReset,
-  type ForgotPasswordResponse,
-  type ResetPasswordResponse,
-  type ResendResetResponse,
-} from '@vyzorix/api-client';
+import { getAuth } from '@vyzorix/api-client';
+import type { MessageResult, SuccessResult } from '@vyzorix/api-client';
 
 export interface ForgotPasswordInput {
   email: string;
@@ -21,30 +15,20 @@ export interface ResendResetInput {
   email: string;
 }
 
-/**
- * Forgot-password mutation. The server always returns `{ success: true }`
- * (even for unknown emails) to avoid leaking which addresses are registered.
- */
 export function useForgotPassword() {
-  return useMutation<ForgotPasswordResponse, Error, ForgotPasswordInput>({
-    mutationFn: (input) => forgotPassword(input.email),
+  return useMutation<MessageResult, Error, ForgotPasswordInput>({
+    mutationFn: (input) => getAuth().postAuthForgotPassword({ email: input.email }),
   });
 }
 
-/**
- * Reset-password mutation. Consumes the token from the reset email link.
- */
 export function useResetPassword() {
-  return useMutation<ResetPasswordResponse, Error, ResetPasswordInput>({
-    mutationFn: (input) => resetPassword(input.token, input.newPassword),
+  return useMutation<SuccessResult, Error, ResetPasswordInput>({
+    mutationFn: (input) => getAuth().postAuthResetPassword({ token: input.token, newPassword: input.newPassword }),
   });
 }
 
-/**
- * Resend reset email — used when the reset link expired or was never received.
- */
 export function useResendPasswordReset() {
-  return useMutation<ResendResetResponse, Error, ResendResetInput>({
-    mutationFn: (input) => resendPasswordReset(input.email),
+  return useMutation<SuccessResult, Error, ResendResetInput>({
+    mutationFn: (input) => getAuth().postAuthResendPasswordReset({ email: input.email }),
   });
 }

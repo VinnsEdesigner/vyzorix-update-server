@@ -1,22 +1,14 @@
 import { http, HttpResponse, delay } from 'msw';
 import {
   buildDeviceListItem,
-  buildDeviceStats,
   resetFixtureCounter,
 } from '../fixtures/vyzor-test-fixtures';
 import type {
-  RawDeviceListItem,
-  RawDeviceListResult,
-  RawDeviceStats,
+  DeviceListResult,
+  DeviceDetailResult,
 } from '@vyzorix/api-client';
 
 const API_BASE = '/v1/devices';
-
-function toRawDeviceListItem(
-  d: ReturnType<typeof buildDeviceListItem>,
-): RawDeviceListItem {
-  return { ...d } as unknown as RawDeviceListItem;
-}
 
 export function createDevicesHandlers() {
   resetFixtureCounter();
@@ -33,29 +25,17 @@ export function createDevicesHandlers() {
       const page = Number(url.searchParams.get('page') ?? '1');
       const limit = Number(url.searchParams.get('limit') ?? '20');
 
-      const result: RawDeviceListResult = {
-        devices: devices.map(toRawDeviceListItem),
-        pagination: {
-          page,
-          limit,
-          total: devices.length,
-          totalPages: 1,
-        },
-      } as unknown as RawDeviceListResult;
+      const start = (page - 1) * limit;
+      const pageItems = devices.slice(start, start + limit);
+      const result: DeviceListResult = {
+        devices: pageItems,
+        total: devices.length,
+      };
       return HttpResponse.json(result);
     }),
 
-    http.get(`${API_BASE}/stats`, async () => {
-      await delay(30);
-      const stats: RawDeviceStats = buildDeviceStats({
-        total: devices.length,
-        online: devices.filter((d) => d.status === 'online').length,
-        offline: devices.filter((d) => d.status === 'offline').length,
-      }) as unknown as RawDeviceStats;
-      return HttpResponse.json(stats);
-    }),
 
-    http.get(`${API_BASE}/count`, async () => {
+    http.get('/v1/device/count', async () => {
       await delay(20);
       return HttpResponse.json({ count: devices.length });
     }),
@@ -67,34 +47,28 @@ export function createDevicesHandlers() {
       if (!item) {
         return HttpResponse.json({ error: 'device not found' }, { status: 404 });
       }
-      // Return a proper RawDevice (camelCase, online boolean, numeric timestamps)
-      // matching what the Go server actually returns and what deviceFromRaw expects.
       const now = Date.now();
-      return HttpResponse.json({
+      const detail: DeviceDetailResult = {
         id: item.id,
         imei: item.imei,
-        deviceName: item.device_name,
+        device_name: item.device_name,
         model: item.model,
         manufacturer: item.manufacturer,
-        osVersion: '14.0',
-        appVersion: 'v1.1.0',
-        securityPatch: '2025-01-01',
-        online: item.status === 'online',
-        fcmTokenValid: true,
-        commandSecretSet: true,
-        registeredAt: now - 86_400_000,
-        lastSeen: now,
-        createdAt: now - 86_400_000,
-        updatedAt: now,
-      });
+        app_version: item.app_version,
+        status: item.status,
+        registered_at: now - 86_400_000,
+        last_seen: now,
+      };
+      return HttpResponse.json(detail);
     }),
 
     http.get(`${API_BASE}/:imei/connection-status`, async ({ params }) => {
       await delay(20);
       const imei = params.imei as string;
       return HttpResponse.json({
-        imei,
-        connected: devices.find((d) => d.imei === imei)?.status === 'online',
+        device_id: imei,
+        online: devices.find((d) => d.imei === imei)?.status === 'online',
+        status: devices.find((d) => d.imei === imei)?.status ?? 'offline',
       });
     }),
 

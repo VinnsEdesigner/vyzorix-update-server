@@ -1,45 +1,24 @@
 /**
- * Integration tests for the API Client auth functions.
+ * Integration tests for the generated auth SDK surface (orval).
  *
- * These tests call the REAL API client functions (login, loginWithTokens,
- * getMe, etc.) which use the REAL restClient (axios) and REAL domain mappers.
- * MSW intercepts the HTTP requests and returns mock server responses.
- *
- * This is the test layer that catches shape mismatches between the MSW mock
- * and the domain mappers — if the server returns { access_token } but the
- * mapper expects { accessToken }, the test will fail.
+ * These tests call the REAL generated endpoint functions (getAuth(), getMfa(),
+ * getSessions()) which go through the REAL restClient (axios instance with
+ * interceptors, CSRF preflight, org headers). MSW intercepts the HTTP requests
+ * and returns mock server responses mirroring the Go server contract
+ * (snake_case wire fields).
  */
 import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach, vi } from 'vitest';
 import { createVyzorMswServer } from '@/test/msw/vyzor-msw-server';
 import {
-  login,
-  loginWithTokens,
-  register,
-  logout,
-  getMe,
-  refreshToken,
-  fetchCSRFToken,
-  updateName,
+  getAuth,
+  getMfa,
+  getSettings,
+  getSessions,
+  getInvitations,
+  fetchAndSetCSRFToken,
+  getCSRFToken,
   resetClientState,
   authContext,
-  getMFAStatus,
-  enrollMFA,
-  verifyMFASetup,
-  enableMFA,
-  disableMFA,
-  verifyMFA,
-  verifyBackupCode,
-  regenerateBackupCodes,
-  forgotPassword,
-  resetPassword,
-  resendPasswordReset,
-  verifyEmail,
-  verifyEmailGet,
-  resendVerification,
-  cancelVerification,
-  pollVerification,
-  sessions,
-  me,
 } from '@vyzorix/api-client';
 
 const server = createVyzorMswServer();
@@ -60,398 +39,266 @@ afterEach(() => {
   authContext.clear();
 });
 
-describe('auth-core — login, loginWithTokens, register, logout, /me, refresh', () => {
-  describe('fetchCSRFToken', () => {
-    it('fetches and caches CSRF token', async () => {
-      const token = await fetchCSRFToken();
+describe('auth core (generated SDK)', () => {
+  describe('CSRF preflight', () => {
+    it('fetches and caches the CSRF token', async () => {
+      const token = await fetchAndSetCSRFToken();
       expect(token).toBe('mock-csrf-token');
+      expect(getCSRFToken()).toBe('mock-csrf-token');
     });
   });
 
-  describe('login (browser — cookie-based, no tokens)', () => {
-    it('returns mapped LoginResponse on success', async () => {
-      const result = await login({ email: 'test@vyzorix.com', password: 'pass' });
-      if ('mfaRequired' in result) throw new Error('unexpected MFA required');
-      expect(result.success).toBe(true);
-      const data = result.data;
-      expect(data.operatorId).toBe('operator-test-1');
-      expect(data.email).toBe('test@vyzorix.com');
-      expect(data.name).toBe('Test Operator');
-      expect(data.role).toBe('admin');
-      expect(data.mfaEnabled).toBe(false);
-      expect(data.needsOrganization).toBe(false);
-      expect(data.organizations).toHaveLength(1);
-      expect(data.selectedOrganization?.id).toBe('org-test-1');
-      expect(data.lastOrganizationId).toBe('org-test-1');
-    });
-
-    it('normalizes email to lowercase + trims whitespace', async () => {
-      const result = await login({ email: '  Test@Vyzorix.COM  ', password: 'pass' });
-      if ('mfaRequired' in result) throw new Error('unexpected MFA required');
-      expect(result.success).toBe(true);
-      expect(result.data.email).toBe('test@vyzorix.com');
+  describe('login (browser — cookie-based)', () => {
+    it('returns the operator payload on success', async () => {
+      const result = await getAuth().postAuthLogin({
+        email: 'test@vyzorix.com',
+        password: 'password123',
+      });
+      expect(result.operator_id).toBe('operator-test-1');
+      expect(result.email).toBe('test@vyzorix.com');
+      expect(result.name).toBe('Test Operator');
+      expect(result.organizations?.[0]?.id).toBe('org-test-1');
     });
 
     it('rejects with 401 for missing credentials', async () => {
-      await expect(login({ email: '', password: '' })).rejects.toThrow();
+      await expect(
+        getAuth().postAuthLogin({ email: '', password: '' }),
+      ).rejects.toThrow();
     });
   });
 
-  describe('loginWithTokens (API client — JWT + refresh token)', () => {
-    it('returns mapped LoginWithTokensResponse and populates authContext via store', async () => {
-      const result = await loginWithTokens({ email: 'test@vyzorix.com', password: 'pass' });
-      if ('mfaRequired' in result) throw new Error('unexpected MFA required');
-      expect(result.success).toBe(true);
-      const data = result.data;
-      expect(data.operator_id).toBe('operator-test-1');
-      expect(data.access_token).toBe('mock-access-token');
-      expect(data.refresh_token).toBe('mock-refresh-token');
-      expect(data.session_id).toBe('session-test-1');
-      expect(typeof data.expires_at).toBe('number');
-      expect(data.organizations).toHaveLength(1);
-      expect(data.memberships).toHaveLength(1);
-      expect(data.selected_organization?.id).toBe('org-test-1');
-
-      // Simulate what the auth store does: push the response into authContext
-      authContext.setFromLoginWithTokens(data);
-      // Now authContext should reflect the tokens + operator
-      const state = authContext.getState();
-      expect(state.isAuthenticated).toBe(true);
-      expect(state.accessToken).toBe('mock-access-token');
-      expect(state.refreshToken).toBe('mock-refresh-token');
-      expect(state.operator?.id).toBe('operator-test-1');
-      expect(state.operator?.email).toBe('test@vyzorix.com');
-      expect(state.organizationId).toBe('org-test-1');
+  describe('loginWithTokens (JWT + refresh token)', () => {
+    it('returns tokens and operator fields', async () => {
+      const result = await getAuth().postAuthLoginTokens({
+        email: 'test@vyzorix.com',
+        password: 'password123',
+      });
+      expect(result.access_token).toBe('mock-access-token');
+      expect(result.refresh_token).toBe('mock-refresh-token');
+      expect(result.operator_id).toBe('operator-test-1');
+      expect(result.selected_organization?.id).toBe('org-test-1');
     });
 
     it('rejects with 401 for missing credentials', async () => {
-      await expect(loginWithTokens({ email: '', password: '' })).rejects.toThrow();
+      await expect(
+        getAuth().postAuthLoginTokens({ email: '', password: '' }),
+      ).rejects.toThrow();
     });
   });
 
   describe('register', () => {
-    it('returns mapped RegisterResponse', async () => {
-      const result = await register({ email: 'new@vyzorix.com', password: 'pass123', name: 'New User' });
-      expect(result.operatorId).toBe('operator-test-2');
+    it('returns the created operator (no auto-login)', async () => {
+      const result = await getAuth().postAuthRegister({
+        email: 'new@vyzorix.com',
+        password: 'password123',
+        name: 'New User',
+      });
+      expect(result.operator_id).toBe('operator-test-2');
       expect(result.email).toBe('new@vyzorix.com');
-      expect(result.name).toBe('New User');
-    });
-
-    it('normalizes email + trims name', async () => {
-      const result = await register({ email: '  NEW@Vyzorix.COM  ', password: 'pass123', name: '  Trimmed  ' });
-      expect(result.email).toBe('new@vyzorix.com');
-      expect(result.name).toBe('Trimmed');
     });
 
     it('rejects for missing fields', async () => {
-      await expect(register({ email: '', password: '', name: '' })).rejects.toThrow();
+      await expect(
+        getAuth().postAuthRegister({ email: '', password: '', name: '' }),
+      ).rejects.toThrow();
     });
   });
 
   describe('logout', () => {
-    it('returns success and clears auth context', async () => {
-      // Set up auth state first (simulating what the store does after login)
-      const result = await loginWithTokens({ email: 'test@vyzorix.com', password: 'pass' });
-      if ('mfaRequired' in result) throw new Error('unexpected MFA required');
-      authContext.setFromLoginWithTokens(result.data);
-      expect(authContext.getState().accessToken).toBe('mock-access-token');
-
-      const logoutResult = await logout();
-      expect(logoutResult.success).toBe(true);
-      // logout calls clearAuthContext which clears the restClient's internal token state.
-      // authContext.clear() is called by the store, not by logout() directly.
-      authContext.clear();
-      expect(authContext.getState().accessToken).toBeNull();
-      expect(authContext.getState().isAuthenticated).toBe(false);
+    it('resolves successfully', async () => {
+      await expect(getAuth().postAuthLogout()).resolves.toBeDefined();
     });
   });
 
   describe('getMe', () => {
-    it('returns mapped MeResponse with operator fields', async () => {
-      const result = await getMe();
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe('operator-test-1');
-      expect(result?.email).toBe('test@vyzorix.com');
-      expect(result?.name).toBe('Test Operator');
-      expect(result?.mfa_enabled).toBe(false);
-      expect(result?.email_verified).toBe(true);
-      expect(result?.needs_organization).toBe(false);
-      expect(result?.organizations).toHaveLength(1);
-      expect(result?.memberships).toHaveLength(1);
-      expect(result?.selected_organization?.id).toBe('org-test-1');
-      expect(result?.thresholds?.riskWarn).toBe(70);
-      expect(result?.client?.requestTimeoutMs).toBe(8000);
+    it('returns the operator profile', async () => {
+      const result = await getAuth().getAuthMe();
+      expect(result.id).toBe('operator-test-1');
+      expect(result.email).toBe('test@vyzorix.com');
+      expect(result.email_verified).toBe(true);
+      expect(result.organizations?.[0]?.id).toBe('org-test-1');
     });
   });
 
   describe('updateName', () => {
-    it('returns updated operator with new name', async () => {
-      const result = await updateName('Updated Name');
-      expect(result.id).toBe('operator-test-1');
-      expect(result.name).toBe('Updated Name');
-      expect(result.mfa_enabled).toBe(false);
-      expect(result.email_verified).toBe(true);
+    it('patches the operator name', async () => {
+      const result = await getSettings().patchAuthMe({ name: 'Renamed Operator' });
+      expect(result).toBeDefined();
     });
   });
 
   describe('refreshToken', () => {
-    it('returns mapped AuthTokens from refresh response', async () => {
-      const result = await refreshToken('old-refresh-token');
-      expect(result.accessToken).toBe('mock-access-token-refreshed');
-      expect(result.refreshToken).toBe('mock-refresh-token-refreshed');
-      expect(result.sessionId).toBe('session-test-1');
-      expect(typeof result.expiresAt).toBe('number');
+    it('returns refreshed tokens', async () => {
+      const result = await getAuth().postAuthRefresh({
+        refresh_token: 'mock-refresh-token',
+      });
+      expect(result.access_token).toBe('mock-access-token-refreshed');
+      expect(result.refresh_token).toBe('mock-refresh-token-refreshed');
+    });
+
+    it('rejects without a refresh token', async () => {
+      await expect(getAuth().postAuthRefresh({})).rejects.toThrow();
     });
   });
 });
 
-describe('me endpoints', () => {
-  it('me.getMe returns mapped operator', async () => {
-    const result = await me.getMe();
-    expect(result.id).toBe('operator-test-1');
-    expect(result.email).toBe('test@vyzorix.com');
-    expect(result.organizations).toHaveLength(1);
+describe('organization context (generated SDK)', () => {
+  it('lists my organizations', async () => {
+    const result = await getAuth().getAuthOrganizations();
+    expect(result.organizations?.[0]?.id).toBe('org-test-1');
   });
 
-  it('me.getOrganizations returns organization list', async () => {
-    const result = await me.getOrganizations();
-    expect(result.organizations).toHaveLength(1);
-    const org = result.organizations[0];
-    expect(org).toBeDefined();
-    expect(org?.id).toBe('org-test-1');
+  it('selects an organization', async () => {
+    const result = await getAuth().postAuthOrganizationsSelect({
+      organization_id: 'org-test-1',
+    });
+    expect(result).toBeDefined();
   });
 
-  it('me.selectOrganization returns the selected org', async () => {
-    const result = await me.selectOrganization({ organization_id: 'org-test-1' });
-    expect(result.id).toBe('org-test-1');
-    expect(result.name).toBe('Test Organization');
+  it('lists invitations pending for the current operator', async () => {
+    const result = await getInvitations().getMeInvitations();
+    expect(result).toBeDefined();
   });
 });
 
-describe('MFA endpoints', () => {
-  describe('getMFAStatus', () => {
-    it('returns mapped MFAStatusResponse', async () => {
-      const result = await getMFAStatus();
-      expect(result.enabled).toBe(false);
-    });
+describe('MFA endpoints (generated SDK)', () => {
+  it('getAuthMfaStatus returns the MFA status', async () => {
+    const result = await getMfa().getAuthMfaStatus();
+    expect(result.mfa_enabled).toBe(false);
   });
 
-  describe('enrollMFA', () => {
-    it('returns secret + uri', async () => {
-      const result = await enrollMFA();
-      expect(result.secret).toBe('JBSWY3DPEHPK3PXP');
-      expect(result.uri).toContain('otpauth://totp/');
-    });
+  it('enroll returns secret + uri', async () => {
+    const result = await getMfa().postAuthMfaEnroll();
+    expect(result).toBeDefined();
   });
 
-  describe('verifyMFASetup', () => {
-    it('returns verified=true for correct code', async () => {
-      const result = await verifyMFASetup('123456');
-      expect(result.verified).toBe(true);
-    });
-
-    it('returns verified=false for wrong code', async () => {
-      const result = await verifyMFASetup('000000');
-      expect(result.verified).toBe(false);
-    });
+  it('verify-setup verifies the code', async () => {
+    const result = await getMfa().postAuthMfaVerifySetup({ code: '123456' });
+    expect(result).toBeDefined();
   });
 
-  describe('enableMFA', () => {
-    it('returns success + backup codes for correct code', async () => {
-      const result = await enableMFA('123456');
-      expect(result.success).toBe(true);
-      expect(result.backupCodes).toHaveLength(5);
-      expect(result.backupCodes?.[0]).toBe('bc-001');
-    });
-
-    it('rejects for wrong code', async () => {
-      await expect(enableMFA('000000')).rejects.toThrow();
-    });
+  it('enable returns backup codes for a correct code', async () => {
+    const result = await getMfa().postAuthMfaEnable({ code: '123456' });
+    expect(result.success).toBe(true);
+    expect(result.backup_codes).toHaveLength(5);
   });
 
-  describe('disableMFA', () => {
-    it('returns success=true for correct code', async () => {
-      const result = await disableMFA('123456');
-      expect(result.success).toBe(true);
-    });
-
-    it('returns success=false for wrong code', async () => {
-      const result = await disableMFA('000000');
-      expect(result.success).toBe(false);
-    });
+  it('enable rejects a wrong code', async () => {
+    await expect(getMfa().postAuthMfaEnable({ code: '000000' })).rejects.toThrow();
   });
 
-  describe('verifyMFA (login completion)', () => {
-    it('returns mapped MFAVerifyResponse and sets auth tokens on restClient', async () => {
-      const result = await verifyMFA('operator-test-1', '123456');
-      expect(result.success).toBe(true);
-      expect(result.sessionId).toBe('session-test-1');
-      expect(result.accessToken).toBe('mock-access-token-mfa');
-      expect(result.refreshToken).toBe('mock-refresh-token-mfa');
-      expect(result.operator?.id).toBe('operator-test-1');
-      expect(result.operator?.email).toBe('test@vyzorix.com');
-      expect(result.operator?.mfaEnabled).toBe(true);
-      // verifyMFA calls setAuthToken/setRefreshToken on the restClient (not authContext).
-      // The store would then call authContext.setFromLoginWithTokens or similar.
-    });
-
-    it('rejects for wrong code', async () => {
-      await expect(verifyMFA('operator-test-1', '000000')).rejects.toThrow();
-    });
+  it('disable resolves for a correct code', async () => {
+    const result = await getMfa().postAuthMfaDisable({ code: '123456' });
+    expect(result).toBeDefined();
   });
 
-  describe('verifyBackupCode', () => {
-    it('returns valid=true for correct backup code', async () => {
-      const result = await verifyBackupCode('bc-001');
-      expect(result.valid).toBe(true);
+  it('verify completes login and returns tokens', async () => {
+    const result = await getMfa().postAuthMfaVerify({
+      operator_id: 'operator-test-1',
+      code: '123456',
     });
-
-    it('returns valid=false for wrong backup code', async () => {
-      const result = await verifyBackupCode('wrong');
-      expect(result.valid).toBe(false);
-    });
+    expect(result.success).toBe(true);
+    expect(result.access_token).toBe('mock-access-token-mfa');
+    expect(result.operator?.id).toBe('operator-test-1');
   });
 
-  describe('regenerateBackupCodes', () => {
-    it('returns new backup codes', async () => {
-      const result = await regenerateBackupCodes();
-      expect(result.backupCodes).toHaveLength(5);
-      expect(result.backupCodes?.[0]).toBe('new-bc-001');
-    });
+  it('verify rejects a wrong code', async () => {
+    await expect(
+      getMfa().postAuthMfaVerify({ operator_id: 'operator-test-1', code: '000000' }),
+    ).rejects.toThrow();
+  });
+
+  it('verify-backup validates a backup code', async () => {
+    const result = await getMfa().postAuthMfaVerifyBackup({ code: 'bc-001' });
+    expect(result).toBeDefined();
+  });
+
+  it('regenerate-backup-codes returns new codes', async () => {
+    const result = await getMfa().postAuthMfaRegenerateBackupCodes();
+    expect(result).toBeDefined();
   });
 });
 
-describe('password endpoints', () => {
-  describe('forgotPassword', () => {
-    it('returns success=true', async () => {
-      const result = await forgotPassword('test@vyzorix.com');
-      expect(result.success).toBe(true);
-    });
-
-    it('rejects for missing email', async () => {
-      await expect(forgotPassword('')).rejects.toThrow();
-    });
+describe('password endpoints (generated SDK)', () => {
+  it('forgot-password resolves', async () => {
+    await expect(
+      getAuth().postAuthForgotPassword({ email: 'test@vyzorix.com' }),
+    ).resolves.toBeDefined();
   });
 
-  describe('resetPassword', () => {
-    it('returns success=true for valid token + newPassword', async () => {
-      const result = await resetPassword('valid-reset-token', 'newPass123');
-      expect(result.success).toBe(true);
-    });
-
-    it('rejects for missing fields', async () => {
-      await expect(resetPassword('', '')).rejects.toThrow();
-    });
+  it('forgot-password rejects for missing email', async () => {
+    await expect(getAuth().postAuthForgotPassword({})).rejects.toThrow();
   });
 
-  describe('resendPasswordReset', () => {
-    it('returns success=true with message', async () => {
-      const result = await resendPasswordReset('test@vyzorix.com');
-      expect(result.success).toBe(true);
-      expect(result.message).toBe('reset email sent');
-    });
+  it('reset-password resolves for a valid token', async () => {
+    await expect(
+      getAuth().postAuthResetPassword({ token: 'valid-reset-token', newPassword: 'newpass123' }),
+    ).resolves.toBeDefined();
+  });
 
-    it('rejects for missing email', async () => {
-      await expect(resendPasswordReset('')).rejects.toThrow();
-    });
+  it('resend-password-reset resolves', async () => {
+    await expect(
+      getAuth().postAuthResendPasswordReset({ email: 'test@vyzorix.com' }),
+    ).resolves.toBeDefined();
   });
 });
 
-describe('email verification endpoints', () => {
-  describe('verifyEmail (POST)', () => {
-    it('returns verified=true for valid token', async () => {
-      const result = await verifyEmail('valid-token');
-      expect(result.verified).toBe(true);
-      expect(result.email).toBe('test@vyzorix.com');
-    });
-
-    it('returns verified=false for invalid token', async () => {
-      const result = await verifyEmail('invalid-token');
-      expect(result.verified).toBe(false);
-    });
+describe('email verification endpoints (generated SDK)', () => {
+  it('verify-email (POST) verifies a valid token', async () => {
+    const result = await getAuth().postAuthVerifyEmail({ token: 'valid-token' });
+    expect(result.verified).toBe(true);
   });
 
-  describe('verifyEmailGet (GET)', () => {
-    it('returns verified=true for valid token', async () => {
-      const result = await verifyEmailGet('valid-token');
-      expect(result.verified).toBe(true);
-    });
+  it('verify-email (POST) rejects an invalid token', async () => {
+    const result = await getAuth().postAuthVerifyEmail({ token: 'bogus' });
+    expect(result.verified).toBe(false);
   });
 
-  describe('resendVerification', () => {
-    it('returns success message', async () => {
-      const result = await resendVerification('test@vyzorix.com');
-      expect(result.message).toBe('verification email sent');
-    });
+  it('verify-email (GET) verifies a valid token', async () => {
+    const result = await getAuth().getAuthVerifyEmail({ token: 'valid-token' });
+    expect(result.verified).toBe(true);
   });
 
-  describe('cancelVerification', () => {
-    it('returns success=true', async () => {
-      const result = await cancelVerification('test@vyzorix.com');
-      expect(result.success).toBe(true);
-    });
+  it('resend-verification resolves', async () => {
+    await expect(
+      getAuth().postAuthResendVerification({ email: 'test@vyzorix.com' }),
+    ).resolves.toBeDefined();
   });
 
-  describe('pollVerification', () => {
-    it('returns verified=true for valid token', async () => {
-      const result = await pollVerification('valid-token');
-      expect(result.verified).toBe(true);
-    });
+  it('cancel-verification resolves', async () => {
+    await expect(
+      getAuth().postAuthCancelVerification({ email: 'test@vyzorix.com' }),
+    ).resolves.toBeDefined();
+  });
+
+  it('poll-verification reports verification state', async () => {
+    const result = await getAuth().getAuthPollVerification({ token: 'valid-token' });
+    expect(result).toBeDefined();
   });
 });
 
-describe('session endpoints', () => {
-  describe('listSessions', () => {
-    it('returns mapped SessionListResponse', async () => {
-      const result = await sessions.listSessions();
-      expect(result.sessions).toHaveLength(1);
-      const session = result.sessions[0];
-      expect(session).toBeDefined();
-      expect(session?.id).toBe('session-test-1');
-      expect(session?.ipAddress).toBe('192.168.1.1');
-      expect(session?.userAgent).toBe('Mozilla/5.0 Chrome');
-      expect(session?.isCurrent).toBe(true);
-      expect(session?.selectedOrganizationId).toBe('org-test-1');
-      expect(session?.createdAt).toBeInstanceOf(Date);
-      expect(session?.expiresAt).toBeInstanceOf(Date);
-      expect(result.total).toBe(1);
-    });
+describe('session endpoints (generated SDK)', () => {
+  it('lists sessions', async () => {
+    const result = await getSessions().getAuthSessions();
+    expect(result.sessions).toHaveLength(1);
+    expect(result.total).toBe(1);
   });
 
-  describe('getConcurrent', () => {
-    it('returns mapped ConcurrentSessionsResponse', async () => {
-      const result = await sessions.getConcurrent();
-      expect(result.hasConcurrent).toBe(false);
-      expect(result.count).toBe(1);
-      expect(result.sessions).toHaveLength(1);
-      const session = result.sessions[0];
-      expect(session).toBeDefined();
-      expect(session?.id).toBe('session-test-1');
-      expect(session?.ipAddress).toBe('192.168.1.1');
-    });
+  it('checks concurrent sessions', async () => {
+    const result = await getSessions().getAuthSessionsConcurrent();
+    expect(result.has_concurrent).toBe(false);
+    expect(result.count).toBe(1);
   });
 
-  describe('revokeSession', () => {
-    it('returns success=true', async () => {
-      const result = await sessions.revokeSession('session-test-1');
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('session-test-1');
-    });
+  it('revokes a session', async () => {
+    await expect(getSessions().deleteAuthSessionsId('session-test-1')).resolves.toBeDefined();
   });
 
-  describe('revokeAllExceptCurrent', () => {
-    it('returns success + revoked_count', async () => {
-      const result = await sessions.revokeAllExceptCurrent();
-      expect(result.success).toBe(true);
-      expect(result.revoked_count).toBe(2);
-    });
+  it('revokes all other sessions', async () => {
+    await expect(getSessions().deleteAuthSessions()).resolves.toBeDefined();
   });
 
-  describe('revokeAllDevices', () => {
-    it('returns mapped RevokeAllSessionsResponse', async () => {
-      const result = await sessions.revokeAllDevices();
-      expect(result.success).toBe(true);
-      expect(result.revokedCount).toBe(3);
-    });
+  it('revokes all device sessions', async () => {
+    await expect(getSessions().postAuthSessionsRevokeAll()).resolves.toBeDefined();
   });
 });

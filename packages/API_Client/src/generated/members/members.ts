@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  MessageResult,
+  OrganizationMember,
+  OrganizationMemberListResult,
+  UpdateMemberRoleRequest
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,43 +19,104 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getMembers = () => {
+/**
+ * Returns all members of an organization
+ * @summary List organization members
+ */
 const getOrganizationsIdMembers = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<OrganizationMemberListResult>>,) => {
+      return customAxios<OrganizationMemberListResult>(
       {url: `/organizations/${id}/members`, method: 'GET'
     },
       options);
     }
-  const getOrganizationsIdMembersMemberId = (
+  /**
+ * Returns a single organization member by ID
+ * @summary Get organization member
+ */
+const getOrganizationsIdMembersMemberId = (
     id: string,
     memberId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<OrganizationMember>>,) => {
+      return customAxios<OrganizationMember>(
       {url: `/organizations/${id}/members/${memberId}`, method: 'GET'
     },
       options);
     }
-  const deleteOrganizationsIdMembersMemberId = (
+  /**
+ * Removes a member from an organization. Cannot remove the last super_admin or yourself
+ * @summary Remove organization member
+ */
+const deleteOrganizationsIdMembersMemberId = (
     id: string,
     memberId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
       {url: `/organizations/${id}/members/${memberId}`, method: 'DELETE'
     },
       options);
     }
-  const patchOrganizationsIdMembersMemberIdRole = (
+  /**
+ * Reinstates a suspended organization member
+ * @summary Reinstate member
+ */
+const postOrganizationsIdMembersMemberIdReinstate = (
     id: string,
     memberId: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/organizations/${id}/members/${memberId}/role`, method: 'PATCH'
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/organizations/${id}/members/${memberId}/reinstate`, method: 'POST'
     },
       options);
     }
-  return {getOrganizationsIdMembers,getOrganizationsIdMembersMemberId,deleteOrganizationsIdMembersMemberId,patchOrganizationsIdMembersMemberIdRole}};
+  /**
+ * Updates a member's role. Cannot change role to super_admin
+ * @summary Update member role
+ */
+const patchOrganizationsIdMembersMemberIdRole = (
+    id: string,
+    memberId: string,
+    updateMemberRoleRequest: UpdateMemberRoleRequest,
+ options?: SecondParameter<typeof customAxios<OrganizationMember>>,) => {
+      return customAxios<OrganizationMember>(
+      {url: `/organizations/${id}/members/${memberId}/role`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: updateMemberRoleRequest
+    },
+      options);
+    }
+  /**
+ * Suspends an organization member
+ * @summary Suspend member
+ */
+const postOrganizationsIdMembersMemberIdSuspend = (
+    id: string,
+    memberId: string,
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/organizations/${id}/members/${memberId}/suspend`, method: 'POST'
+    },
+      options);
+    }
+  /**
+ * Transfers organization ownership to another member
+ * @summary Transfer ownership
+ */
+const postOrganizationsIdMembersMemberIdTransfer = (
+    id: string,
+    memberId: string,
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/organizations/${id}/members/${memberId}/transfer`, method: 'POST'
+    },
+      options);
+    }
+  return {getOrganizationsIdMembers,getOrganizationsIdMembersMemberId,deleteOrganizationsIdMembersMemberId,postOrganizationsIdMembersMemberIdReinstate,patchOrganizationsIdMembersMemberIdRole,postOrganizationsIdMembersMemberIdSuspend,postOrganizationsIdMembersMemberIdTransfer}};
 export type GetOrganizationsIdMembersResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['getOrganizationsIdMembers']>>>
 export type GetOrganizationsIdMembersMemberIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['getOrganizationsIdMembersMemberId']>>>
 export type DeleteOrganizationsIdMembersMemberIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['deleteOrganizationsIdMembersMemberId']>>>
+export type PostOrganizationsIdMembersMemberIdReinstateResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['postOrganizationsIdMembersMemberIdReinstate']>>>
 export type PatchOrganizationsIdMembersMemberIdRoleResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['patchOrganizationsIdMembersMemberIdRole']>>>
+export type PostOrganizationsIdMembersMemberIdSuspendResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['postOrganizationsIdMembersMemberIdSuspend']>>>
+export type PostOrganizationsIdMembersMemberIdTransferResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getMembers>['postOrganizationsIdMembersMemberIdTransfer']>>>

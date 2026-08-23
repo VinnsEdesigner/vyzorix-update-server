@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updates, type UpdatePush } from '@vyzorix/api-client';
+import { getUpdates, type UpdatePush } from '@vyzorix/api-client';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { cancelUpdateViaGraphQL } from './_graphql-fallback';
+import { cancelUpdateViaGraphQL, normalizeWireCancelResult } from './_graphql-fallback';
 
 export function useCancelUpdate() {
   const queryClient = useQueryClient();
@@ -10,7 +10,7 @@ export function useCancelUpdate() {
   return useMutation({
     mutationFn: async (pushId: string): Promise<UpdatePush> => {
       try {
-        return await updates.cancelPush(pushId, organizationId ?? undefined);
+        return normalizeWireCancelResult(await getUpdates().postUpdatesHistoryPushIdCancel(pushId));
       } catch {
         if (!organizationId) throw new Error('No organization selected');
         return cancelUpdateViaGraphQL(organizationId, pushId);

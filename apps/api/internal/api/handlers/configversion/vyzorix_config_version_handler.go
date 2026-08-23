@@ -53,7 +53,7 @@ func versionJSON(v *configversion.ConfigVersion) gin.H {
 
 // List handles GET /v1/config-versions/:resource.
 // @Summary      List config versions
-// @Description  Returns the version history for a resource type.
+// @Description  Returns the version history for a resource type
 // @Tags         config-versions
 // @Accept       json
 // @Produce      json
@@ -91,7 +91,7 @@ func (h *Handler) List(c *gin.Context) {
 
 // Get handles GET /v1/config-versions/:resource/:version.
 // @Summary      Get config version
-// @Description  Returns one config version snapshot by resource type and version number.
+// @Description  Returns one config version snapshot by resource type and version number
 // @Tags         config-versions
 // @Accept       json
 // @Produce      json
@@ -125,7 +125,7 @@ func (h *Handler) Get(c *gin.Context) {
 // Restore handles POST /v1/config-versions/:resource/:version/restore.
 // Re-applies the version's snapshot as the live settings.
 // @Summary      Restore config version
-// @Description  Re-applies the version's snapshot as the live settings.
+// @Description  Re-applies the version's snapshot as the live settings
 // @Tags         config-versions
 // @Accept       json
 // @Produce      json

@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { registration, type RegisteredDeviceListResult } from '@vyzorix/api-client';
-import { fetchRegisteredDevicesViaGraphQL } from './_graphql-fallback';
+import { getDevices, type RegisteredDeviceListResult } from '@vyzorix/api-client';
+import { fetchRegisteredDevicesViaGraphQL, normalizeRegisteredDevice } from './_graphql-fallback';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
@@ -17,10 +17,20 @@ export function useRegisteredDevices(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.registrationDevices({ ...params, organizationId }),
-    queryFn: async () => {
-      const org = organizationId ?? undefined;
+    queryFn: async (): Promise<RegisteredDeviceListResult> => {
       try {
-        return await registration.getDevices({ ...params, organizationId: org });
+        const result = await getDevices().getDevices({ page: params?.page, limit: params?.limit });
+        const limit = params?.limit ?? 20;
+        const total = result.total ?? result.devices?.length ?? 0;
+        return {
+          devices: (result.devices ?? []).map(normalizeRegisteredDevice),
+          pagination: {
+            page: params?.page ?? 1,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
+        };
       } catch (restError) {
         if (!organizationId) throw restError;
         return fetchRegisteredDevicesViaGraphQL(organizationId, params);

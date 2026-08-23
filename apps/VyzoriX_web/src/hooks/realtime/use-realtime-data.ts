@@ -4,14 +4,13 @@ import {
   TELEMETRY_RECEIVED_SUBSCRIPTION,
   ORGANIZATION_EVENT_SUBSCRIPTION,
   COMMAND_STATUS_SUBSCRIPTION,
-  commands,
+  getCommands,
   validateTelemetry,
   telemetryFromRaw,
   type WSTelemetry,
   type WSEvent,
   type WSEventType,
   type WSCommandType,
-  type PresetCommandType,
 } from '@vyzorix/api-client';
 import { useWebSocketStore } from '@/stores';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
@@ -326,17 +325,13 @@ export function useCommandDispatch(
       if (!imei) throw new Error('Cannot dispatch command: no device IMEI');
 
       // Dispatch via the authoritative REST path; status arrives over WS.
-      const sent = await commands.send(
-        {
-          imei,
-          commandType: command as PresetCommandType,
-          params: parameters,
-        },
-        organizationId ?? undefined,
-      );
+      const sent = await getCommands().postDeviceImeiCommand(imei, {
+        command,
+        args: parameters,
+      });
 
-      const dispatchId = sent.dispatchId;
-      const createdAt = sent.createdAt;
+      const dispatchId = sent.dispatchId ?? '';
+      const createdAt = new Date(sent.serverTime ?? Date.now());
 
       setPending((prev) => [
         ...prev,

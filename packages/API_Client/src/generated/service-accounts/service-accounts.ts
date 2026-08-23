@@ -6,7 +6,16 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  CreateServiceAccountRequest,
+  CreateServiceAccountTokenRequest,
+  DeletedResult,
+  RevokedResult,
+  RotateServiceAccountTokenRequest,
+  ServiceAccount,
+  ServiceAccountListResult,
+  ServiceAccountTokenCreated,
+  ServiceAccountTokenListResult,
+  ServiceAccountTokenRotated
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,59 +25,104 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getServiceAccounts = () => {
+/**
+ * Returns all org-scoped service accounts
+ * @summary List service accounts
+ */
 const getServiceAccounts = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<ServiceAccountListResult>>,) => {
+      return customAxios<ServiceAccountListResult>(
       {url: `/service-accounts`, method: 'GET'
     },
       options);
     }
-  const postServiceAccounts = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/service-accounts`, method: 'POST'
+  /**
+ * Creates a new org-scoped service account
+ * @summary Create service account
+ */
+const postServiceAccounts = (
+    createServiceAccountRequest: CreateServiceAccountRequest,
+ options?: SecondParameter<typeof customAxios<ServiceAccount>>,) => {
+      return customAxios<ServiceAccount>(
+      {url: `/service-accounts`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createServiceAccountRequest
     },
       options);
     }
-  const deleteServiceAccountsId = (
+  /**
+ * Removes a service account and its tokens
+ * @summary Delete service account
+ */
+const deleteServiceAccountsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<DeletedResult>>,) => {
+      return customAxios<DeletedResult>(
       {url: `/service-accounts/${id}`, method: 'DELETE'
     },
       options);
     }
-  const postServiceAccountsIdRotate = (
+  /**
+ * Revokes the existing token and issues a new one. Returns the full key once
+ * @summary Rotate service account token
+ */
+const postServiceAccountsIdRotate = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/service-accounts/${id}/rotate`, method: 'POST'
+    rotateServiceAccountTokenRequest: RotateServiceAccountTokenRequest,
+ options?: SecondParameter<typeof customAxios<ServiceAccountTokenRotated>>,) => {
+      return customAxios<ServiceAccountTokenRotated>(
+      {url: `/service-accounts/${id}/rotate`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: rotateServiceAccountTokenRequest
     },
       options);
     }
-  const getServiceAccountsIdTokens = (
+  /**
+ * Returns all tokens for a service account
+ * @summary List service account tokens
+ */
+const getServiceAccountsIdTokens = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<ServiceAccountTokenListResult>>,) => {
+      return customAxios<ServiceAccountTokenListResult>(
       {url: `/service-accounts/${id}/tokens`, method: 'GET'
     },
       options);
     }
-  const deleteServiceAccountsIdTokensToken = (
+  /**
+ * Creates a new token for a service account. Returns the full key once
+ * @summary Create service account token
+ */
+const postServiceAccountsIdTokens = (
+    id: string,
+    createServiceAccountTokenRequest: CreateServiceAccountTokenRequest,
+ options?: SecondParameter<typeof customAxios<ServiceAccountTokenCreated>>,) => {
+      return customAxios<ServiceAccountTokenCreated>(
+      {url: `/service-accounts/${id}/tokens`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: createServiceAccountTokenRequest
+    },
+      options);
+    }
+  /**
+ * Revokes a single token by ID
+ * @summary Revoke service account token
+ */
+const deleteServiceAccountsIdTokensToken = (
     id: string,
     token: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<RevokedResult>>,) => {
+      return customAxios<RevokedResult>(
       {url: `/service-accounts/${id}/tokens/${token}`, method: 'DELETE'
     },
       options);
     }
-  return {getServiceAccounts,postServiceAccounts,deleteServiceAccountsId,postServiceAccountsIdRotate,getServiceAccountsIdTokens,deleteServiceAccountsIdTokensToken}};
+  return {getServiceAccounts,postServiceAccounts,deleteServiceAccountsId,postServiceAccountsIdRotate,getServiceAccountsIdTokens,postServiceAccountsIdTokens,deleteServiceAccountsIdTokensToken}};
 export type GetServiceAccountsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['getServiceAccounts']>>>
 export type PostServiceAccountsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['postServiceAccounts']>>>
 export type DeleteServiceAccountsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['deleteServiceAccountsId']>>>
 export type PostServiceAccountsIdRotateResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['postServiceAccountsIdRotate']>>>
 export type GetServiceAccountsIdTokensResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['getServiceAccountsIdTokens']>>>
+export type PostServiceAccountsIdTokensResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['postServiceAccountsIdTokens']>>>
 export type DeleteServiceAccountsIdTokensTokenResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getServiceAccounts>['deleteServiceAccountsIdTokensToken']>>>

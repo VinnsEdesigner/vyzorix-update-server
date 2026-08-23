@@ -6,7 +6,11 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  ContactPoint,
+  ContactPointListResult,
+  ContactPointRequest,
+  ContactPointTestResult,
+  DeletedResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,58 +20,87 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getContactPoints = () => {
-const getContactPoints = (
+/**
+ * Returns all org-scoped contact points
+ * @summary List contact points
+ */
+const getNotificationsContactPoints = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/contact-points`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<ContactPointListResult>>,) => {
+      return customAxios<ContactPointListResult>(
+      {url: `/notifications/contact-points`, method: 'GET'
     },
       options);
     }
-  const postContactPoints = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/contact-points`, method: 'POST'
+  /**
+ * Creates a new org-scoped contact point
+ * @summary Create contact point
+ */
+const postNotificationsContactPoints = (
+    contactPointRequest: ContactPointRequest,
+ options?: SecondParameter<typeof customAxios<ContactPoint>>,) => {
+      return customAxios<ContactPoint>(
+      {url: `/notifications/contact-points`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: contactPointRequest
     },
       options);
     }
-  const getContactPointsId = (
+  /**
+ * Returns one contact point by ID
+ * @summary Get contact point
+ */
+const getNotificationsContactPointsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/contact-points/${id}`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<ContactPoint>>,) => {
+      return customAxios<ContactPoint>(
+      {url: `/notifications/contact-points/${id}`, method: 'GET'
     },
       options);
     }
-  const deleteContactPointsId = (
+  /**
+ * Removes a contact point
+ * @summary Delete contact point
+ */
+const deleteNotificationsContactPointsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/contact-points/${id}`, method: 'DELETE'
+ options?: SecondParameter<typeof customAxios<DeletedResult>>,) => {
+      return customAxios<DeletedResult>(
+      {url: `/notifications/contact-points/${id}`, method: 'DELETE'
     },
       options);
     }
-  const patchContactPointsId = (
+  /**
+ * Replaces a contact point's mutable fields
+ * @summary Update contact point
+ */
+const patchNotificationsContactPointsId = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/contact-points/${id}`, method: 'PATCH'
+    contactPointRequest: ContactPointRequest,
+ options?: SecondParameter<typeof customAxios<ContactPoint>>,) => {
+      return customAxios<ContactPoint>(
+      {url: `/notifications/contact-points/${id}`, method: 'PATCH',
+      headers: {'Content-Type': 'application/json', },
+      data: contactPointRequest
     },
       options);
     }
-  const postContactPointsIdTest = (
+  /**
+ * Sends a one-off test notification through the contact point
+ * @summary Test contact point
+ */
+const postNotificationsContactPointsIdTest = (
     id: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/contact-points/${id}/test`, method: 'POST'
+ options?: SecondParameter<typeof customAxios<ContactPointTestResult>>,) => {
+      return customAxios<ContactPointTestResult>(
+      {url: `/notifications/contact-points/${id}/test`, method: 'POST'
     },
       options);
     }
-  return {getContactPoints,postContactPoints,getContactPointsId,deleteContactPointsId,patchContactPointsId,postContactPointsIdTest}};
-export type GetContactPointsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['getContactPoints']>>>
-export type PostContactPointsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['postContactPoints']>>>
-export type GetContactPointsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['getContactPointsId']>>>
-export type DeleteContactPointsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['deleteContactPointsId']>>>
-export type PatchContactPointsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['patchContactPointsId']>>>
-export type PostContactPointsIdTestResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['postContactPointsIdTest']>>>
+  return {getNotificationsContactPoints,postNotificationsContactPoints,getNotificationsContactPointsId,deleteNotificationsContactPointsId,patchNotificationsContactPointsId,postNotificationsContactPointsIdTest}};
+export type GetNotificationsContactPointsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['getNotificationsContactPoints']>>>
+export type PostNotificationsContactPointsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['postNotificationsContactPoints']>>>
+export type GetNotificationsContactPointsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['getNotificationsContactPointsId']>>>
+export type DeleteNotificationsContactPointsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['deleteNotificationsContactPointsId']>>>
+export type PatchNotificationsContactPointsIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['patchNotificationsContactPointsId']>>>
+export type PostNotificationsContactPointsIdTestResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getContactPoints>['postNotificationsContactPointsIdTest']>>>

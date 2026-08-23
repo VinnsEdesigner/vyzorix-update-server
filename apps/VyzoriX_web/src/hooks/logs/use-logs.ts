@@ -1,27 +1,36 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
-  logs,
+  getDevices,
   type LogEntry,
   type LogListResult,
-  type LogStats,
-  type LogParams,
-  type StatsParams,
+  type LogEventType,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { fetchDeviceLogsViaGraphQL } from './_graphql-fallback';
+import { fetchDeviceLogsViaGraphQL, normalizeDeviceLogList } from './_graphql-fallback';
+
+export interface LogParams {
+  level?: string;
+  limit?: number;
+  before?: string;
+}
 
 export function useDeviceLogs(
   imei: string | undefined,
-  params?: Omit<LogParams, 'organizationId'>,
+  params?: LogParams,
   options?: Omit<UseQueryOptions<LogListResult>, 'queryKey' | 'queryFn'>,
 ) {
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.logs(imei ?? '', { ...params, organizationId }),
-    queryFn: async () => {
+    queryFn: async (): Promise<LogListResult> => {
       try {
-        return await logs.list(imei!, { ...params, organizationId: organizationId ?? undefined });
+        const result = await getDevices().getDashboardDeviceImeiLogs(imei!, {
+          limit: params?.limit,
+          before: params?.before,
+          level: params?.level,
+        });
+        return normalizeDeviceLogList(result, imei!);
       } catch (restError) {
         if (!organizationId || !imei) throw restError;
         return fetchDeviceLogsViaGraphQL(organizationId, imei, params);
@@ -32,31 +41,4 @@ export function useDeviceLogs(
   });
 }
 
-export function useLog(
-  id: string | undefined,
-  options?: Omit<UseQueryOptions<LogEntry>, 'queryKey' | 'queryFn'>,
-) {
-  const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: ['logs', 'entry', id ?? ''],
-    queryFn: () => logs.get(id!, organizationId ?? undefined),
-    enabled: id !== undefined && id !== '' && organizationId !== null,
-    ...options,
-  });
-}
-
-export function useLogStats(
-  imei: string | undefined,
-  params?: Omit<StatsParams, 'organizationId'>,
-  options?: Omit<UseQueryOptions<LogStats>, 'queryKey' | 'queryFn'>,
-) {
-  const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.logStats(imei ?? '', { ...params, organizationId }),
-    queryFn: () => logs.stats(imei!, { ...params, organizationId: organizationId ?? undefined }),
-    enabled: imei !== undefined && imei !== '' && organizationId !== null,
-    ...options,
-  });
-}
-
-export type { LogListResult, LogEntry, LogStats, LogParams };
+export type { LogListResult, LogEntry, LogEventType };

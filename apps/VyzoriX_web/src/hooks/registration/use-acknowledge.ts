@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { registration, type AckResult, type AcknowledgeAction } from '@vyzorix/api-client';
-import { acknowledgeViaGraphQL } from './_graphql-fallback';
+import { getInbox, type AckResult, type AcknowledgeAction } from '@vyzorix/api-client';
+import { acknowledgeViaGraphQL, normalizeAckResult } from './_graphql-fallback';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
@@ -15,9 +15,8 @@ export function useAcknowledgeInbox() {
   const organizationId = useCurrentOrganizationId();
   return useMutation({
     mutationFn: async ({ imei, action, notes }: AcknowledgeInboxVariables): Promise<AckResult> => {
-      const org = organizationId ?? undefined;
       try {
-        return await registration.acknowledgeInbox(imei, action, notes, org);
+        return normalizeAckResult(await getInbox().postDeviceInboxImeiAck(imei, { action, notes }));
       } catch (restError) {
         if (!organizationId) throw restError;
         return acknowledgeViaGraphQL(organizationId, imei, action, notes);

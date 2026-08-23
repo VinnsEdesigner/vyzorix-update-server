@@ -16,7 +16,7 @@ import {
 const METRIC_LABELS: Record<(typeof ALERT_METRICS)[number], string> = {
   device_offline_count: 'Offline devices (count)',
   device_offline_percent: 'Offline devices (%)',
-  command_failure_rate: 'Command failure rate (%)',
+  command_failure_rate: 'CommandResponse failure rate (%)',
 };
 
 const STATE_COLORS: Record<string, string> = {
@@ -172,10 +172,10 @@ function AlertsPage() {
       {rules.isError && <p className="text-red-600">Failed to load rules.</p>}
 
       <div className="space-y-3">
-        {rules.data?.map((rule) => (
+        {(rules.data?.rules ?? []).map((rule) => (
           <RuleCard key={rule.id} rule={rule} />
         ))}
-        {rules.data?.length === 0 && (
+        {(rules.data?.rules ?? []).length === 0 && (
           <p className="text-muted-foreground">No alert rules yet. Create one above.</p>
         )}
       </div>

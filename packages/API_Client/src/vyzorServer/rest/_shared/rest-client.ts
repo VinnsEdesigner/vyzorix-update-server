@@ -431,6 +431,21 @@ function createAxiosInstance(config: RESTConfig): AxiosInstance {
         config.headers.set('Authorization', `Bearer ${clientState.authToken}`);
       }
 
+      // Auth-group mutations (login, register, MFA, password, email) require a
+      // CSRF token. Fetch it lazily on the first mutating call when none is
+      // cached — this replaces the ensureCSRFToken() preflight the deleted
+      // hand-rolled auth endpoints did explicitly.
+      const requestMethod = config.method?.toUpperCase();
+      const requestPath = extractRequestPath(config.url, config.baseURL);
+      if (
+        !clientState.csrfToken &&
+        requestMethod &&
+        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(requestMethod) &&
+        requestPath.startsWith('/v1/auth/')
+      ) {
+        await fetchAndSetCSRFToken();
+      }
+
       if (clientState.csrfToken) {
         config.headers.set('X-CSRF-Token', clientState.csrfToken);
       }

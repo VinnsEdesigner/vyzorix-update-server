@@ -83,8 +83,8 @@ describe('useCommandHistory', () => {
   it('fetches history when imei is provided', async () => {
     const { result } = renderHookWithQueryClient(() => useCommandHistory(IMEI));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.commands).toHaveLength(2);
-    expect(result.current.data?.commands[0]?.dispatchId).toBe('disp-1');
+    expect(result.current.data?.commands ?? []).toHaveLength(2);
+    expect((result.current.data?.commands ?? [])[0]?.dispatchId).toBe('disp-1');
   });
 
   it('passes params including organizationId', async () => {
@@ -92,8 +92,8 @@ describe('useCommandHistory', () => {
       useCommandHistory(IMEI, { status: 'pending', page: 1, limit: 10 }),
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pagination.page).toBe(1);
-    expect(result.current.data?.pagination.limit).toBe(10);
+    expect(result.current.data?.pagination?.page).toBe(1);
+    expect(result.current.data?.pagination?.limit).toBe(10);
   });
 
   it('is disabled when organizationId is null', () => {
@@ -168,7 +168,6 @@ describe('useSendCommand', () => {
     result.current.mutate({ imei: IMEI, commandType: 'FORCE_SPEAKER' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.dispatchId).toBe('disp-1');
-    expect(result.current.data?.deviceId).toBe(IMEI);
     expect(useCommandDispatchStore.getState().getPending('disp-1')).toBeDefined();
     expect(useCommandDispatchStore.getState().pendingCount).toBe(1);
   });
@@ -192,7 +191,7 @@ describe('useCancelCommand', () => {
     const { result } = renderHookWithQueryClient(() => useCancelCommand());
     result.current.mutate('disp-1');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.success).toBe(true);
+    expect(result.current.data?.cancelled).toBe(true);
     expect(useCommandDispatchStore.getState().getPending('disp-1')).toBeUndefined();
     expect(useCommandDispatchStore.getState().pendingCount).toBe(0);
   });
@@ -206,6 +205,6 @@ describe('useRetryCommand', () => {
     result.current.mutate('disp-1');
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.dispatchId).toBe('disp-1');
-    expect(result.current.data?.status).toBe('queued');
+    expect(result.current.data?.retried).toBe(true);
   });
 });

@@ -42,21 +42,21 @@ func (h *EventsHandler) findDevice(ctx context.Context, deviceID, orgID string) 
 	return h.devRepo.FindByIDAndOrganization(ctx, deviceID, orgID)
 }
 
-// GetEvents handles GET /v1/device/:imei/events.
+// GetEvents handles GET /v1/dashboard/device/:imei/events.
 // Returns event history for a device with filtering and pagination.
 // @Summary      List device events
-// @Description  Returns event history for a device with filtering and pagination.
+// @Description  Returns event history for a device with filtering and pagination
 // @Tags         devices
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Param        id     path  string  true  "device IMEI"
+// @Param        imei   path  string  true  "device IMEI"
 // @Param        limit  query int     false  "result limit"
 // @Param        before query string  false  "pagination cursor"
 // @Success      200  {object}  openapi.DeviceEventListResult  "events"
 // @Failure      400  {object}  openapi.ErrorResponse  "device not found / forbidden"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /devices/{id}/events [get]
+// @Router       /dashboard/device/{imei}/events [get]
 func (h *EventsHandler) GetEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -148,22 +148,21 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 	})
 }
 
-// GetEventsByType handles GET /v1/events/types/:type.
+// GetEventsByType handles GET /v1/dashboard/events/types/:type.
 // Returns events of a specific type across all accessible devices.
 // @Summary      List device events by type
-// @Description  Returns events of a specific type across all accessible devices.
+// @Description  Returns events of a specific type across all accessible devices
 // @Tags         devices
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Param        id     path  string  true  "device IMEI"
 // @Param        type   path  string  true  "event type"
 // @Param        limit  query int     false  "result limit (default 100, max 500)"
 // @Param        offset query int     false  "pagination offset"
 // @Success      200  {object}  openapi.DeviceEventListResult  "events"
 // @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /devices/{id}/events/{type} [get]
+// @Router       /dashboard/events/types/{type} [get]
 func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -209,20 +208,19 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 	})
 }
 
-// GetRecentEvents handles GET /v1/events/recent.
+// GetRecentEvents handles GET /v1/dashboard/events/recent.
 // Returns most recent events across all accessible devices.
 // @Summary      List recent device events
-// @Description  Returns most recent events across all accessible devices.
+// @Description  Returns most recent events across all accessible devices
 // @Tags         devices
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Param        id     path  string  true  "device IMEI"
 // @Param        limit  query int     false  "result limit (default 50, max 200)"
 // @Success      200  {object}  openapi.DeviceEventListResult  "events"
 // @Failure      401  {object}  openapi.ErrorResponse  "operator context required"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /devices/{id}/events/recent [get]
+// @Router       /dashboard/events/recent [get]
 func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -252,8 +250,20 @@ func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 	})
 }
 
-// GetEventByID handles GET /v1/events/:id.
+// GetEventByID handles GET /v1/dashboard/events/:id.
 // Returns a single event by ID.
+// @Summary      Get event by ID
+// @Description  Returns a single device event by ID
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id     path  string  true  "event ID"
+// @Success      200  {object}  openapi.DeviceEvent  "event"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "event not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /dashboard/events/{id} [get]
 func (h *EventsHandler) GetEventByID(c *gin.Context) {
 	ctx := c.Request.Context()
 

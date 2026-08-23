@@ -12,7 +12,7 @@
  * No MSW is needed — the store doesn't make HTTP calls; it wraps authContext.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { authContext, resetClientState, type LoginWithTokensResponse, type MeResponse, type OrganizationInfo, type OrganizationMembership } from '@vyzorix/api-client';
+import { authContext, resetClientState, type LoginWithTokensResult, type MeResult, type OrganizationInfo } from '@vyzorix/api-client';
 import { useAuthStore, type MfaChallenge } from '@/stores/auth-store';
 
 const MOCK_ORG: OrganizationInfo = {
@@ -21,46 +21,32 @@ const MOCK_ORG: OrganizationInfo = {
   role: 'admin',
 };
 
-const MOCK_MEMBERSHIP: OrganizationMembership = {
-  id: 'membership-1',
-  organization_id: 'org-test-1',
-  organization_name: 'Test Organization',
-  role: 'admin',
-  joined_at: '2026-01-01T00:00:00Z',
-};
-
-function makeLoginResponse(overrides: Partial<LoginWithTokensResponse> = {}): LoginWithTokensResponse {
+function makeLoginResponse(overrides: Partial<LoginWithTokensResult> = {}): LoginWithTokensResult {
   return {
     operator_id: 'operator-1',
     email: 'test@vyzorix.com',
     name: 'Test Operator',
-    role: 'admin',
     mfa_enabled: false,
     access_token: 'access-token-123',
     refresh_token: 'refresh-token-123',
     expires_at: Math.floor(Date.now() / 1000) + 3600,
-    session_id: 'session-1',
-    signing_key: 'test-signing-key',
     needs_organization: false,
     organizations: [MOCK_ORG],
-    memberships: [MOCK_MEMBERSHIP],
     last_organization_id: 'org-test-1',
     selected_organization: MOCK_ORG,
     ...overrides,
   };
 }
 
-function makeMeResponse(overrides: Partial<MeResponse> = {}): MeResponse {
+function makeMeResponse(overrides: Partial<MeResult> = {}): MeResult {
   return {
     id: 'operator-1',
     email: 'test@vyzorix.com',
     name: 'Test Operator',
-    role: 'admin',
     mfa_enabled: false,
     email_verified: true,
     needs_organization: false,
     organizations: [MOCK_ORG],
-    memberships: [MOCK_MEMBERSHIP],
     last_organization_id: 'org-test-1',
     selected_organization: MOCK_ORG,
     ...overrides,

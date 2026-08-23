@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  DownloadProgressRequest,
+  DownloadProgressResult,
+  GetCheckUpdateParams,
+  UpdateChangelogResult,
+  UpdaterCheckResult,
+  UpdaterVersionManifestResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,58 +21,87 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getUpdater = () => {
-const getUpdaterChangelog = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updater/changelog`, method: 'GET'
-    },
-      options);
-    }
-  const postUpdaterCheck = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updater/check`, method: 'POST'
-    },
-      options);
-    }
-  const getUpdaterProgress = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updater/progress`, method: 'GET'
-    },
-      options);
-    }
-  const getUpdaterVersion = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updater/version`, method: 'GET'
-    },
-      options);
-    }
-  const getUpdaterNameApk = (
+/**
+ * Serves APK files with optional Range support for resume
+ * @summary Download APK
+ */
+const getApkName = (
     name: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updater/${name}/apk`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<Blob>>,) => {
+      return customAxios<Blob>(
+      {url: `/apk/${name}`, method: 'GET',
+        responseType: 'blob'
     },
       options);
     }
-  const getUpdaterNameBin = (
+  /**
+ * Serves binary artifacts (same as APK but different path prefix)
+ * @summary Download binary artifact
+ */
+const getBinName = (
     name: string,
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/updater/${name}/bin`, method: 'GET'
+ options?: SecondParameter<typeof customAxios<Blob>>,) => {
+      return customAxios<Blob>(
+      {url: `/bin/${name}`, method: 'GET',
+        responseType: 'blob'
     },
       options);
     }
-  return {getUpdaterChangelog,postUpdaterCheck,getUpdaterProgress,getUpdaterVersion,getUpdaterNameApk,getUpdaterNameBin}};
-export type GetUpdaterChangelogResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getUpdaterChangelog']>>>
-export type PostUpdaterCheckResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['postUpdaterCheck']>>>
-export type GetUpdaterProgressResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getUpdaterProgress']>>>
-export type GetUpdaterVersionResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getUpdaterVersion']>>>
-export type GetUpdaterNameApkResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getUpdaterNameApk']>>>
-export type GetUpdaterNameBinResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getUpdaterNameBin']>>>
+  /**
+ * Returns the release changelog served to Android clients
+ * @summary OTA changelog
+ */
+const getChangelog = (
+
+ options?: SecondParameter<typeof customAxios<UpdateChangelogResult>>,) => {
+      return customAxios<UpdateChangelogResult>(
+      {url: `/changelog`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Checks if an update is available for a device by version code
+ * @summary Check for update
+ */
+const getCheckUpdate = (
+    params?: GetCheckUpdateParams,
+ options?: SecondParameter<typeof customAxios<UpdaterCheckResult>>,) => {
+      return customAxios<UpdaterCheckResult>(
+      {url: `/check-update`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Tracks download progress for analytics
+ * @summary Report download progress
+ */
+const postDownloadProgress = (
+    downloadProgressRequest: DownloadProgressRequest,
+ options?: SecondParameter<typeof customAxios<DownloadProgressResult>>,) => {
+      return customAxios<DownloadProgressResult>(
+      {url: `/download-progress`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: downloadProgressRequest
+    },
+      options);
+    }
+  /**
+ * Returns the current OTA version manifest for Android clients
+ * @summary OTA version manifest
+ */
+const getVersion = (
+
+ options?: SecondParameter<typeof customAxios<UpdaterVersionManifestResult>>,) => {
+      return customAxios<UpdaterVersionManifestResult>(
+      {url: `/version`, method: 'GET'
+    },
+      options);
+    }
+  return {getApkName,getBinName,getChangelog,getCheckUpdate,postDownloadProgress,getVersion}};
+export type GetApkNameResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getApkName']>>>
+export type GetBinNameResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getBinName']>>>
+export type GetChangelogResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getChangelog']>>>
+export type GetCheckUpdateResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getCheckUpdate']>>>
+export type PostDownloadProgressResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['postDownloadProgress']>>>
+export type GetVersionResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUpdater>['getVersion']>>>

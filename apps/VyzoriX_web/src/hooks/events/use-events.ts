@@ -1,18 +1,30 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { events, type Event, type EventResult, type EventParams } from '@vyzorix/api-client';
+import {
+  getDevices,
+  type DeviceEvent,
+  type DeviceEventListResult,
+} from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
+export interface DeviceEventsParams {
+  limit?: number;
+  before?: string;
+}
+
 export function useDeviceEvents(
   imei: string | undefined,
-  params?: Omit<EventParams, 'organizationId'>,
-  options?: Omit<UseQueryOptions<EventResult>, 'queryKey' | 'queryFn'>,
+  params?: DeviceEventsParams,
+  options?: Omit<UseQueryOptions<DeviceEventListResult>, 'queryKey' | 'queryFn'>,
 ) {
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.deviceEvents(imei ?? '', { ...params, organizationId }),
     queryFn: () =>
-      events.getDeviceEvents(imei!, { ...params, organizationId: organizationId ?? undefined }),
+      getDevices().getDashboardDeviceImeiEvents(imei!, {
+        limit: params?.limit,
+        before: params?.before,
+      }),
     enabled: imei !== undefined && imei !== '',
     ...options,
   });
@@ -20,12 +32,12 @@ export function useDeviceEvents(
 
 export function useRecentEvents(
   limit?: number,
-  options?: Omit<UseQueryOptions<Event[]>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<DeviceEventListResult>, 'queryKey' | 'queryFn'>,
 ) {
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.recentEvents(limit),
-    queryFn: () => events.getRecentEvents(limit, organizationId ?? undefined),
+    queryFn: () => getDevices().getDashboardEventsRecent(limit ? { limit } : undefined),
     enabled: organizationId !== null,
     ...options,
   });
@@ -33,17 +45,17 @@ export function useRecentEvents(
 
 export function useEventsByType(
   type: string | undefined,
-  params?: Omit<EventParams, 'types'>,
-  options?: Omit<UseQueryOptions<EventResult>, 'queryKey' | 'queryFn'>,
+  params?: { limit?: number; offset?: number },
+  options?: Omit<UseQueryOptions<DeviceEventListResult>, 'queryKey' | 'queryFn'>,
 ) {
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.events({ type, ...params, organizationId }),
     queryFn: () =>
-      events.getEventsByType(type!, {
-        ...params,
-        organizationId: organizationId ?? undefined,
-      } as Omit<EventParams, 'types'> & { organizationId?: string }),
+      getDevices().getDashboardEventsTypesType(type!, {
+        limit: params?.limit,
+        offset: params?.offset,
+      }),
     enabled: type !== undefined && type !== '' && organizationId !== null,
     ...options,
   });
@@ -51,15 +63,14 @@ export function useEventsByType(
 
 export function useEvent(
   id: string | undefined,
-  options?: Omit<UseQueryOptions<Event>, 'queryKey' | 'queryFn'>,
+  options?: Omit<UseQueryOptions<DeviceEvent>, 'queryKey' | 'queryFn'>,
 ) {
-  const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: ['events', 'entry', id ?? ''],
-    queryFn: () => events.getById(id!, organizationId ?? undefined),
+    queryFn: () => getDevices().getDashboardEventsId(id!),
     enabled: id !== undefined && id !== '',
     ...options,
   });
 }
 
-export type { Event, EventResult, EventParams };
+export type { DeviceEvent, DeviceEventListResult };

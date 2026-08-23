@@ -8,12 +8,20 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/confirmation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.CommandConfirmRequest
+	_ openapi.CommandConfirmResult
+	_ openapi.ErrorResponse
 )
 
 // Handler issues confirmation tokens for risky device commands.
@@ -43,6 +51,21 @@ type requestConfirmationRequest struct {
 // command on a device. If the command does not require confirmation, the.
 // endpoint responds with confirmation_required:false so the client can issue.
 // the command directly.
+// RequestConfirmation handles POST /v1/devices/:imei/command/confirm.
+// @Summary      Request command confirmation
+// @Description  Issues a single-use confirmation token for a risky device command
+// @Tags         commands
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.CommandConfirmRequest  true  "command name"
+// @Success      201  {object}  openapi.CommandConfirmResult  "confirmation token issued"
+// @Success      200  {object}  openapi.CommandConfirmResult  "confirmation not required"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /devices/{imei}/command/confirm [post]
 func (h *Handler) RequestConfirmation(c *gin.Context) {
 	imei := c.Param("imei")
 	if imei == "" {

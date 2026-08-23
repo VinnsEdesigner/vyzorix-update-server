@@ -5,12 +5,22 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.AdminClientListResult
+	_ openapi.AdminClientResult
+	_ openapi.UpdateAdminClientRequest
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // ClientsHandler handles admin client management endpoints.
@@ -48,6 +58,17 @@ func requireAdmin(c *gin.Context) bool {
 }
 
 // List handles GET /v1/admin/clients.
+// @Summary      List admin clients
+// @Description  Returns all OAuth clients (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.AdminClientListResult  "clients"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /admin/clients [get]
 func (h *ClientsHandler) List(c *gin.Context) {
 	if !requireAdmin(c) {
 		return
@@ -63,6 +84,20 @@ func (h *ClientsHandler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/admin/clients/:clientId.
+// @Summary      Get admin client
+// @Description  Returns a single OAuth client by ID (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        clientId  path  string  true  "client ID"
+// @Success      200  {object}  openapi.AdminClientResult  "client"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      404  {object}  openapi.ErrorResponse  "client not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /admin/clients/{clientId} [get]
 func (h *ClientsHandler) Get(c *gin.Context) {
 	if !requireAdmin(c) {
 		return
@@ -84,6 +119,20 @@ func (h *ClientsHandler) Get(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/admin/clients/:clientId.
+// @Summary      Update admin client
+// @Description  Updates mutable client fields (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        clientId  path  string  true  "client ID"
+// @Param        body  body  openapi.UpdateAdminClientRequest  true  "client update"
+// @Success      200  {object}  openapi.AdminClientResult  "updated client"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required / invalid body"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /admin/clients/{clientId} [patch]
 func (h *ClientsHandler) Update(c *gin.Context) {
 	if !requireAdmin(c) {
 		return
@@ -115,6 +164,19 @@ func (h *ClientsHandler) Update(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/admin/clients/:clientId.
+// @Summary      Delete admin client
+// @Description  Revokes a client (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        clientId  path  string  true  "client ID"
+// @Success      200  {object}  openapi.SuccessResult  "client deleted"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /admin/clients/{clientId} [delete]
 func (h *ClientsHandler) Delete(c *gin.Context) {
 	if !requireAdmin(c) {
 		return
@@ -141,7 +203,20 @@ func (h *ClientsHandler) Delete(c *gin.Context) {
 }
 
 // RotateKey handles POST /v1/admin/clients/:clientId/rotate-key.
-// Rotates the signing key with a 24-hour grace period.
+// @Summary      Rotate admin client key
+// @Description  Rotates the signing key with a 24-hour grace period (super_admin only)
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        clientId  path  string  true  "client ID"
+// @Success      200  {object}  openapi.AdminClientResult  "client with rotated key"
+// @Failure      400  {object}  openapi.ErrorResponse  "clientId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      403  {object}  openapi.ErrorResponse  "super_admin required"
+// @Failure      404  {object}  openapi.ErrorResponse  "client not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /admin/clients/{clientId}/rotate-key [post]
 func (h *ClientsHandler) RotateKey(c *gin.Context) {
 	if !requireAdmin(c) {
 		return

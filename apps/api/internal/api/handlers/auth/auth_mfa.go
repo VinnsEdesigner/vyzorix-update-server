@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -10,6 +11,23 @@ import (
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.MFAStatusResult
+	_ openapi.MFAEnrollResult
+	_ openapi.MFAVerifySetupRequest
+	_ openapi.MFAEnableRequest
+	_ openapi.MFAEnableResult
+	_ openapi.MFADisableRequest
+	_ openapi.MFABackupCodeRequest
+	_ openapi.MFABackupCodeResult
+	_ openapi.MFARegenerateResult
+	_ openapi.MFAVerifyRequest
+	_ openapi.MFAVerifyResult
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // MFAHandler handles MFA endpoints.
@@ -44,6 +62,15 @@ func (h *MFAHandler) getOperatorFromSession(c *gin.Context) (string, error) {
 }
 
 // GetMFAStatus handles GET /v1/auth/mfa/status.
+// @Summary      Get MFA status
+// @Description  Returns whether MFA is enabled for the current operator
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.MFAStatusResult  "MFA status"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/mfa/status [get]
 func (h *MFAHandler) GetMFAStatus(c *gin.Context) {
 	opID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -61,6 +88,15 @@ func (h *MFAHandler) GetMFAStatus(c *gin.Context) {
 }
 
 // EnrollMFA handles POST /v1/auth/mfa/enroll.
+// @Summary      Enroll MFA
+// @Description  Generates a new TOTP MFA secret and enrollment URI
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.MFAEnrollResult  "MFA secret and URI"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/mfa/enroll [post]
 func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 	opID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -88,6 +124,16 @@ func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 }
 
 // VerifySetupMFA handles POST /v1/auth/mfa/verify-setup.
+// @Summary      Verify MFA setup
+// @Description  Verifies a TOTP code during MFA enrollment setup
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.MFAVerifySetupRequest  true  "TOTP code"
+// @Success      200  {object}  openapi.SuccessResult  "verified"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated / invalid code"
+// @Router       /auth/mfa/verify-setup [post]
 func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 	var req struct {
 		Code  string `json:"code"`
@@ -116,6 +162,17 @@ func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 }
 
 // EnableMFA handles POST /v1/auth/mfa/enable.
+// @Summary      Enable MFA
+// @Description  Enables MFA after verifying a TOTP code and returns backup codes
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.MFAEnableRequest  true  "TOTP code"
+// @Success      200  {object}  openapi.MFAEnableResult  "enabled with backup codes"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated / invalid code"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/mfa/enable [post]
 func (h *MFAHandler) EnableMFA(c *gin.Context) {
 	var req struct {
 		Code  string `json:"code"`
@@ -160,6 +217,17 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 }
 
 // DisableMFA handles POST /v1/auth/mfa/disable.
+// @Summary      Disable MFA
+// @Description  Disables MFA after verifying a TOTP code
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.MFADisableRequest  true  "TOTP code"
+// @Success      200  {object}  openapi.SuccessResult  "disabled"
+// @Failure      400  {object}  openapi.ErrorResponse  "code required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated / invalid code"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/mfa/disable [post]
 func (h *MFAHandler) DisableMFA(c *gin.Context) {
 	var req struct {
 		Code string `json:"code"`
@@ -198,6 +266,17 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 }
 
 // VerifyBackupCode handles POST /v1/auth/mfa/verify-backup.
+// @Summary      Verify MFA backup code
+// @Description  Verifies a backup code for an operator with MFA enabled
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.MFABackupCodeRequest  true  "backup code"
+// @Success      200  {object}  openapi.MFABackupCodeResult  "valid"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated / invalid code"
+// @Failure      403  {object}  openapi.ErrorResponse  "MFA not enabled"
+// @Router       /auth/mfa/verify-backup [post]
 func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 	var req struct {
 		Code string `json:"code"`
@@ -232,6 +311,15 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 }
 
 // RegenerateBackupCodes handles POST /v1/auth/mfa/regenerate-backup-codes.
+// @Summary      Regenerate MFA backup codes
+// @Description  Generates and persists a new set of MFA backup codes
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.MFARegenerateResult  "new backup codes"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/mfa/regenerate-backup-codes [post]
 func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 	opID, err := h.getOperatorFromSession(c)
 	if err != nil {
@@ -250,6 +338,17 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 }
 
 // VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.
+// @Summary      Verify MFA (login)
+// @Description  Completes login by verifying an MFA code and creating a session with tokens
+// @Tags         mfa
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.MFAVerifyRequest  true  "operator_id + MFA code"
+// @Success      200  {object}  openapi.MFAVerifyResult  "session with tokens"
+// @Failure      400  {object}  openapi.ErrorResponse  "operator_id and code required"
+// @Failure      401  {object}  openapi.ErrorResponse  "invalid MFA code / operator invalid"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/mfa/verify [post]
 func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 	var req struct {
 		OperatorID string `json:"operator_id" binding:"required"`

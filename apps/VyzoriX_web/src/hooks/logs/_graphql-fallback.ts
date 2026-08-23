@@ -55,6 +55,29 @@ export interface LogsViaGraphQLParams {
   cursor?: string;
 }
 
+/** Maps the REST wire shape (DeviceLogEventListResult) onto the domain
+ * LogListResult so hook consumers get one type across REST and GraphQL. */
+export function normalizeDeviceLogList(
+  raw: {
+    events?: { id?: string; type?: string; timestamp?: number; data?: Record<string, unknown> }[];
+    pagination?: { hasMore?: boolean; nextCursor?: string };
+  },
+  deviceId: string,
+): LogListResult {
+  const logs = (raw.events ?? []).map((entry): LogEntry => ({
+    id: entry.id ?? '',
+    deviceId,
+    eventType: (entry.type ?? 'info') as LogEventType,
+    timestamp: toDate(entry.timestamp),
+    data: entry.data,
+  }));
+  return {
+    logs,
+    hasMore: raw.pagination?.hasMore ?? false,
+    nextCursor: raw.pagination?.nextCursor,
+  };
+}
+
 export async function fetchDeviceLogsViaGraphQL(
   organizationId: string,
   imei: string,

@@ -75,7 +75,13 @@ def convert_schema(schema, seen=None):
         elif key in ("type",):
             # Swagger2 uses "type": "object" with no properties for gin.H;
             # leave as-is so orval emits `unknown` rather than inventing fields.
-            out[key] = val
+            # Swagger2 "type": "file" → OpenAPI3 binary string (content negoti­ated
+            # by the response content type, handled in normalize_responses).
+            if val == "file":
+                out[key] = "string"
+                out["format"] = "binary"
+            else:
+                out[key] = val
         elif key in ("format", "description", "required", "title", "example"):
             out[key] = val
         elif key == "nullable":
@@ -118,14 +124,26 @@ def normalize_responses(responses):
     for code, r in responses.items():
         desc = r.get("description", "")
         schema = r.get("schema")
+        # 204 No Content (and any response with no schema and a non-empty
+        # description that isn't a placeholder) carries no body — emit a
+        # contentless response so orval doesn't generate a spurious
+        # untyped object return type.
+        if schema is None and code in ("204", "205"):
+            out[code] = {"description": desc}
+            continue
         if schema is None:
             # Endpoints with no @Success annotation: emit a permissive
             # schema so orval still generates a typed function returning
             # unknown rather than skipping the response entirely.
             schema = {"type": "object"}
+        converted = convert_schema(schema)
+        # Swagger2 "type": file → OpenAPI3 binary string served as
+        # application/octet-stream, not application/json.
+        is_binary = converted.get("format") == "binary"
+        content_type = "application/octet-stream" if is_binary else "application/json"
         out[code] = {
             "description": desc,
-            "content": {"application/json": {"schema": convert_schema(schema)}},
+            "content": {content_type: {"schema": converted}},
         }
     return out
 

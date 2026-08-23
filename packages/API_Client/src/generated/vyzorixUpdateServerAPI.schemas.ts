@@ -5,131 +5,2011 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
-export const ALERT_METRICS = ["device_offline_count", "device_offline_percent", "command_failure_rate"] as const;
-export type AlertMetric = (typeof ALERT_METRICS)[number];
+export interface APIKey {
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  is_active?: boolean;
+  key_prefix?: string;
+  last_request_at?: string;
+  name?: string;
+  operator_id?: string;
+  request_count?: number;
+  revoked_at?: string;
+  scope?: string;
+  updated_at?: string;
+}
 
-export const ALERT_CONDITIONS = ["gt", "gte", "lt", "lte"] as const;
-export type AlertCondition = (typeof ALERT_CONDITIONS)[number];
+export interface Pagination {
+  limit?: number;
+  page?: number;
+  total?: number;
+  total_pages?: number;
+}
 
-export const ALERT_STATES = ["inactive", "pending", "firing", "no_data", "error"] as const;
-export type AlertState = (typeof ALERT_STATES)[number];
+export interface APIKeyListResult {
+  keys?: APIKey[];
+  keys_created_this_month?: number;
+  monthly_limit?: number;
+  pagination?: Pagination;
+}
 
-export interface RuleRequest {
-  name: string;
-  metric: string;
-  condition: string;
-  webhook_url?: string;
-  threshold: number;
-  for_seconds?: number;
-  notify_interval_seconds?: number;
-  on_no_data?: string;
-  on_error?: string;
-  enabled?: boolean;
+export interface APIKeyWithSecret {
+  api_key?: string;
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  is_active?: boolean;
+  key_prefix?: string;
+  last_request_at?: string;
+  name?: string;
+  operator_id?: string;
+  request_count?: number;
+  revoked_at?: string;
+  scope?: string;
+  updated_at?: string;
+}
+
+export interface AdminAPIKey {
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  is_active?: boolean;
+  key_prefix?: string;
+  last_request_at?: string;
+  name?: string;
+  operator_id?: string;
+  operator_name?: string;
+  request_count?: number;
+  revoked_at?: string;
+  scope?: string;
+  updated_at?: string;
+}
+
+export interface AdminAPIKeyListResult {
+  keys?: AdminAPIKey[];
+  pagination?: Pagination;
+}
+
+export interface AdminClient {
+  clientId?: string;
+  createdAt?: string;
+  id?: string;
+  name?: string;
+}
+
+export interface AdminClientListResult {
+  clients?: AdminClient[];
+  total?: number;
+}
+
+export interface AdminClientResult {
+  client?: AdminClient;
+}
+
+export interface AdminOperator {
+  created_at?: string;
+  email?: string;
+  email_verified?: boolean;
+  id?: string;
+  mfa_enabled?: boolean;
+  name?: string;
+  role?: string;
+  updated_at?: string;
+}
+
+export interface AdminOperatorListResult {
+  operators?: AdminOperator[];
+  total?: number;
+}
+
+export interface AlertEvaluateResult {
+  rule_id?: string;
+  transitioned?: number;
+}
+
+export interface AlertHistoryEvent {
+  created_at?: string;
+  from_state?: string;
+  id?: string;
+  rule_id?: string;
+  to_state?: string;
+  value?: number;
+}
+
+export interface AlertHistoryResult {
+  events?: AlertHistoryEvent[];
 }
 
 export type AlertInstanceLabels = {[key: string]: string};
 
 export interface AlertInstance {
+  evaluated_at?: string;
   labels?: AlertInstanceLabels;
   state?: string;
   value?: number;
-  evaluated_at?: string;
 }
 
-export interface AlertRuleWithInstances {
-  id?: string;
-  org_id?: string;
-  name?: string;
-  metric?: string;
+export interface AlertRule {
   condition?: string;
-  threshold?: number;
+  created_at?: string;
+  enabled?: boolean;
   for_seconds?: number;
-  notify_interval_seconds?: number;
-  on_no_data?: string;
-  on_error?: string;
-  enabled?: boolean;
-  webhook_url?: string;
-  created_at?: string;
-  updated_at?: string;
+  id?: string;
   instances?: AlertInstance[];
-}
-
-export interface AlertHistoryEvent {
-  id?: string;
-  rule_id?: string;
-  from_state?: string;
-  to_state?: string;
-  value?: number;
-  created_at?: number;
-}
-
-export type ContactPointConfig = { [key: string]: unknown };
-
-export interface ContactPoint {
-  id?: string;
-  org_id?: string;
+  metric?: string;
   name?: string;
-  type?: string;
-  config?: ContactPointConfig;
-  enabled?: boolean;
-  created_at?: string;
+  notify_interval_seconds?: number;
+  on_error?: string;
+  on_no_data?: string;
+  org_id?: string;
+  threshold?: number;
   updated_at?: string;
+  webhook_url?: string;
 }
 
-export interface ServiceAccount {
-  id?: string;
-  org_id?: string;
+export interface AlertRuleListResult {
+  rules?: AlertRule[];
+}
+
+export interface AlertRuleRequest {
+  condition?: string;
+  enabled?: boolean;
+  for_seconds?: number;
+  metric?: string;
   name?: string;
-  description?: string;
-  scopes?: string[];
-  created_at?: string;
-  /** @nullable */
-  expires_at?: string | null;
-}
-
-export type ConfigVersionSnapshot = { [key: string]: unknown };
-
-export interface ConfigVersion {
-  id?: string;
-  org_id?: string;
-  resource_type?: string;
-  version?: number;
-  snapshot?: ConfigVersionSnapshot;
-  changed_by?: string;
-  created_at?: string;
+  notify_interval_seconds?: number;
+  on_error?: string;
+  on_no_data?: string;
+  threshold?: number;
+  webhook_url?: string;
 }
 
 export interface Annotation {
+  created_at?: string;
+  end_time?: string;
   id?: string;
   org_id?: string;
-  text?: string;
+  source?: string;
+  start_time?: string;
   tags?: string[];
-  time?: string;
-  /** @nullable */
-  time_end?: string | null;
+  text?: string;
+  title?: string;
+  updated_at?: string;
 }
 
-export type UsageStatsSnapshotToggles = {[key: string]: boolean};
+export interface AnnotationListResult {
+  annotations?: Annotation[];
+}
 
-export type UsageStatsSnapshotCounts = {
+export interface AnnotationRequest {
+  end_time?: string;
+  source?: string;
+  start_time?: string;
+  tags?: string[];
+  text?: string;
+  title?: string;
+}
+
+export interface CancelVerificationRequest {
+  email?: string;
+}
+
+export interface ChannelStatusResult {
+  active_streams?: number;
+  org?: string;
+}
+
+export interface ChannelSubscribeRequest {
+  scope?: string;
+}
+
+export interface ChannelSubscribeResult {
+  subscribed?: string;
+}
+
+export interface ChannelUnsubscribeResult {
+  unsubscribed?: string;
+}
+
+export interface ClientCredential {
+  clientId?: string;
+  createdAt?: string;
+  id?: string;
+  name?: string;
+  secret?: string;
+}
+
+export interface ClientCredentialListResult {
+  clients?: ClientCredential[];
+}
+
+export interface ClientSettings {
+  autoReconnect?: boolean;
+  deviceId?: string;
+  logBufferLimit?: number;
+  notificationsEnabled?: boolean;
+  requestTimeoutMs?: number;
+  serverUrl?: string;
+  signalHistoryLimit?: number;
+  strictHmac?: boolean;
+}
+
+export interface CommandCancelResult {
+  cancelled?: boolean;
+  dispatchId?: string;
+  serverTime?: number;
+}
+
+export interface CommandConfirmRequest {
+  command?: string;
+}
+
+export interface CommandConfirmResult {
+  confirmation_required?: boolean;
+  confirmation_token?: string;
+  expires_at?: number;
+  risk_tier?: string;
+  trace_id?: string;
+}
+
+export interface CommandDispatchResult {
+  command_id?: string;
+  device_online?: boolean;
+  dispatchId?: string;
+  serverTime?: number;
+  status?: string;
+}
+
+export interface CommandHistoryEntry {
+  command?: string;
+  completedAt?: number;
+  createdAt?: number;
+  deliveredAt?: number;
+  deviceId?: string;
+  dispatchId?: string;
+  failureReason?: string;
+  id?: string;
+  latencyMs?: number;
+  sentAt?: number;
+  status?: string;
+}
+
+export interface CommandHistoryResult {
+  commands?: CommandHistoryEntry[];
+  pagination?: Pagination;
+}
+
+export interface CommandResponse {
+  args?: number[];
+  command?: string;
+  delivery?: string;
+  deviceId?: string;
+  dispatchId?: string;
+  id?: string;
+  serverTime?: number;
+  status?: string;
+}
+
+export interface CommandPendingResult {
+  commands?: CommandResponse[];
+}
+
+export type CommandRequestArgs = { [key: string]: unknown };
+
+export interface CommandRequest {
+  args?: CommandRequestArgs;
+  command?: string;
+  confirmation_token?: string;
+  dispatch_id?: string;
+  nonce?: string;
+  signature?: string;
+  timestamp?: number;
+}
+
+export interface CommandRetryResult {
+  command_id?: string;
+  dispatchId?: string;
+  retried?: boolean;
+  serverTime?: number;
+}
+
+export interface CommandStatus {
+  command?: string;
+  command_id?: string;
+  device_id?: string;
+  dispatchId?: string;
+  serverTime?: number;
+  status?: string;
+}
+
+export interface SessionInfo {
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  ip_address?: string;
+  is_current?: boolean;
+  selected_organization_id?: string;
+  user_agent?: string;
+}
+
+export interface ConcurrentSessionsResult {
+  count?: number;
+  has_concurrent?: boolean;
+  sessions?: SessionInfo[];
+}
+
+export type ConfigVersionSnapshot = {[key: string]: unknown};
+
+export interface ConfigVersion {
+  changed_by?: string;
+  created_at?: string;
+  id?: string;
+  org_id?: string;
+  resource_type?: string;
+  snapshot?: ConfigVersionSnapshot;
+  version?: number;
+}
+
+export interface ConfigVersionListResult {
+  versions?: ConfigVersion[];
+}
+
+export type ConfigVersionRestoreResultSettings = {[key: string]: unknown};
+
+export interface ConfigVersionRestoreResult {
+  restored_to_version?: number;
+  settings?: ConfigVersionRestoreResultSettings;
+}
+
+export interface ConnectionStatusResult {
+  device_id?: string;
+  online?: boolean;
+  status?: string;
+}
+
+export interface ConnectionListResult {
+  connections?: ConnectionStatusResult[];
+}
+
+export interface ConnectionMetricsResult {
+  online_connections?: number;
+  total_connections?: number;
+}
+
+export type ContactPointConfig = {[key: string]: string};
+
+export interface ContactPoint {
+  channel?: string;
+  config?: ContactPointConfig;
+  created_at?: string;
+  enabled?: boolean;
+  id?: string;
+  name?: string;
+  org_id?: string;
+  secret?: boolean;
+  template_id?: string;
+  updated_at?: string;
+}
+
+export interface ContactPointListResult {
+  contact_points?: ContactPoint[];
+}
+
+export type ContactPointRequestConfig = {[key: string]: string};
+
+export interface ContactPointRequest {
+  channel?: string;
+  config?: ContactPointRequestConfig;
+  enabled?: boolean;
+  name?: string;
+  secret?: string;
+  template_id?: string;
+}
+
+export interface ContactPointTestResult {
+  sent?: boolean;
+  tested_at?: string;
+}
+
+export interface CreateAPIKeyRequest {
+  expires_in_days?: number;
+  name?: string;
+  scope?: string;
+}
+
+export interface CreateClientCredentialRequest {
+  name?: string;
+}
+
+export interface CreateInvitationRequest {
+  email?: string;
+  org_id?: string;
+  role?: string;
+}
+
+export interface CreateOperatorRequest {
+  email?: string;
+  name?: string;
+  password?: string;
+  role?: string;
+}
+
+export interface CreateOrganizationRequest {
+  description?: string;
+  maxMembers?: number;
+  name?: string;
+  role?: string;
+}
+
+export interface CreateServiceAccountRequest {
+  name?: string;
+}
+
+export interface CreateServiceAccountTokenRequest {
+  expires_at?: string;
+  name?: string;
+  scopes?: string[];
+  service_id?: string;
+}
+
+export interface CursorPaginationResult {
+  hasMore?: boolean;
+  limit?: number;
+  nextCursor?: string;
+}
+
+export interface DashboardStats {
+  offline_devices?: number;
+  online_devices?: number;
+  pending_devices?: number;
+  total_devices?: number;
+}
+
+export interface DeletedResult {
+  deleted?: boolean;
+}
+
+export interface DeviceConfirmRequest {
+  commandSecret?: string;
+  imei?: string;
+}
+
+export interface DeviceConfirmResult {
+  confirmed?: boolean;
+  device_id?: string;
+  imei?: string;
+  online?: boolean;
+  registered_at?: number;
+  server_time?: number;
+}
+
+export interface DeviceCountResult {
+  count?: number;
+  serverTime?: number;
+}
+
+export interface DeviceDetailResult {
+  app_version?: string;
+  device_name?: string;
+  id?: string;
+  imei?: string;
+  last_seen?: number;
+  manufacturer?: string;
+  model?: string;
+  registered_at?: number;
+  status?: string;
+}
+
+export interface DeviceDisconnectResult {
+  deviceId?: string;
+  disconnected?: boolean;
+  operatorId?: string;
+}
+
+export type DeviceEventData = {[key: string]: unknown};
+
+export interface DeviceEvent {
+  created_at?: string;
+  data?: DeviceEventData;
+  device_id?: string;
+  id?: string;
+  type?: string;
+}
+
+export interface DeviceEventListResult {
+  events?: DeviceEvent[];
+}
+
+export interface DeviceFCMTokenRequest {
+  fcmToken?: string;
+}
+
+export interface DiagnosticsConnectionInfo {
+  clientIp?: string;
+  connectedAt?: number;
+  fcmStatus?: string;
+  lastSeen?: number;
+  protocol?: string;
+  webSocketStatus?: string;
+}
+
+export interface DiagnosticsIdentityInfo {
+  deviceName?: string;
+  imei?: string;
+  manufacturer?: string;
+  model?: string;
+}
+
+export interface DiagnosticsRegistrationInfo {
+  commandSecretSet?: boolean;
+  fcmTokenRefreshedAt?: number;
+  fcmTokenValid?: boolean;
+  registeredAt?: number;
+  status?: string;
+}
+
+export interface DiagnosticsSoftwareInfo {
+  appVersion?: string;
+  buildId?: string;
+  osVersion?: string;
+  securityPatch?: string;
+}
+
+export interface DiagnosticsTelemetryInfo {
+  avgLatencyMs?: number;
+  framesToday?: number;
+  lastTimestamp?: number;
+  sessionsToday?: number;
+  totalBytesToday?: number;
+}
+
+export interface DeviceInspectionResult {
+  connection?: DiagnosticsConnectionInfo;
+  identity?: DiagnosticsIdentityInfo;
+  registration?: DiagnosticsRegistrationInfo;
+  software?: DiagnosticsSoftwareInfo;
+  telemetry?: DiagnosticsTelemetryInfo;
+}
+
+export interface DeviceListItem {
+  app_version?: string;
+  device_name?: string;
+  id?: string;
+  imei?: string;
+  last_seen?: number;
+  manufacturer?: string;
+  model?: string;
+  online?: boolean;
+  registered_at?: number;
+  status?: string;
+}
+
+export interface DeviceListResult {
+  devices?: DeviceListItem[];
+  nextCursor?: number;
+  total?: number;
+}
+
+export type DeviceLogEventData = {[key: string]: unknown};
+
+export interface DeviceLogEvent {
+  data?: DeviceLogEventData;
+  id?: string;
+  timestamp?: number;
+  type?: string;
+}
+
+export interface DeviceLogEventListResult {
+  events?: DeviceLogEvent[];
+  pagination?: CursorPaginationResult;
+}
+
+export type DeviceSettingsResultMetadata = {[key: string]: string};
+
+export interface OperatorThresholds {
+  bufferCrit?: number;
+  bufferWarn?: number;
+  riskCrit?: number;
+  riskWarn?: number;
+  thermalCrit?: number;
+  thermalWarn?: number;
+}
+
+export interface DeviceSettingsResult {
+  createdAt?: string;
+  customName?: string;
+  deviceImei?: string;
+  id?: string;
+  location?: string;
+  metadata?: DeviceSettingsResultMetadata;
+  thresholds?: OperatorThresholds;
+  updatedAt?: string;
+}
+
+export interface DeviceStatus {
+  app_version?: string;
+  device_class?: string;
+  device_id?: string;
+  last_seen?: number;
+  online?: boolean;
+}
+
+export interface DeviceTagAddedResult {
+  added?: string;
+}
+
+export interface DeviceTagRemovedResult {
+  removed?: string;
+}
+
+export interface DeviceTagsResult {
+  tags?: string[];
+}
+
+export interface DeviceTransferRequest {
+  target_organization_id?: string;
+}
+
+export interface DeviceTransferResult {
+  device_id?: string;
+  from_org_id?: string;
+  message?: string;
+  success?: boolean;
+  to_org_id?: string;
+}
+
+export interface DeviceUpdateStatusRequest {
+  deviceId?: string;
+  dispatchId?: string;
+  error?: string;
+  status?: string;
+}
+
+export interface DeviceUpdateStatusResponse {
+  acknowledged?: boolean;
+  message?: string;
+}
+
+export interface DownloadProgressRequest {
+  device_id?: string;
+  progress?: number;
+  version?: string;
+}
+
+export interface DownloadProgressResult {
+  recorded?: boolean;
+}
+
+export interface EmailNotifications {
+  commandFailed?: boolean;
+  deviceOffline?: boolean;
+  deviceOnline?: boolean;
+  registrationRequest?: boolean;
+  thresholdBreach?: boolean;
+  updateAvailable?: boolean;
+}
+
+export interface EmailVerifyRequest {
+  token?: string;
+}
+
+export interface EmailVerifyResult {
+  email?: string;
+  verified?: boolean;
+}
+
+export type ErrorResponseFields = {[key: string]: string};
+
+export interface ErrorResponse {
+  docs?: string;
+  error?: string;
+  fields?: ErrorResponseFields;
+  message?: string;
+  trace_id?: string;
+}
+
+export interface ForgotPasswordRequest {
+  email?: string;
+}
+
+export interface TelemetryFrameDTO {
+  bufferLevel?: number;
+  riskScore?: number;
+  thermalTemp?: number;
+  timestamp?: number;
+  uptime?: number;
+}
+
+export interface MetricStatsDTO {
+  avg?: number;
+  current?: number;
+  max?: number;
+  min?: number;
+}
+
+export interface TelemetryStatsDTO {
+  bufferLevel?: MetricStatsDTO;
+  riskScore?: MetricStatsDTO;
+  thermalTemp?: MetricStatsDTO;
+}
+
+export interface GetTelemetryResponse {
+  frames?: TelemetryFrameDTO[];
+  stats?: TelemetryStatsDTO;
+}
+
+export type GlobalAPIKeyStatsResultRequestsByScope = {[key: string]: number};
+
+export interface TopOperatorStat {
+  active_key_count?: number;
+  operator_id?: string;
+  operator_name?: string;
+  total_requests?: number;
+}
+
+export interface GlobalAPIKeyStatsResult {
+  active_keys?: number;
+  max_per_month?: number;
+  requests_by_scope?: GlobalAPIKeyStatsResultRequestsByScope;
+  revoked_keys?: number;
+  top_operators?: TopOperatorStat[];
+  total_keys?: number;
+  total_operators?: number;
+  total_requests?: number;
+}
+
+export interface InboxAckRequest {
+  action?: string;
+  notes?: string;
+}
+
+export interface InboxAckResult {
+  acknowledgedAt?: number;
+  approvedAt?: number;
+  approvingAt?: number;
+  commandSecret?: string;
+  fcmPushSent?: boolean;
+  id?: string;
+  imei?: string;
+  notes?: string;
+  rejectedAt?: number;
+  status?: string;
+}
+
+export interface InboxEntryResponse {
+  acknowledgedAt?: number;
+  appVersion?: string;
+  approvedAt?: number;
+  approvingAt?: number;
+  createdAt?: number;
+  deviceClass?: string;
+  deviceName?: string;
+  fcmToken?: string;
+  firebaseInstallId?: string;
+  id?: string;
+  imei?: string;
+  manufacturer?: string;
+  model?: string;
+  notes?: string;
+  operatorId?: string;
+  osVersion?: string;
+  rejectedAt?: number;
+  status?: string;
+}
+
+export interface InboxListResult {
+  pagination?: Pagination;
+  requests?: InboxEntryResponse[];
+}
+
+export interface InboxRequest {
+  appVersion?: string;
+  deviceClass?: string;
+  deviceName?: string;
+  fcmToken?: string;
+  firebaseInstallId?: string;
+  idempotencyKey?: string;
+  imei?: string;
+  manufacturer?: string;
+  model?: string;
+  osVersion?: string;
+}
+
+export interface InboxResendResult {
+  fcmPushSent?: boolean;
+  id?: string;
+  imei?: string;
+  status?: string;
+}
+
+export interface Invitation {
+  email?: string;
+  expires_at?: string;
+  id?: string;
+  invited_at?: string;
+  invited_by?: string;
+  organization_id?: string;
+  role?: string;
+  status?: string;
+  token?: string;
+}
+
+export interface InvitationByTokenResult {
+  email?: string;
+  expires_at?: string;
+  id?: string;
+  invited_at?: string;
+  inviter_name?: string;
+  organization_id?: string;
+  organization_name?: string;
+  role?: string;
+  status?: string;
+}
+
+export interface InvitationListResult {
+  invitations?: Invitation[];
+}
+
+export interface LockoutStatusResult {
+  attempts?: number;
+  locked?: boolean;
+  max_attempts?: number;
+  reason?: string;
+  unlock_at?: number;
+}
+
+export interface LoginRequest {
+  device_fingerprint?: string;
+  email?: string;
+  password?: string;
+  remember?: boolean;
+}
+
+export interface OrganizationInfo {
+  id?: string;
+  name?: string;
+  role?: string;
+}
+
+export interface LoginResult {
+  device_fingerprint?: string;
+  email?: string;
+  last_organization_id?: string;
+  mfa_enabled?: boolean;
+  mfa_session?: string;
+  name?: string;
+  needs_organization?: boolean;
+  operator_id?: string;
+  organizations?: OrganizationInfo[];
+  requires_mfa?: boolean;
+  selected_organization?: OrganizationInfo;
+  signing_key?: string;
+}
+
+export interface LoginWithTokensResult {
+  access_token?: string;
+  device_fingerprint?: string;
+  email?: string;
+  expires_at?: number;
+  last_organization_id?: string;
+  mfa_enabled?: boolean;
+  mfa_session?: string;
+  name?: string;
+  needs_organization?: boolean;
+  operator_id?: string;
+  organizations?: OrganizationInfo[];
+  refresh_token?: string;
+  requires_mfa?: boolean;
+  selected_organization?: OrganizationInfo;
+  session_id?: string;
+  signing_key?: string;
+}
+
+export interface LogoutRequest {
+  all_devices?: boolean;
+}
+
+export interface MFABackupCodeRequest {
+  code?: string;
+}
+
+export interface MFABackupCodeResult {
+  valid?: boolean;
+}
+
+export interface MFADisableRequest {
+  code?: string;
+}
+
+export interface MFAEnableRequest {
+  code?: string;
+  token?: string;
+}
+
+export interface MFAEnableResult {
+  backup_codes?: string[];
+  success?: boolean;
+}
+
+export interface MFAEnrollResult {
+  secret?: string;
+  uri?: string;
+}
+
+export interface MFAOperator {
+  email?: string;
+  id?: string;
+  mfa_enabled?: boolean;
+  name?: string;
+  role?: string;
+}
+
+export interface MFARegenerateResult {
+  backup_codes?: string[];
+}
+
+export interface MFAStatusResult {
+  mfa_enabled?: boolean;
+}
+
+export interface MFAVerifyRequest {
+  code?: string;
+  operator_id?: string;
+}
+
+export interface MFAVerifyResult {
+  access_token?: string;
+  expires_at?: number;
+  operator?: MFAOperator;
+  refresh_token?: string;
+  session_id?: string;
+  signing_key?: string;
+  success?: boolean;
+}
+
+export interface MFAVerifySetupRequest {
+  code?: string;
+  token?: string;
+}
+
+export interface MeResult {
+  email?: string;
+  email_verified?: boolean;
+  id?: string;
+  last_organization_id?: string;
+  mfa_enabled?: boolean;
+  name?: string;
+  needs_organization?: boolean;
+  organizations?: OrganizationInfo[];
+  selected_organization?: OrganizationInfo;
+}
+
+export interface MessageResult {
+  message?: string;
+}
+
+export interface MetricAggregateResult {
+  avg?: number;
+  max?: number;
+  min?: number;
+}
+
+export interface PushNotifications {
+  commandFailed?: boolean;
+  deviceOffline?: boolean;
+  deviceOnline?: boolean;
+  registrationRequest?: boolean;
+  thresholdBreach?: boolean;
+  updateAvailable?: boolean;
+}
+
+export interface WebhookNotifications {
+  enabled?: boolean;
+  secret?: string;
+  types?: string[];
+  url?: string;
+}
+
+export interface NotificationSettings {
+  channels?: string[];
+  email?: EmailNotifications;
+  enabled?: boolean;
+  push?: PushNotifications;
+  webhook?: WebhookNotifications;
+}
+
+export interface NotificationUpdateRequest {
+  channels?: string[];
+  email?: EmailNotifications;
+  enabled?: boolean;
+  push?: PushNotifications;
+  webhook?: WebhookNotifications;
+}
+
+export interface OperatorAPIKeyStatsResult {
+  active_keys?: number;
+  keys_created_this_month?: number;
+  monthly_limit?: number;
+  operator_id?: string;
+  revoked_keys?: number;
+  total_keys?: number;
+}
+
+export interface OperatorSettingsResult {
+  client?: ClientSettings;
+  notifications?: NotificationSettings;
+  thresholds?: OperatorThresholds;
+}
+
+export interface OperatorSettingsResultLegacy {
+  client?: ClientSettings;
+  email?: string;
+  email_verified?: boolean;
+  id?: string;
+  mfa_enabled?: boolean;
+  name?: string;
+  role?: string;
+}
+
+export interface Organization {
+  created_at?: string;
+  created_by?: string;
+  description?: string;
+  id?: string;
+  is_active?: boolean;
+  max_members?: number;
+  member_count?: number;
+  name?: string;
+  updated_at?: string;
+}
+
+export interface OrganizationListResult {
+  organizations?: Organization[];
+}
+
+export interface OrganizationMember {
+  id?: string;
+  invited_by?: string;
+  joined_at?: string;
+  operator_email?: string;
+  operator_id?: string;
+  operator_name?: string;
+  organization_id?: string;
+  removed_at?: string;
+  role?: string;
+  status?: string;
+}
+
+export interface OrganizationMemberListResult {
+  members?: OrganizationMember[];
+}
+
+export interface OrganizationSettingsResult {
+  alertCooldownMinutes?: number;
+  createdAt?: string;
+  dateFormat?: string;
+  defaultThresholds?: OperatorThresholds;
+  id?: string;
+  organizationId?: string;
+  timezone?: string;
+  updatedAt?: string;
+}
+
+export interface PollVerificationResult {
+  email?: string;
+  emailError?: string;
+  status?: string;
+}
+
+export type PreferencesResultPreferences = {[key: string]: unknown};
+
+export interface PreferencesResult {
+  preferences?: PreferencesResultPreferences;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token?: string;
+}
+
+export interface RefreshTokenResult {
+  access_token?: string;
+  expires_at?: number;
+  refresh_token?: string;
+  session_id?: string;
+}
+
+export interface RegisterRequest {
+  email?: string;
+  name?: string;
+  password?: string;
+  role?: string;
+}
+
+export interface RegisterResult {
+  email?: string;
+  name?: string;
+  operator_id?: string;
+}
+
+export interface ResendVerificationRequest {
+  email?: string;
+}
+
+export interface ResetPasswordRequest {
+  newPassword?: string;
+  token?: string;
+}
+
+export interface RevokeResult {
+  message?: string;
+  revoked_count?: number;
+  success?: boolean;
+}
+
+export interface RevokedResult {
+  revoked?: boolean;
+}
+
+export interface RotateServiceAccountTokenRequest {
+  expires_at?: string;
+  name?: string;
+  scopes?: string[];
+}
+
+export interface SelectOrganizationRequest {
+  organization_id?: string;
+}
+
+export interface SelectOrganizationResult {
+  organization_id?: string;
+  organization_name?: string;
+  role?: string;
+}
+
+export interface ServiceAccount {
+  created_at?: string;
+  enabled?: boolean;
+  id?: string;
+  name?: string;
+  org_id?: string;
+  updated_at?: string;
+}
+
+export interface ServiceAccountListResult {
+  service_accounts?: ServiceAccount[];
+}
+
+export interface ServiceAccountToken {
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  key_prefix?: string;
+  name?: string;
+  revoked_at?: string;
+  scopes?: string[];
+  service_id?: string;
+  valid?: boolean;
+}
+
+export interface ServiceAccountTokenCreated {
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  key_prefix?: string;
+  name?: string;
+  revoked_at?: string;
+  scopes?: string[];
+  secret?: string;
+  service_id?: string;
+  valid?: boolean;
+}
+
+export interface ServiceAccountTokenListResult {
+  tokens?: ServiceAccountToken[];
+}
+
+export interface ServiceAccountTokenRotated {
+  created_at?: string;
+  expires_at?: string;
+  id?: string;
+  key_prefix?: string;
+  name?: string;
+  revoked_at?: string;
+  scopes?: string[];
+  secret?: string;
+  service_id?: string;
+  valid?: boolean;
+}
+
+export interface SessionListResult {
+  sessions?: SessionInfo[];
+  total?: number;
+}
+
+export interface SetDeviceTagsRequest {
+  tags?: string[];
+}
+
+export type SettingsResponseResultPreferences = {[key: string]: unknown};
+
+export interface SettingsResponseResult {
+  client?: ClientSettings;
+  notifications?: NotificationSettings;
+  preferences?: SettingsResponseResultPreferences;
+}
+
+export interface SuccessResult {
+  message?: string;
+  success?: boolean;
+}
+
+export interface SupportBundleResult {
+  device_count?: number;
+  generated_at?: string;
+  go_max_procs?: number;
+  go_num_cpu?: number;
+  go_version?: string;
+  goroutines?: number;
+  hostname?: string;
+  operator_count?: number;
+  org_count?: number;
+  schema_version?: number;
+}
+
+export type TelemetryEntryMetrics = {[key: string]: number};
+
+export interface TelemetryEntry {
+  metrics?: TelemetryEntryMetrics;
+  timestamp?: string;
+}
+
+export interface TelemetryHistoryEntry {
+  bufferLevel?: number;
+  deviceId?: string;
+  id?: string;
+  payload?: string;
+  receivedAt?: string;
+  riskScore?: number;
+  thermalTemp?: number;
+}
+
+export interface TelemetryHistoryQueryResult {
+  deviceId?: string;
+  endTime?: number;
+  entries?: TelemetryHistoryEntry[];
+  queryTime?: number;
+  startTime?: number;
+  totalCount?: number;
+}
+
+export interface TelemetryStatsResult {
+  bufferLevel?: MetricAggregateResult;
+  deviceId?: string;
+  latestEntry?: string;
+  oldestEntry?: string;
+  riskScore?: MetricAggregateResult;
+  sampleCount?: number;
+  thermalTemp?: MetricAggregateResult;
+}
+
+export interface ThresholdUpdateRequest {
+  bufferCrit?: number;
+  bufferWarn?: number;
+  riskCrit?: number;
+  riskWarn?: number;
+  thermalCrit?: number;
+  thermalWarn?: number;
+}
+
+export interface ThresholdsResult {
+  thresholds?: OperatorThresholds;
+}
+
+export type TimelineEventResultData = {[key: string]: unknown};
+
+export interface TimelineEventResult {
+  data?: TimelineEventResultData;
+  deviceId?: string;
+  id?: string;
+  timestamp?: string;
+  type?: string;
+}
+
+export interface TimelineResult {
+  events?: TimelineEventResult[];
+  hasMore?: boolean;
+  nextCursor?: string;
+}
+
+export interface UpdateAPIKeyRequest {
+  name?: string;
+  scope?: string;
+}
+
+export interface UpdateAdminClientRequest {
+  allowed_origins?: string[];
+  allowed_paths?: string[];
+  is_active?: boolean;
+  name?: string;
+  rate_limit?: number;
+}
+
+export interface UpdateCancelPushResult {
+  cancelledAt?: number;
+  cancelledBy?: string;
+  id?: string;
+  status?: string;
+}
+
+export interface UpdateChangelogEntryResult {
+  date?: string;
+  notes?: string;
+  type?: string;
+  version?: string;
+}
+
+export interface UpdateChangelogResult {
+  changelog?: UpdateChangelogEntryResult[];
+}
+
+export interface UsageStatsCounts {
+  alert_rules?: number;
+  annotations?: number;
+  contact_points?: number;
   devices?: number;
   operators?: number;
   organizations?: number;
   service_accounts?: number;
-  alert_rules?: number;
-  contact_points?: number;
-  annotations?: number;
-};
+}
+
+export type UsageStatsSnapshotToggles = {[key: string]: boolean};
 
 export interface UsageStatsSnapshot {
   collected_at?: string;
+  counts?: UsageStatsCounts;
   toggles?: UsageStatsSnapshotToggles;
-  counts?: UsageStatsSnapshotCounts;
 }
+
+export interface UpdateCheckerResult {
+  current_version?: string;
+  latest_version?: string;
+  release_name?: string;
+  release_url?: string;
+  update_available?: boolean;
+  usage_stats?: UsageStatsSnapshot;
+}
+
+export interface UpdateClientCredentialRequest {
+  name?: string;
+}
+
+export type UpdateDeviceSettingsRequestMetadata = {[key: string]: string};
+
+export interface UpdateDeviceSettingsRequest {
+  customName?: string;
+  location?: string;
+  metadata?: UpdateDeviceSettingsRequestMetadata;
+  thresholds?: OperatorThresholds;
+}
+
+export interface UpdateDeviceStatusInfo {
+  currentVersion?: string;
+  needsUpdate?: boolean;
+}
+
+export interface UpdateVersionResponse {
+  apkFilename?: string;
+  apkSize?: number;
+  isLatest?: boolean;
+  releaseNotes?: string;
+  releaseType?: string;
+  releasedAt?: number;
+  sha256?: string;
+  status?: string;
+  version?: string;
+}
+
+export interface UpdateExportResult {
+  changelog?: UpdateChangelogEntryResult[];
+  exportedAt?: number;
+  format?: string;
+  versions?: UpdateVersionResponse[];
+}
+
+export interface UpdateFailedDevice {
+  deviceId?: string;
+  reason?: string;
+}
+
+export interface UpdateInboxEntryRequest {
+  status?: string;
+}
+
+export interface UpdateLatestVersionInfo {
+  apkFilename?: string;
+  apkSize?: number;
+  releaseType?: string;
+  releasedAt?: number;
+  sha256?: string;
+  version?: string;
+}
+
+export interface UpdateMemberRoleRequest {
+  role?: string;
+}
+
+export interface UpdateNameRequest {
+  name?: string;
+}
+
+export interface UpdateOperatorRequest {
+  email?: string;
+  email_verified?: boolean;
+  mfa_enabled?: boolean;
+  name?: string;
+  role?: string;
+}
+
+export interface UpdateOrganizationRequest {
+  isActive?: boolean;
+  maxMembers?: number;
+  name?: string;
+}
+
+export interface UpdateOrganizationSettingsRequest {
+  alertCooldownMinutes?: number;
+  dateFormat?: string;
+  defaultThresholds?: OperatorThresholds;
+  timezone?: string;
+}
+
+export interface UpdatePushDetailDevice {
+  acknowledgedAt?: number;
+  deviceId?: string;
+  deviceName?: string;
+  error?: string;
+  id?: string;
+  sentAt?: number;
+  status?: string;
+}
+
+export interface UpdatePushDetailResult {
+  cancelledAt?: number;
+  completedAt?: number;
+  devices?: UpdatePushDetailDevice[];
+  id?: string;
+  initiatedAt?: number;
+  initiatedBy?: string;
+  installType?: string;
+  scheduledAt?: number;
+  status?: string;
+  version?: string;
+}
+
+export interface UpdatePushDeviceCounts {
+  acknowledged?: number;
+  failed?: number;
+  pending?: number;
+  sent?: number;
+  total?: number;
+}
+
+export interface UpdatePushHistoryDeviceCounts {
+  acknowledged?: number;
+  failed?: number;
+  pending?: number;
+  sent?: number;
+}
+
+export interface UpdatePushHistoryEntry {
+  cancelledAt?: number;
+  completedAt?: number;
+  deviceCount?: number;
+  devices?: UpdatePushHistoryDeviceCounts;
+  id?: string;
+  initiatedAt?: number;
+  initiatedBy?: string;
+  installType?: string;
+  scheduledAt?: number;
+  status?: string;
+  version?: string;
+}
+
+export interface UpdatePushHistoryListResult {
+  pagination?: Pagination;
+  pushes?: UpdatePushHistoryEntry[];
+}
+
+export interface UpdatePushRequest {
+  deviceIds?: string[];
+  installType?: string;
+  scheduledAt?: number;
+  version?: string;
+}
+
+export interface UpdatePushResult {
+  deviceIds?: string[];
+  devices?: UpdatePushDeviceCounts;
+  failedDevices?: UpdateFailedDevice[];
+  initiatedAt?: number;
+  initiatedBy?: string;
+  installType?: string;
+  pushId?: string;
+  scheduledAt?: number;
+  status?: string;
+  version?: string;
+}
+
+export interface UpdateSettingsRequest {
+  client?: ClientSettings;
+  name?: string;
+  reset?: boolean;
+}
+
+export interface UpdateSyncStatusInfo {
+  error?: string;
+  lastSyncAt?: number;
+  nextSyncAt?: number;
+  status?: string;
+  versionsFound?: number;
+}
+
+export interface UpdateStatusResult {
+  device?: UpdateDeviceStatusInfo;
+  latest?: UpdateLatestVersionInfo;
+  sync?: UpdateSyncStatusInfo;
+}
+
+export interface UpdateSyncResponse {
+  message?: string;
+  startedAt?: number;
+  status?: string;
+  versionsFound?: number;
+}
+
+export interface UpdateSyncStatusResult {
+  error?: string;
+  lastSyncAt?: number;
+  nextSyncAt?: number;
+  status?: string;
+  versionsFound?: number;
+}
+
+export interface UpdateVersionListResult {
+  pagination?: Pagination;
+  versions?: UpdateVersionResponse[];
+}
+
+export interface UpdaterCheckResult {
+  apk_filename?: string;
+  apk_sha256?: string;
+  apk_size_bytes?: number;
+  release_notes?: string;
+  update_available?: boolean;
+  version?: string;
+  version_code?: number;
+}
+
+export interface UpdaterVersionManifestResult {
+  apk_filename?: string;
+  apk_sha256?: string;
+  apk_size_bytes?: number;
+  release_notes?: string;
+  version?: string;
+  version_code?: number;
+}
+
+export interface WebhookSecretResult {
+  secret?: string;
+}
+
+export interface WebhookTestRequest {
+  url?: string;
+}
+
+export interface WebhookTestResult {
+  error?: string;
+  message?: string;
+  responseTime?: number;
+  statusCode?: number;
+  success?: boolean;
+}
+
+export type GetAdminApiKeysParams = {
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20)
+ */
+limit?: number;
+/**
+ * filter by operator ID
+ */
+operator_id?: string;
+/**
+ * search by key name
+ */
+search?: string;
+};
+
+export type GetAdminApiKeysOperatorOperatorIdParams = {
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20)
+ */
+limit?: number;
+};
 
 export type GetAlertsRulesIdHistoryParams = {
 /**
  * event limit (default 200)
+ */
+limit?: number;
+};
+
+export type GetAnnotationsParams = {
+/**
+ * filter by tag
+ */
+tag?: string;
+/**
+ * result limit (default 200)
+ */
+limit?: number;
+/**
+ * RFC3339 lower bound
+ */
+start_time?: string;
+/**
+ * RFC3339 upper bound
+ */
+end_time?: string;
+};
+
+export type GetAuthApiKeysParams = {
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20)
+ */
+limit?: number;
+};
+
+export type PostAuthOauthGithubParams = {
+/**
+ * post-OAuth redirect URL
+ */
+redirect_url?: string;
+};
+
+export type PostAuthOauthGoogleParams = {
+/**
+ * post-OAuth redirect URL
+ */
+redirect_url?: string;
+};
+
+export type GetAuthPollVerificationParams = {
+/**
+ * verification token
+ */
+token: string;
+};
+
+export type GetAuthResendVerificationParams = {
+/**
+ * operator email
+ */
+email: string;
+};
+
+export type GetAuthVerifyEmailParams = {
+/**
+ * verification token
+ */
+token: string;
+};
+
+export type PostChannelsUnsubscribeParams = {
+/**
+ * channel scope
+ */
+scope: string;
+};
+
+export type GetCheckUpdateParams = {
+/**
+ * client version code
+ */
+version_code?: number;
+};
+
+export type GetConfigVersionsResourceParams = {
+/**
+ * result limit (default 50)
+ */
+limit?: number;
+};
+
+export type GetDashboardDeviceImeiCommandsParams = {
+/**
+ * filter by command status
+ */
+status?: string;
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20, max 100)
+ */
+limit?: number;
+/**
+ * epoch-millis lower bound
+ */
+startTime?: number;
+/**
+ * epoch-millis upper bound
+ */
+endTime?: number;
+};
+
+export type GetDashboardDeviceImeiEventsParams = {
+/**
+ * result limit
+ */
+limit?: number;
+/**
+ * pagination cursor
+ */
+before?: string;
+};
+
+export type GetDashboardDeviceImeiLogsParams = {
+/**
+ * result limit
+ */
+limit?: number;
+/**
+ * pagination cursor
+ */
+before?: string;
+/**
+ * log level filter
+ */
+level?: string;
+};
+
+export type GetDashboardDeviceImeiMetricsParams = {
+/**
+ * time window (e.g. 1h, 24h)
+ */
+window?: string;
+};
+
+export type GetDashboardDeviceImeiMetricsExportParams = {
+/**
+ * json or csv (default json)
+ */
+format?: string;
+};
+
+export type GetDashboardDeviceImeiTelemetryParams = {
+/**
+ * max frames (default 100)
+ */
+limit?: number;
+};
+
+export type GetDashboardDevicesParams = {
+/**
+ * pagination cursor (offset)
+ */
+cursor?: number;
+/**
+ * page size (default 50)
+ */
+limit?: number;
+/**
+ * search by IMEI/name
+ */
+search?: string;
+/**
+ * filter by status
+ */
+status?: string;
+};
+
+export type GetDashboardDevicesOperatorParams = {
+/**
+ * operator ID
+ */
+operatorId?: string;
+};
+
+export type GetDashboardEventsRecentParams = {
+/**
+ * result limit (default 50, max 200)
+ */
+limit?: number;
+};
+
+export type GetDashboardEventsTypesTypeParams = {
+/**
+ * result limit (default 100, max 500)
+ */
+limit?: number;
+/**
+ * pagination offset
+ */
+offset?: number;
+};
+
+export type GetDeviceInboxParams = {
+/**
+ * filter by status
+ */
+status?: string;
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20)
+ */
+limit?: number;
+};
+
+export type GetDeviceImeiTimelineParams = {
+/**
+ * filter by event type
+ */
+eventType?: string;
+/**
+ * epoch-millis lower bound
+ */
+startTime?: number;
+/**
+ * epoch-millis upper bound
+ */
+endTime?: number;
+/**
+ * pagination cursor
+ */
+cursor?: string;
+/**
+ * result limit
+ */
+limit?: number;
+};
+
+export type GetDevicesParams = {
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20)
+ */
+limit?: number;
+/**
+ * search by IMEI/name
+ */
+search?: string;
+};
+
+export type DeleteDevicesImeiParams = {
+/**
+ * hard delete (default false)
+ */
+hard?: boolean;
+};
+
+export type GetOrganizationsIdInvitationsParams = {
+/**
+ * filter by status
+ */
+status?: string;
+};
+
+export type GetTelemetryHistoryParams = {
+/**
+ * device IMEI
+ */
+deviceId: string;
+/**
+ * epoch-millis lower bound
+ */
+startTime?: number;
+/**
+ * epoch-millis upper bound
+ */
+endTime?: number;
+/**
+ * result limit (default 1000)
+ */
+limit?: number;
+/**
+ * response format
+ */
+format?: string;
+};
+
+export type GetTelemetryHistoryExportParams = {
+/**
+ * device IMEI
+ */
+deviceId: string;
+/**
+ * epoch-millis lower bound
+ */
+startTime?: number;
+/**
+ * epoch-millis upper bound
+ */
+endTime?: number;
+/**
+ * result limit (default 1000)
+ */
+limit?: number;
+};
+
+export type GetUpdatesChangelogParams = {
+/**
+ * version filter (default 'all')
+ */
+version?: string;
+};
+
+export type GetUpdatesExportParams = {
+/**
+ * json or csv (default json)
+ */
+format?: string;
+/**
+ * version filter
+ */
+version?: string;
+/**
+ * include changelog (default true)
+ */
+includeChangelog?: boolean;
+/**
+ * include APK metadata (default true)
+ */
+includeApkInfo?: boolean;
+};
+
+export type GetUpdatesHistoryParams = {
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20)
+ */
+limit?: number;
+};
+
+export type GetUpdatesVersionsParams = {
+/**
+ * filter by version status
+ */
+status?: string;
+/**
+ * page number (default 1)
+ */
+page?: number;
+/**
+ * page size (default 20, max 50)
  */
 limit?: number;
 };

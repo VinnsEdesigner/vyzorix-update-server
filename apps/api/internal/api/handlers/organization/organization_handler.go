@@ -16,6 +16,8 @@ import (
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
+	_ openapi.Organization
+	_ openapi.OrganizationListResult
 	_ openapi.CreateOrganizationRequest
 	_ openapi.SelectOrganizationRequest
 	_ openapi.ErrorResponse
@@ -43,13 +45,13 @@ func NewOrganizationHandler(
 
 // Create handles POST /v1/organizations.
 // @Summary      Create organization
-// @Description  Creates a new organization and makes the caller its owner.
+// @Description  Creates a new organization and makes the caller its owner
 // @Tags         organizations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        body  body  openapi.CreateOrganizationRequest  true  "organization definition"
-// @Success      201  {object}  organization.Organization  "created organization"
+// @Success      201  {object}  openapi.Organization  "created organization"
 // @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
 // @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
@@ -117,10 +119,15 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 }
 
 // List handles GET /v1/organizations.
+// @Summary      List organizations
+// @Description  Returns all organizations the operator is a member of
 // @Tags         organizations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.OrganizationListResult  "organizations"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations [get]
 func (h *OrganizationHandler) List(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -155,10 +162,18 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 }
 
 // Get handles GET /v1/organizations/:id.
+// @Summary      Get organization
+// @Description  Returns one organization by ID with member count
 // @Tags         organizations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "organization ID"
+// @Success      200  {object}  openapi.Organization  "organization"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations/{id} [get]
 func (h *OrganizationHandler) Get(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -214,10 +229,19 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 }
 
 // Update handles PATCH /v1/organizations/:id.
+// @Summary      Update organization
+// @Description  Updates mutable organization fields. Sensitive fields (maxMembers, isActive) require super_admin
 // @Tags         organizations
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "organization ID"
+// @Param        body  body  openapi.UpdateOrganizationRequest  true  "organization update"
+// @Success      200  {object}  openapi.Organization  "updated organization"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied / insufficient role"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /organizations/{id} [patch]
 func (h *OrganizationHandler) Update(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
@@ -284,6 +308,20 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/organizations/:id.
+// @Summary      Delete organization
+// @Description  Deletes an organization. Only super_admin members can delete
+// @Tags         organizations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id     path  string  true  "organization ID"
+// @Success      200  {object}  openapi.MessageResult  "deletion result"
+// @Failure      400  {object}  openapi.ErrorResponse  "organization id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied"
+// @Failure      404  {object}  openapi.ErrorResponse  "organization not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id} [delete]
 func (h *OrganizationHandler) Delete(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

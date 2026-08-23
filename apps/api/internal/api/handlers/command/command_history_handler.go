@@ -13,6 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Compile-time references for swaggo-annotated openapi DTO types.
+var _ openapi.CommandHistoryResult
+
 // HistoryHandler handles command history endpoints.
 type HistoryHandler struct {
 	historySvc *command.HistoryService
@@ -35,7 +38,7 @@ func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Reposi
 // GetHistory handles GET /v1/device/:imei/commands.
 // Returns paginated command history for a device.
 // @Summary      List command history
-// @Description  Returns paginated command history for a device.
+// @Description  Returns paginated command history for a device
 // @Tags         commands
 // @Accept       json
 // @Produce      json
@@ -46,11 +49,11 @@ func NewHistoryHandler(historySvc *command.HistoryService, devRepo device.Reposi
 // @Param        limit      query int     false  "page size (default 20, max 100)"
 // @Param        startTime  query int64  false  "epoch-millis lower bound"
 // @Param        endTime    query int64  false  "epoch-millis upper bound"
-// @Success      200  {object}  command.GetHistoryResponse  "command history"
+// @Success      200  {object}  openapi.CommandHistoryResult  "command history"
 // @Failure      401  {object}  openapi.ErrorResponse  "operator context required"
 // @Failure      404  {object}  openapi.ErrorResponse  "device not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /commands/{imei}/history [get]
+// @Router       /dashboard/device/{imei}/commands [get]
 func (h *HistoryHandler) GetHistory(c *gin.Context) {
 	ctx := c.Request.Context()
 

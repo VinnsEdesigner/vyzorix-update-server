@@ -143,15 +143,16 @@ type telemetryEntry struct {
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Param        imei        path   string  true  "device IMEI"
-// @Param        start_time query   int64   false  "epoch-millis lower bound"
-// @Param        end_time   query   int64   false  "epoch-millis upper bound"
+// @Param        deviceId   query   string  true   "device IMEI"
+// @Param        startTime  query   int64   false  "epoch-millis lower bound"
+// @Param        endTime    query   int64   false  "epoch-millis upper bound"
 // @Param        limit      query   int     false  "result limit (default 1000)"
-// @Success      200  {object}  openapi.TelemetryHistoryResponse  "telemetry history"
+// @Param        format     query   string  false  "response format"
+// @Success      200  {object}  openapi.TelemetryHistoryQueryResult  "telemetry history"
 // @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
 // @Failure      404  {object}  openapi.ErrorResponse  "device not found"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
-// @Router       /telemetry/{imei} [get]
+// @Router       /telemetry/history [get]
 func (h *TelemetryHistoryHandler) Query(c *gin.Context) {
 	// Require organization context for multi-tenant isolation.
 	orgID := middleware.GetOrganizationID(c)
@@ -277,6 +278,22 @@ func (h *TelemetryHistoryHandler) exportCSV(c *gin.Context, data QueryHistoryRes
 }
 
 // ExportJSON exports telemetry history as JSON file.
+// ExportJSON handles GET /v1/telemetry/history/export.
+// @Summary      Export telemetry history
+// @Description  Exports telemetry history for a device as JSON
+// @Tags         telemetry
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        deviceId   query   string  true   "device IMEI"
+// @Param        startTime  query   int64   false  "epoch-millis lower bound"
+// @Param        endTime    query   int64   false  "epoch-millis upper bound"
+// @Param        limit      query   int     false  "result limit (default 1000)"
+// @Success      200  {object}  openapi.TelemetryHistoryQueryResult  "telemetry history export"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      403  {object}  openapi.ErrorResponse  "export disabled"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /telemetry/history/export [get]
 func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 	if !h.config.EnableExport {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeAuthzInsufficientPermissions, "JSON export is disabled"))
@@ -323,6 +340,19 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 
 // GetLatest handles GET /v1/telemetry/latest/:deviceId.
 // Gets the latest telemetry entry for a device.
+// GetLatest handles GET /v1/telemetry/latest/:deviceId.
+// @Summary      Get latest telemetry
+// @Description  Returns the latest telemetry entry for a device
+// @Tags         telemetry
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        deviceId   path   string  true  "device IMEI"
+// @Success      200  {object}  openapi.TelemetryEntry  "latest telemetry"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /telemetry/latest/{deviceId} [get]
 func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 	deviceID := c.Param("deviceId")
 	if deviceID == "" {
@@ -364,6 +394,19 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 
 // GetStats handles GET /v1/telemetry/stats/:deviceId.
 // Gets telemetry statistics for a device.
+// GetStats handles GET /v1/telemetry/stats/:deviceId.
+// @Summary      Get telemetry stats
+// @Description  Returns aggregated telemetry statistics for a device
+// @Tags         telemetry
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        deviceId   path   string  true  "device IMEI"
+// @Success      200  {object}  openapi.TelemetryStatsResult  "telemetry stats"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /telemetry/stats/{deviceId} [get]
 func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 	deviceID := c.Param("deviceId")
 	if deviceID == "" {
@@ -451,6 +494,17 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 
 // CleanupOld handles DELETE /v1/telemetry/cleanup.
 // Cleans up telemetry older than the specified timestamp.
+// CleanupOld handles DELETE /v1/telemetry/cleanup.
+// @Summary      Clean up old telemetry
+// @Description  Deletes telemetry entries older than the retention window
+// @Tags         telemetry
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.SuccessResult  "cleanup result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /telemetry/cleanup [delete]
 func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 	// Require admin or operator role.
 	op := middleware.GetOperatorFromContext(c)

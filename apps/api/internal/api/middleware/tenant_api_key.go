@@ -200,9 +200,9 @@ func (t *TenantAPIKeyAuth) Middleware() gin.HandlerFunc {
 				c.Set("auth_type", "service_account")
 				c.Set("service_account_id", saToken.ServiceID)
 				c.Set("service_account_scopes", saToken.Scopes)
-				if saSvc, ok := t.saAuth.(interface { GetOrgID(context.Context) string }); ok {
-				c.Set(ContextKeyOrganizationID, saSvc.GetOrgID(c.Request.Context()))
-				c.Set("org_source", "service_account")
+				if saSvc, ok := t.saAuth.(interface{ GetOrgID(context.Context) string }); ok {
+					c.Set(ContextKeyOrganizationID, saSvc.GetOrgID(c.Request.Context()))
+					c.Set("org_source", "service_account")
 				}
 				c.Next()
 				return

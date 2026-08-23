@@ -1,11 +1,8 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  updates,
-  type ChangelogEntry,
-} from '@vyzorix/api-client';
+import { getUpdates, type ChangelogEntry } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { fetchChangelogViaGraphQL } from './_graphql-fallback';
+import { fetchChangelogViaGraphQL, normalizeWireChangelog } from './_graphql-fallback';
 
 export function useChangelog(
   version?: string,
@@ -14,9 +11,11 @@ export function useChangelog(
   const organizationId = useCurrentOrganizationId();
   return useQuery({
     queryKey: queryKeys.updateChangelog(version),
-    queryFn: async () => {
+    queryFn: async (): Promise<ChangelogEntry[]> => {
       try {
-        return await updates.getChangelog(version, organizationId ?? undefined);
+        return normalizeWireChangelog(
+          await getUpdates().getUpdatesChangelog(version ? { version } : undefined),
+        );
       } catch {
         if (!organizationId) throw new Error('No organization selected');
         return fetchChangelogViaGraphQL(organizationId, version);
@@ -26,3 +25,5 @@ export function useChangelog(
     ...options,
   });
 }
+
+export type { ChangelogEntry };

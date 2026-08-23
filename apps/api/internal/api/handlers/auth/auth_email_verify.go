@@ -2,10 +2,23 @@ package auth
 
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.EmailVerifyRequest
+	_ openapi.EmailVerifyResult
+	_ openapi.PollVerificationResult
+	_ openapi.ResendVerificationRequest
+	_ openapi.CancelVerificationRequest
+	_ openapi.MessageResult
+	_ openapi.SuccessResult
+	_ openapi.ErrorResponse
 )
 
 // EmailVerifyHandler handles email verification endpoints.
@@ -25,6 +38,16 @@ func NewEmailVerifyHandler(authService *auth.AuthService, emailSvc *emailService
 }
 
 // VerifyEmail handles POST /v1/auth/verify-email.
+// @Summary      Verify email
+// @Description  Verifies an operator's email using a verification token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.EmailVerifyRequest  true  "verification token"
+// @Success      200  {object}  openapi.EmailVerifyResult  "verified"
+// @Failure      400  {object}  openapi.ErrorResponse  "token required"
+// @Failure      401  {object}  openapi.ErrorResponse  "invalid or expired token"
+// @Router       /auth/verify-email [post]
 func (h *EmailVerifyHandler) VerifyEmail(c *gin.Context) {
 	var req struct {
 		Token string `json:"token"`
@@ -50,6 +73,16 @@ func (h *EmailVerifyHandler) VerifyEmail(c *gin.Context) {
 }
 
 // ResendVerification handles POST /v1/auth/resend-verification.
+// @Summary      Resend verification email
+// @Description  Resends the verification email to an operator
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.ResendVerificationRequest  true  "email"
+// @Success      200  {object}  openapi.MessageResult  "verification email sent (if email exists)"
+// @Failure      400  {object}  openapi.ErrorResponse  "email required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/resend-verification [post]
 func (h *EmailVerifyHandler) ResendVerification(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`
@@ -76,6 +109,16 @@ func (h *EmailVerifyHandler) ResendVerification(c *gin.Context) {
 }
 
 // PollVerification handles GET /v1/auth/poll-verification.
+// @Summary      Poll verification status
+// @Description  Polls the verification status for a token
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        token  query string  true  "verification token"
+// @Success      200  {object}  openapi.PollVerificationResult  "verification status"
+// @Failure      400  {object}  openapi.ErrorResponse  "token required"
+// @Failure      500  {object}  openapi.ErrorResponse  "verification check failed"
+// @Router       /auth/poll-verification [get]
 func (h *EmailVerifyHandler) PollVerification(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
@@ -93,6 +136,16 @@ func (h *EmailVerifyHandler) PollVerification(c *gin.Context) {
 }
 
 // VerifyEmailGet handles GET /v1/auth/verify-email (alternative to POST).
+// @Summary      Verify email (GET)
+// @Description  Verifies an operator's email via a token query parameter (alternative to POST)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        token  query string  true  "verification token"
+// @Success      200  {object}  openapi.EmailVerifyResult  "verified"
+// @Failure      400  {object}  openapi.ErrorResponse  "token required"
+// @Failure      401  {object}  openapi.ErrorResponse  "invalid or expired token"
+// @Router       /auth/verify-email [get]
 func (h *EmailVerifyHandler) VerifyEmailGet(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
@@ -110,6 +163,16 @@ func (h *EmailVerifyHandler) VerifyEmailGet(c *gin.Context) {
 }
 
 // ResendVerificationGet handles GET /v1/auth/resend-verification (alternative to POST).
+// @Summary      Resend verification email (GET)
+// @Description  Resends the verification email via a query parameter (alternative to POST)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        email  query string  true  "operator email"
+// @Success      200  {object}  openapi.MessageResult  "verification email sent (if email exists)"
+// @Failure      400  {object}  openapi.ErrorResponse  "email required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/resend-verification [get]
 func (h *EmailVerifyHandler) ResendVerificationGet(c *gin.Context) {
 	email := c.Query("email")
 	if email == "" {
@@ -128,6 +191,16 @@ func (h *EmailVerifyHandler) ResendVerificationGet(c *gin.Context) {
 }
 
 // CancelVerification handles POST /v1/auth/cancel-verification.
+// @Summary      Cancel verification
+// @Description  Cancels a pending email verification for an email address
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  openapi.CancelVerificationRequest  true  "email"
+// @Success      200  {object}  openapi.SuccessResult  "cancelled"
+// @Failure      400  {object}  openapi.ErrorResponse  "email required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /auth/cancel-verification [post]
 func (h *EmailVerifyHandler) CancelVerification(c *gin.Context) {
 	var req struct {
 		Email string `json:"email"`

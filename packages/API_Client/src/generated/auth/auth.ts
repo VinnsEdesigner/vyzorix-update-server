@@ -6,7 +6,33 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  CancelVerificationRequest,
+  EmailVerifyRequest,
+  EmailVerifyResult,
+  ForgotPasswordRequest,
+  GetAuthPollVerificationParams,
+  GetAuthResendVerificationParams,
+  GetAuthVerifyEmailParams,
+  LockoutStatusResult,
+  LoginRequest,
+  LoginResult,
+  LoginWithTokensResult,
+  LogoutRequest,
+  MeResult,
+  MessageResult,
+  OrganizationListResult,
+  PollVerificationResult,
+  PostAuthOauthGithubParams,
+  PostAuthOauthGoogleParams,
+  RefreshTokenRequest,
+  RefreshTokenResult,
+  RegisterRequest,
+  RegisterResult,
+  ResendVerificationRequest,
+  ResetPasswordRequest,
+  SelectOrganizationRequest,
+  SelectOrganizationResult,
+  SuccessResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,58 +42,302 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getAuth = () => {
+/**
+ * Clears an operator's account lockout. Requires org-scoped super_admin
+ * @summary Unlock account
+ */
+const postAuthAdminLockoutUnlockOperatorId = (
+    operatorId: string,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/auth/admin/lockout/unlock/${operatorId}`, method: 'POST'
+    },
+      options);
+    }
+  /**
+ * Cancels a pending email verification for an email address
+ * @summary Cancel verification
+ */
+const postAuthCancelVerification = (
+    cancelVerificationRequest: CancelVerificationRequest,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/auth/cancel-verification`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: cancelVerificationRequest
+    },
+      options);
+    }
+  /**
+ * Sends a password reset link to the email if it exists
+ * @summary Forgot password
+ */
+const postAuthForgotPassword = (
+    forgotPasswordRequest: ForgotPasswordRequest,
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/auth/forgot-password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: forgotPasswordRequest
+    },
+      options);
+    }
+  /**
+ * Returns the current account lockout status for the authenticated operator
+ * @summary Get lockout status
+ */
+const getAuthLockoutStatus = (
+
+ options?: SecondParameter<typeof customAxios<LockoutStatusResult>>,) => {
+      return customAxios<LockoutStatusResult>(
+      {url: `/auth/lockout/status`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Authenticates an operator with email/password and starts a session
+ * @summary Operator login
+ */
 const postAuthLogin = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/auth/login`, method: 'POST'
+    loginRequest: LoginRequest,
+ options?: SecondParameter<typeof customAxios<LoginResult>>,) => {
+      return customAxios<LoginResult>(
+      {url: `/auth/login`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: loginRequest
     },
       options);
     }
-  const postAuthLoginTokens = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/auth/login/tokens`, method: 'POST'
+  /**
+ * Authenticates an operator and returns access/refresh tokens instead of a cookie
+ * @summary Operator login (token response)
+ */
+const postAuthLoginTokens = (
+    loginRequest: LoginRequest,
+ options?: SecondParameter<typeof customAxios<LoginWithTokensResult>>,) => {
+      return customAxios<LoginWithTokensResult>(
+      {url: `/auth/login/tokens`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: loginRequest
     },
       options);
     }
-  const postAuthOauthGithub = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/auth/oauth/github`, method: 'POST'
+  /**
+ * Ends the current session and clears the session cookie
+ * @summary Logout
+ */
+const postAuthLogout = (
+    logoutRequest?: LogoutRequest,
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/auth/logout`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: logoutRequest
     },
       options);
     }
-  const postAuthOauthGoogle = (
+  /**
+ * Returns the authenticated operator's profile and organization context
+ * @summary Get current operator
+ */
+const getAuthMe = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/auth/oauth/google`, method: 'POST'
+ options?: SecondParameter<typeof customAxios<MeResult>>,) => {
+      return customAxios<MeResult>(
+      {url: `/auth/me`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * Initiates GitHub OAuth flow with a 307 redirect to GitHub
+ * @summary GitHub OAuth login
+ */
+const postAuthOauthGithub = (
+    params?: PostAuthOauthGithubParams,
+ options?: SecondParameter<typeof customAxios<unknown>>,) => {
+      return customAxios<unknown>(
+      {url: `/auth/oauth/github`, method: 'POST',
+        params
+    },
+      options);
+    }
+  /**
+ * Initiates Google OAuth flow with a 307 redirect to Google
+ * @summary Google OAuth login
+ */
+const postAuthOauthGoogle = (
+    params?: PostAuthOauthGoogleParams,
+ options?: SecondParameter<typeof customAxios<unknown>>,) => {
+      return customAxios<unknown>(
+      {url: `/auth/oauth/google`, method: 'POST',
+        params
     },
       options);
     }
   const getAuthOrganizations = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<OrganizationListResult>>,) => {
+      return customAxios<OrganizationListResult>(
       {url: `/auth/organizations`, method: 'GET'
     },
       options);
     }
-  const postAuthOrganizationsSelect = (
-
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
-      {url: `/auth/organizations/select`, method: 'POST'
+  /**
+ * Switches the operator's active organization context
+ * @summary Select organization
+ */
+const postAuthOrganizationsSelect = (
+    selectOrganizationRequest: SelectOrganizationRequest,
+ options?: SecondParameter<typeof customAxios<SelectOrganizationResult>>,) => {
+      return customAxios<SelectOrganizationResult>(
+      {url: `/auth/organizations/select`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: selectOrganizationRequest
     },
       options);
     }
-  return {postAuthLogin,postAuthLoginTokens,postAuthOauthGithub,postAuthOauthGoogle,getAuthOrganizations,postAuthOrganizationsSelect}};
+  /**
+ * Polls the verification status for a token
+ * @summary Poll verification status
+ */
+const getAuthPollVerification = (
+    params: GetAuthPollVerificationParams,
+ options?: SecondParameter<typeof customAxios<PollVerificationResult>>,) => {
+      return customAxios<PollVerificationResult>(
+      {url: `/auth/poll-verification`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Exchanges a refresh token for a new access/refresh token pair
+ * @summary Refresh access token
+ */
+const postAuthRefresh = (
+    refreshTokenRequest: RefreshTokenRequest,
+ options?: SecondParameter<typeof customAxios<RefreshTokenResult>>,) => {
+      return customAxios<RefreshTokenResult>(
+      {url: `/auth/refresh`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: refreshTokenRequest
+    },
+      options);
+    }
+  /**
+ * Registers a new operator account and sends a verification email
+ * @summary Register operator
+ */
+const postAuthRegister = (
+    registerRequest: RegisterRequest,
+ options?: SecondParameter<typeof customAxios<RegisterResult>>,) => {
+      return customAxios<RegisterResult>(
+      {url: `/auth/register`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: registerRequest
+    },
+      options);
+    }
+  /**
+ * Resends a password reset link with rate limiting
+ * @summary Resend password reset
+ */
+const postAuthResendPasswordReset = (
+    forgotPasswordRequest: ForgotPasswordRequest,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/auth/resend-password-reset`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: forgotPasswordRequest
+    },
+      options);
+    }
+  /**
+ * Resends the verification email via a query parameter (alternative to POST)
+ * @summary Resend verification email (GET)
+ */
+const getAuthResendVerification = (
+    params: GetAuthResendVerificationParams,
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/auth/resend-verification`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Resends the verification email to an operator
+ * @summary Resend verification email
+ */
+const postAuthResendVerification = (
+    resendVerificationRequest: ResendVerificationRequest,
+ options?: SecondParameter<typeof customAxios<MessageResult>>,) => {
+      return customAxios<MessageResult>(
+      {url: `/auth/resend-verification`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: resendVerificationRequest
+    },
+      options);
+    }
+  /**
+ * Resets a password using a valid reset token
+ * @summary Reset password
+ */
+const postAuthResetPassword = (
+    resetPasswordRequest: ResetPasswordRequest,
+ options?: SecondParameter<typeof customAxios<SuccessResult>>,) => {
+      return customAxios<SuccessResult>(
+      {url: `/auth/reset-password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: resetPasswordRequest
+    },
+      options);
+    }
+  /**
+ * Verifies an operator's email via a token query parameter (alternative to POST)
+ * @summary Verify email (GET)
+ */
+const getAuthVerifyEmail = (
+    params: GetAuthVerifyEmailParams,
+ options?: SecondParameter<typeof customAxios<EmailVerifyResult>>,) => {
+      return customAxios<EmailVerifyResult>(
+      {url: `/auth/verify-email`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * Verifies an operator's email using a verification token
+ * @summary Verify email
+ */
+const postAuthVerifyEmail = (
+    emailVerifyRequest: EmailVerifyRequest,
+ options?: SecondParameter<typeof customAxios<EmailVerifyResult>>,) => {
+      return customAxios<EmailVerifyResult>(
+      {url: `/auth/verify-email`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: emailVerifyRequest
+    },
+      options);
+    }
+  return {postAuthAdminLockoutUnlockOperatorId,postAuthCancelVerification,postAuthForgotPassword,getAuthLockoutStatus,postAuthLogin,postAuthLoginTokens,postAuthLogout,getAuthMe,postAuthOauthGithub,postAuthOauthGoogle,getAuthOrganizations,postAuthOrganizationsSelect,getAuthPollVerification,postAuthRefresh,postAuthRegister,postAuthResendPasswordReset,getAuthResendVerification,postAuthResendVerification,postAuthResetPassword,getAuthVerifyEmail,postAuthVerifyEmail}};
+export type PostAuthAdminLockoutUnlockOperatorIdResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthAdminLockoutUnlockOperatorId']>>>
+export type PostAuthCancelVerificationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthCancelVerification']>>>
+export type PostAuthForgotPasswordResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthForgotPassword']>>>
+export type GetAuthLockoutStatusResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthLockoutStatus']>>>
 export type PostAuthLoginResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthLogin']>>>
 export type PostAuthLoginTokensResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthLoginTokens']>>>
+export type PostAuthLogoutResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthLogout']>>>
+export type GetAuthMeResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthMe']>>>
 export type PostAuthOauthGithubResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthOauthGithub']>>>
 export type PostAuthOauthGoogleResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthOauthGoogle']>>>
 export type GetAuthOrganizationsResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthOrganizations']>>>
 export type PostAuthOrganizationsSelectResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthOrganizationsSelect']>>>
+export type GetAuthPollVerificationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthPollVerification']>>>
+export type PostAuthRefreshResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthRefresh']>>>
+export type PostAuthRegisterResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthRegister']>>>
+export type PostAuthResendPasswordResetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthResendPasswordReset']>>>
+export type GetAuthResendVerificationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthResendVerification']>>>
+export type PostAuthResendVerificationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthResendVerification']>>>
+export type PostAuthResetPasswordResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthResetPassword']>>>
+export type GetAuthVerifyEmailResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getAuthVerifyEmail']>>>
+export type PostAuthVerifyEmailResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['postAuthVerifyEmail']>>>

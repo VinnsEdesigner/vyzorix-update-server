@@ -14,12 +14,16 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appsvc "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
 )
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var _ openapi.ErrorResponse
 
 // OAuth error codes for frontend handling.
 const (
@@ -124,9 +128,14 @@ func (h *OAuthHandler) getDefaultRedirectURL(redirectURL string) string {
 }
 
 // GoogleLogin handles GET /v1/auth/google.
+// @Summary      Google OAuth login
+// @Description  Initiates Google OAuth flow with a 307 redirect to Google
 // @Tags         auth
 // @Accept       json
 // @Produce      json
+// @Param        redirect_url  query string  false  "post-OAuth redirect URL"
+// @Success      307  {string}  string  "redirect to Google consent screen"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /auth/oauth/google [post]
 func (h *OAuthHandler) GoogleLogin(c *gin.Context) {
 	if h.config.GoogleOAuthClientID == "" || h.config.GoogleOAuthClientSecret == "" {
@@ -324,9 +333,14 @@ func (h *OAuthHandler) GoogleCallback(c *gin.Context) {
 }
 
 // GitHubLogin handles GET /v1/auth/github.
+// @Summary      GitHub OAuth login
+// @Description  Initiates GitHub OAuth flow with a 307 redirect to GitHub
 // @Tags         auth
 // @Accept       json
 // @Produce      json
+// @Param        redirect_url  query string  false  "post-OAuth redirect URL"
+// @Success      307  {string}  string  "redirect to GitHub consent screen"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /auth/oauth/github [post]
 func (h *OAuthHandler) GitHubLogin(c *gin.Context) {
 	if h.config.GitHubOAuthClientID == "" || h.config.GitHubOAuthClientSecret == "" {

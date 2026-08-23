@@ -6,10 +6,18 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.ConnectionStatusResult
+	_ openapi.DeviceDisconnectResult
+	_ openapi.ErrorResponse
 )
 
 // ConnectionStatusHandler handles WebSocket connection status requests.
@@ -60,7 +68,17 @@ type AllConnectionsResponse struct {
 }
 
 // GetStatus handles GET /v1/device/:id/connection-status.
-// Returns the WebSocket connection status for a specific device.
+// @Summary      Get device connection status
+// @Description  Returns the WebSocket connection status for a specific device
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.ConnectionStatusResult  "connection status"
+// @Failure      400  {object}  openapi.ErrorResponse  "device ID required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/{imei}/connection-status [get]
 func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 	deviceID := c.Param("id")
 	if deviceID == "" {
@@ -99,7 +117,15 @@ func (h *ConnectionStatusHandler) GetStatus(c *gin.Context) {
 }
 
 // GetAllStatus handles GET /v1/connections.
-// Returns the status of all WebSocket connections within the organization.
+// @Summary      List connections
+// @Description  Returns the status of all WebSocket connections within the organization
+// @Tags         connections
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.ConnectionListResult  "connections"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /connections [get]
 func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 	if h.hub == nil {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "WebSocket hub not initialized"))
@@ -172,7 +198,15 @@ func (h *ConnectionStatusHandler) GetAllStatus(c *gin.Context) {
 }
 
 // GetMetrics handles GET /v1/connections/metrics.
-// Returns aggregate WebSocket metrics for the organization.
+// @Summary      Get connection metrics
+// @Description  Returns aggregate WebSocket metrics for the organization
+// @Tags         connections
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Success      200  {object}  openapi.ConnectionMetricsResult  "connection metrics"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /connections/metrics [get]
 func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -235,7 +269,18 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 }
 
 // DisconnectDevice handles POST /v1/device/:id/disconnect.
-// Forcefully disconnects a device's WebSocket connection within the organization.
+// @Summary      Disconnect device
+// @Description  Forcefully disconnects a device's WebSocket connection within the organization
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.DeviceDisconnectResult  "disconnect result"
+// @Failure      400  {object}  openapi.ErrorResponse  "device ID required"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not connected"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/{imei}/disconnect [post]
 func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {

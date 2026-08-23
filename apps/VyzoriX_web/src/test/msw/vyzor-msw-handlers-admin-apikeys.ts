@@ -112,7 +112,7 @@ export function createAdminApiKeysHandlers() {
           page,
           limit,
           total,
-          totalPages,
+          total_pages: totalPages,
         },
       });
     }),
@@ -136,7 +136,7 @@ export function createAdminApiKeysHandlers() {
           page,
           limit,
           total,
-          totalPages,
+          total_pages: totalPages,
         },
       });
     }),

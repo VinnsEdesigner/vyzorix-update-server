@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  organizations,
-  members,
-  invitations,
+import { getOrganizations,
+  getMembers,
+  getInvitations,
   type Organization,
   type OrganizationMember,
   type Invitation,
@@ -10,7 +9,6 @@ import {
   type CreateOrganizationRequest,
   type UpdateOrganizationRequest,
   type UpdateMemberRoleRequest,
-  type InvitationResponseRequest,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
@@ -24,7 +22,7 @@ export function useOrganizations(
 ) {
   return useQuery({
     queryKey: queryKeys.organizations,
-    queryFn: () => organizations.list(),
+    queryFn: async () => (await getOrganizations().getOrganizations()).organizations ?? [],
     ...options,
   });
 }
@@ -35,7 +33,7 @@ export function useOrganization(
 ) {
   return useQuery({
     queryKey: queryKeys.organization(id ?? ''),
-    queryFn: () => organizations.get(id!),
+    queryFn: () => getOrganizations().getOrganizationsId(id!),
     enabled: id !== undefined && id !== '',
     ...options,
   });
@@ -44,7 +42,7 @@ export function useOrganization(
 export function useCreateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (request: CreateOrganizationRequest) => organizations.create(request),
+    mutationFn: (request: CreateOrganizationRequest) => getOrganizations().postOrganizations(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations });
     },
@@ -55,7 +53,7 @@ export function useUpdateOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: UpdateOrganizationRequest }) =>
-      organizations.update(id, request),
+      getOrganizations().patchOrganizationsId(id, request),
     onSuccess: (updated, { id }) => {
       queryClient.setQueryData(queryKeys.organization(id), updated);
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations });
@@ -66,7 +64,7 @@ export function useUpdateOrganization() {
 export function useDeleteOrganization() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => organizations.delete(id),
+    mutationFn: (id: string) => getOrganizations().deleteOrganizationsId(id),
     onSuccess: (_, id) => {
       queryClient.removeQueries({ queryKey: queryKeys.organization(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations });
@@ -80,7 +78,7 @@ export function useOrganizationMembers(
 ) {
   return useQuery({
     queryKey: queryKeys.organizationMembers(orgId ?? ''),
-    queryFn: () => members.list(orgId!),
+    queryFn: async () => (await getMembers().getOrganizationsIdMembers(orgId!)).members ?? [],
     enabled: orgId !== undefined && orgId !== '',
     ...options,
   });
@@ -90,7 +88,7 @@ export function useUpdateMemberRole() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orgId, memberId, request }: { orgId: string; memberId: string; request: UpdateMemberRoleRequest }) =>
-      members.updateRole(orgId, memberId, request),
+      getMembers().patchOrganizationsIdMembersMemberIdRole(orgId, memberId, request),
     onSuccess: (updated, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizationMembers(orgId) });
       queryClient.setQueryData(['organizations', orgId, 'members', updated.id], updated);
@@ -102,7 +100,7 @@ export function useRemoveMember() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orgId, memberId }: { orgId: string; memberId: string }) =>
-      members.remove(orgId, memberId),
+      getMembers().deleteOrganizationsIdMembersMemberId(orgId, memberId),
     onSuccess: (_, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizationMembers(orgId) });
     },
@@ -113,7 +111,7 @@ export function useSuspendMember() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orgId, memberId }: { orgId: string; memberId: string }) =>
-      members.suspend(orgId, memberId),
+      getMembers().postOrganizationsIdMembersMemberIdSuspend(orgId, memberId),
     onSuccess: (_, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizationMembers(orgId) });
     },
@@ -124,7 +122,7 @@ export function useReinstateMember() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orgId, memberId }: { orgId: string; memberId: string }) =>
-      members.reinstate(orgId, memberId),
+      getMembers().postOrganizationsIdMembersMemberIdReinstate(orgId, memberId),
     onSuccess: (_, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizationMembers(orgId) });
     },
@@ -135,7 +133,7 @@ export function useTransferOwnership() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orgId, memberId }: { orgId: string; memberId: string }) =>
-      members.transferOwnership(orgId, memberId),
+      getMembers().postOrganizationsIdMembersMemberIdTransfer(orgId, memberId),
     onSuccess: (_, { orgId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizationMembers(orgId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.organization(orgId) });
@@ -150,7 +148,9 @@ export function useOrganizationInvitations(
 ) {
   return useQuery({
     queryKey: queryKeys.organizationInvitations(orgId ?? '', status),
-    queryFn: () => invitations.listByOrganization(orgId!, status),
+    queryFn: async () =>
+      (await getInvitations().getOrganizationsIdInvitations(orgId!, status ? { status } : undefined))
+        .invitations ?? [],
     enabled: orgId !== undefined && orgId !== '',
     ...options,
   });
@@ -159,7 +159,7 @@ export function useOrganizationInvitations(
 export function useCreateInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateInvitationInput) => invitations.create(input),
+    mutationFn: (input: CreateInvitationInput) => getInvitations().postInvitations(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
@@ -169,8 +169,8 @@ export function useCreateInvitation() {
 export function useAcceptInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ token, request }: { token: string; request?: InvitationResponseRequest }) =>
-      invitations.accept(token, request),
+    mutationFn: ({ token }: { token: string }) =>
+      getInvitations().postInviteTokenAccept(token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations });
       queryClient.invalidateQueries({ queryKey: queryKeys.myInvitations });
@@ -181,8 +181,8 @@ export function useAcceptInvitation() {
 export function useRejectInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ token, request }: { token: string; request?: InvitationResponseRequest }) =>
-      invitations.reject(token, request),
+    mutationFn: ({ token }: { token: string }) =>
+      getInvitations().postInviteTokenReject(token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.myInvitations });
     },

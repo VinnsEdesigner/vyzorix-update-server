@@ -5,11 +5,22 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appOrganization "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.CreateInvitationRequest
+	_ openapi.Invitation
+	_ openapi.InvitationListResult
+	_ openapi.InvitationByTokenResult
+	_ openapi.MessageResult
+	_ openapi.ErrorResponse
 )
 
 type InvitationHandler struct {
@@ -32,6 +43,21 @@ func NewInvitationHandler(
 }
 
 // Create handles POST /v1/invitations.
+// @Summary      Create invitation
+// @Description  Invites an operator to an organization by email
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        body  body  openapi.CreateInvitationRequest  true  "invitation details"
+// @Success      201  {object}  openapi.Invitation  "created invitation"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input / cannot invite self"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied / max invitations"
+// @Failure      404  {object}  openapi.ErrorResponse  "organization not found"
+// @Failure      409  {object}  openapi.ErrorResponse  "invitation already exists"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /invitations [post]
 func (h *InvitationHandler) Create(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -112,6 +138,19 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 }
 
 // ListByOrganization handles GET /v1/organizations/:id/invitations.
+// @Summary      List organization invitations
+// @Description  Returns invitations for an organization, optionally filtered by status
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id      path   string  true  "organization ID"
+// @Param        status  query  string  false  "filter by status"
+// @Success      200  {object}  openapi.InvitationListResult  "invitations"
+// @Failure      400  {object}  openapi.ErrorResponse  "org id required / invalid status"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/invitations [get]
 func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -176,6 +215,15 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 }
 
 // ListByInviter handles GET /v1/invitations (as inviter).
+// @Summary      List sent invitations
+// @Description  Returns invitations sent by the authenticated operator
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.InvitationListResult  "invitations"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /invitations [get]
 func (h *InvitationHandler) ListByInviter(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -210,6 +258,17 @@ func (h *InvitationHandler) ListByInviter(c *gin.Context) {
 }
 
 // GetByToken handles GET /v1/invite/:token (public endpoint).
+// @Summary      Get invitation by token
+// @Description  Returns invitation details for a token (public, used by the invitee)
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        token  path  string  true  "invitation token"
+// @Success      200  {object}  openapi.InvitationByTokenResult  "invitation"
+// @Failure      400  {object}  openapi.ErrorResponse  "token required"
+// @Failure      404  {object}  openapi.ErrorResponse  "invitation not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /invite/{token} [get]
 func (h *InvitationHandler) GetByToken(c *gin.Context) {
 	token := c.Param("token")
 	if token == "" {
@@ -245,6 +304,18 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 }
 
 // Accept handles POST /v1/invite/:token/accept.
+// @Summary      Accept invitation
+// @Description  Accepts an invitation and adds the operator to the organization
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        token  path  string  true  "invitation token"
+// @Success      200  {object}  openapi.MessageResult  "invitation accepted"
+// @Failure      400  {object}  openapi.ErrorResponse  "token required"
+// @Failure      403  {object}  openapi.ErrorResponse  "email mismatch / org at capacity"
+// @Failure      404  {object}  openapi.ErrorResponse  "invitation not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /invite/{token}/accept [post]
 func (h *InvitationHandler) Accept(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -309,6 +380,18 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 }
 
 // Reject handles POST /v1/invite/:token/reject.
+// @Summary      Reject invitation
+// @Description  Rejects an invitation
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        token  path  string  true  "invitation token"
+// @Success      200  {object}  openapi.MessageResult  "invitation rejected"
+// @Failure      400  {object}  openapi.ErrorResponse  "token required"
+// @Failure      403  {object}  openapi.ErrorResponse  "email does not match"
+// @Failure      404  {object}  openapi.ErrorResponse  "invitation not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /invite/{token}/reject [post]
 func (h *InvitationHandler) Reject(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -360,6 +443,15 @@ func (h *InvitationHandler) Reject(c *gin.Context) {
 }
 
 // ListPendingForEmail handles GET /v1/me/invitations.
+// @Summary      List pending invitations for current operator
+// @Description  Returns pending invitations addressed to the authenticated operator's email
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  openapi.InvitationListResult  "pending invitations"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /me/invitations [get]
 func (h *InvitationHandler) ListPendingForEmail(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {
@@ -394,6 +486,21 @@ func (h *InvitationHandler) ListPendingForEmail(c *gin.Context) {
 }
 
 // Delete handles DELETE /v1/invitations/:id (cancel/delete invitation).
+// @Summary      Delete invitation
+// @Description  Cancels a pending invitation. Only the inviter or an org admin can delete
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id  path  string  true  "invitation ID"
+// @Success      200  {object}  openapi.MessageResult  "invitation deleted"
+// @Failure      400  {object}  openapi.ErrorResponse  "invitation id required"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "only inviter or admin can delete"
+// @Failure      404  {object}  openapi.ErrorResponse  "invitation not found"
+// @Failure      409  {object}  openapi.ErrorResponse  "only pending invitations can be deleted"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /invitations/{id} [delete]
 func (h *InvitationHandler) Delete(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

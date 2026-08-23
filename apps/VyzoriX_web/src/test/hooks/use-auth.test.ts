@@ -38,7 +38,7 @@ beforeEach(() => {
 
 function rawLoginTokensMfaRequired() {
   return HttpResponse.json({
-    mfa_required: true,
+    requires_mfa: true,
     operator_id: 'operator-1',
     email: 'test@vyzorix.com',
     name: 'Test Operator',
@@ -155,7 +155,7 @@ describe('useRegister', () => {
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.operatorId).toBe('operator-test-2');
+    expect(result.current.data?.operator_id).toBe('operator-test-2');
     expect(result.current.data?.email).toBe('new@vyzorix.com');
     // Registration must not establish a session.
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
@@ -230,7 +230,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
       result.current.mutate({ email: 'test@vyzorix.com' });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.success).toBe(true);
+    expect(result.current.data?.message).toBeTruthy();
   });
 
   it('reset-password returns success with a valid token', async () => {
@@ -239,7 +239,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
       result.current.mutate({ token: 'valid-reset-token', newPassword: 'newpass123' });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.success).toBe(true);
+    expect(result.current.data?.message).toBeTruthy();
   });
 
   it('reset-password surfaces an invalid token', async () => {
@@ -261,7 +261,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
       result.current.mutate({ email: 'test@vyzorix.com' });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.success).toBe(true);
+    expect(result.current.data?.message).toBeTruthy();
   });
 });
 

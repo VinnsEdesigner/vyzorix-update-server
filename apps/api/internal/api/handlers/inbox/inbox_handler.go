@@ -11,10 +11,23 @@ import (
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.InboxListResult
+	_ openapi.InboxEntryResponse
+	_ openapi.InboxAckResult
+	_ openapi.InboxResendResult
+	_ openapi.InboxRequest
+	_ openapi.InboxAckRequest
+	_ openapi.UpdateInboxEntryRequest
+	_ openapi.ErrorResponse
 )
 
 // Handler handles inbox-related HTTP requests.
@@ -55,13 +68,20 @@ func NewHandlerWithAppCheck(service *inbox.Service, deviceSecret string, appChec
 	}
 }
 
-// GetInbox handles GET /v1/device/inbox.
-// Returns paginated list of inbox entries for the authenticated operator within the organization.
+// GetInbox handles GET /v1/inbox.
+// @Summary      List inbox entries
+// @Description  Returns paginated inbox entries for the authenticated operator within the organization
 // @Tags         inbox
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei} [get]
+// @Param        status  query string  false  "filter by status"
+// @Param        page    query int    false  "page number (default 1)"
+// @Param        limit   query int    false  "page size (default 20)"
+// @Success      200  {object}  openapi.InboxListResult  "inbox entries"
+// @Failure      400  {object}  openapi.ErrorResponse  "organization context required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/inbox [get]
 func (h *Handler) GetInbox(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -99,13 +119,19 @@ func (h *Handler) GetInbox(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// GetInboxEntry handles GET /v1/device/inbox/:imei.
-// Returns a single inbox entry by IMEI within the organization.
+// GetInboxEntry handles GET /v1/inbox/:imei.
+// @Summary      Get inbox entry
+// @Description  Returns a single inbox entry by IMEI within the organization
 // @Tags         inbox
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei}/{entryId} [get]
+// @Param        imei     path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.InboxEntryResponse  "inbox entry"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      404  {object}  openapi.ErrorResponse  "not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/inbox/{imei} [get]
 func (h *Handler) GetInboxEntry(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -130,12 +156,18 @@ func (h *Handler) GetInboxEntry(c *gin.Context) {
 }
 
 // AckInbox handles POST /v1/device/inbox/:imei/ack.
-// Acknowledges (approves or rejects) an inbox entry within the organization.
+// @Summary      Acknowledge inbox entry
+// @Description  Acknowledges (approves or rejects) an inbox entry within the organization
 // @Tags         inbox
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei}/{entryId} [post]
+// @Param        imei     path  string  true  "device IMEI"
+// @Param        body  body  openapi.InboxAckRequest  true  "ack action (acknowledge|approve|reject)"
+// @Success      200  {object}  openapi.InboxAckResult  "ack result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid action / IMEI required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/inbox/{imei}/ack [post]
 func (h *Handler) AckInbox(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -178,14 +210,21 @@ func (h *Handler) AckInbox(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// CreateInboxRequest handles POST /v1/device/inbox.
-// Creates a new inbox entry (used by device registration flow).
-// Requires attestation via Firebase App Check (preferred) or X-Device-Signature header (HMAC fallback).
+// CreateInboxRequest handles POST /v1/inbox.
+// @Summary      Create inbox request
+// @Description  Submits a device registration request to the operator inbox. Requires device attestation when configured
 // @Tags         inbox
 // @Accept       json
 // @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei}/requests [post]
+// @Param        X-Organization-ID    header  string  false  "Organization ID"
+// @Param        X-Device-Signature   header  string  false  "HMAC-SHA256 body signature (legacy attestation)"
+// @Param        X-Firebase-AppCheck  header  string  false  "Firebase App Check token (recommended attestation)"
+// @Param        body  body  openapi.InboxRequest  true  "device registration request"
+// @Success      201  {object}  openapi.InboxEntryResponse  "created inbox entry"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid request body"
+// @Failure      401  {object}  openapi.ErrorResponse  "attestation failed"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/inbox [post]
 func (h *Handler) CreateInboxRequest(c *gin.Context) {
 	requiresAttestation := h.deviceSecret != "" || h.attestationRequired
 
@@ -258,12 +297,18 @@ type UpdateInboxEntryRequest struct {
 }
 
 // UpdateInboxEntry handles PATCH /v1/device/inbox/:imei.
-// Updates an inbox entry (e.g., add operator notes) within the organization.
+// @Summary      Update inbox entry
+// @Description  Updates an inbox entry (e.g., add operator notes) within the organization
 // @Tags         inbox
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei}/{entryId} [patch]
+// @Param        imei     path  string  true  "device IMEI"
+// @Param        body  body  openapi.UpdateInboxEntryRequest  true  "inbox update (notes)"
+// @Success      200  {object}  openapi.InboxEntryResponse  "updated inbox entry"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required / invalid body"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/inbox/{imei} [patch]
 func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {
@@ -299,18 +344,18 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// ResendApproval handles POST /v1/device/inbox/:imei/resend.
-// Resends the FCM notification to a device that was approved but may have missed the notification.
+// ResendApproval handles POST /v1/inbox/:imei/resend.
+// @Summary      Resend approval notification
+// @Description  Resends the FCM notification to a device that was approved but may have missed the notification
 // @Tags         inbox
 // @Accept       json
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei}/{entryId}/resend [post]
-// @Tags         inbox
-// @Accept       json
-// @Produce      json
-// @Param        X-Organization-ID  header  string  true  "Organization ID"
-// @Router       /inbox/{imei}/{entryId}/resend [post]
+// @Param        imei     path  string  true  "device IMEI"
+// @Success      200  {object}  openapi.InboxResendResult  "resend result"
+// @Failure      400  {object}  openapi.ErrorResponse  "IMEI required"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /device/inbox/{imei}/resend [post]
 func (h *Handler) ResendApproval(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	if orgID == "" {

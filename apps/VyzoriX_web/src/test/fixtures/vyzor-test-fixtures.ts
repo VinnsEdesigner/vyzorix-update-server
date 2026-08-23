@@ -2,21 +2,15 @@ import type {
   UpdateVersion,
   UpdatePush,
   SyncState,
-  PushUpdateRequest,
+  UpdatePushRequest,
   Thresholds,
   ClientSettings,
   NotificationSettings,
-} from '@vyzorix/api-client';
-import type {
-  Device,
+  DeviceDetailResult,
   DeviceListItem,
-  DeviceStats,
-} from '@vyzorix/api-client';
-import type {
-  OrganizationSettings,
-} from '@vyzorix/api-client';
-import type {
-  DeviceSettings,
+  DashboardStats,
+  OrganizationSettingsResult,
+  DeviceSettingsResult,
 } from '@vyzorix/api-client';
 
 let counter = 0;
@@ -73,8 +67,8 @@ export function buildPush(overrides: Partial<UpdatePush> = {}): UpdatePush {
 }
 
 export function buildPushRequest(
-  overrides: Partial<PushUpdateRequest> = {},
-): PushUpdateRequest {
+  overrides: Partial<UpdatePushRequest> = {},
+): UpdatePushRequest {
   return {
     version: 'v1.2.0',
     deviceIds: ['device-test-1', 'device-test-2'],
@@ -83,30 +77,18 @@ export function buildPushRequest(
   };
 }
 
-export function buildDevice(overrides: Partial<Device> = {}): Device {
-  const now = '2025-01-15T10:00:00Z';
+export function buildDevice(overrides: Partial<DeviceDetailResult> = {}): DeviceDetailResult {
+  const now = new Date('2025-01-15T10:00:00Z').getTime();
   return {
     id: nextId('device'),
     imei: '123456789012345',
-    organization_id: 'org-test-1',
     device_name: 'Test Device',
     model: 'VyzoriX Pro',
     manufacturer: 'VyzoriX',
-    os_version: '14.0',
     app_version: 'v1.1.0',
-    security_patch: '2025-01-01',
     status: 'online',
-    registered_at: now,
+    registered_at: now - 86_400_000,
     last_seen: now,
-    fcm_token_valid: true,
-    command_secret_set: true,
-    connection: {
-      web_socket_status: 'connected',
-      connected_at: now,
-      protocol: 'websocket',
-    },
-    created_at: now,
-    updated_at: now,
     ...overrides,
   };
 }
@@ -117,21 +99,23 @@ export function buildDeviceListItem(
   return {
     id: nextId('device'),
     imei: '123456789012345',
-    organization_id: 'org-test-1',
     device_name: 'Test Device',
     model: 'VyzoriX Pro',
     manufacturer: 'VyzoriX',
+    app_version: 'v1.1.0',
     status: 'online',
-    last_seen: '2025-01-15T10:00:00Z',
+    online: true,
+    last_seen: new Date('2025-01-15T10:00:00Z').getTime(),
     ...overrides,
   };
 }
 
-export function buildDeviceStats(overrides: Partial<DeviceStats> = {}): DeviceStats {
+export function buildDeviceStats(overrides: Partial<DashboardStats> = {}): DashboardStats {
   return {
-    total: 10,
-    online: 7,
-    offline: 3,
+    total_devices: 10,
+    online_devices: 7,
+    offline_devices: 3,
+    pending_devices: 0,
     ...overrides,
   };
 }
@@ -203,8 +187,8 @@ export function buildOperatorSettings() {
 }
 
 export function buildOrgSettings(
-  overrides: Partial<OrganizationSettings> = {},
-): OrganizationSettings {
+  overrides: Partial<OrganizationSettingsResult> = {},
+): OrganizationSettingsResult {
   const now = '2025-01-15T10:00:00Z';
   return {
     id: nextId('org_set'),
@@ -220,8 +204,8 @@ export function buildOrgSettings(
 }
 
 export function buildDeviceSettings(
-  overrides: Partial<DeviceSettings> = {},
-): DeviceSettings {
+  overrides: Partial<DeviceSettingsResult> = {},
+): DeviceSettingsResult {
   const now = '2025-01-15T10:00:00Z';
   return {
     id: nextId('dev_set'),

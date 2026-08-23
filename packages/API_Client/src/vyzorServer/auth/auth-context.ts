@@ -1,9 +1,9 @@
 import { setOrganizationContext, setAuthToken, setCSRFToken, setSigningKey, restClient } from "../rest/_shared/rest-client";
-import type { MeResponse, LoginWithTokensResponse, MFAVerifyResponse } from "../../domain/auth";
+import type { MeResult, LoginWithTokensResult, MFAVerifyResult } from "../../domain/auth";
 
 export interface AuthState {
   isAuthenticated: boolean;
-  operator: MeResponse | null;
+  operator: MeResult | null;
   organizationId: string | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -94,7 +94,7 @@ async function refreshTokens(): Promise<void> {
         scheduleTokenRefresh(response.expires_at);
     
         notifyRefreshListeners({
-      accessToken: response.access_token,
+      accessToken: response.access_token ?? null,
       refreshToken: response.refresh_token,
       expiresAt: response.expires_at,
     });
@@ -132,24 +132,22 @@ export const authContext = {
     return () => refreshListeners.delete(callback);
   },
 
-    setFromLoginWithTokens(response: LoginWithTokensResponse): void {
+    setFromLoginWithTokens(response: LoginWithTokensResult): void {
     authContextState.auth = {
       isAuthenticated: true,
       operator: {
         id: response.operator_id,
         email: response.email,
         name: response.name,
-        role: response.role,
         mfa_enabled: response.mfa_enabled,
         email_verified: false,
         needs_organization: response.needs_organization,
         organizations: response.organizations || [],
-        memberships: response.memberships || [],
         last_organization_id: response.last_organization_id,
         selected_organization: response.selected_organization,
       },
-      organizationId: response.selected_organization?.id || response.last_organization_id || null,
-      accessToken: response.access_token,
+      organizationId: response.selected_organization?.id ?? response.last_organization_id ?? null,
+      accessToken: response.access_token ?? null,
       refreshToken: response.refresh_token || null,
       tokenExpiresAt: response.expires_at || null,
     };
@@ -170,7 +168,7 @@ export const authContext = {
     notifyListeners();
   },
 
-    setFromMeResponse(me: MeResponse): void {
+    setFromMeResponse(me: MeResult): void {
     authContextState.auth.operator = me;
     authContextState.auth.organizationId = me.selected_organization?.id || me.last_organization_id || null;
     authContextState.auth.isAuthenticated = true;
@@ -182,8 +180,8 @@ export const authContext = {
     notifyListeners();
   },
 
-  setFromMfaVerify(response: MFAVerifyResponse): void {
-    if (!response.success || !response.accessToken || !response.refreshToken || !response.operator) {
+  setFromMfaVerify(response: MFAVerifyResult): void {
+    if (!response.success || !response.access_token || !response.refresh_token || !response.operator) {
       return;
     }
     const op = response.operator;
@@ -193,25 +191,24 @@ export const authContext = {
         id: op.id,
         email: op.email,
         name: op.name,
-        role: op.role,
-        mfa_enabled: op.mfaEnabled,
+        
+        mfa_enabled: op.mfa_enabled,
         email_verified: true,
         needs_organization: false,
         organizations: [],
-        memberships: [],
       },
       organizationId: null,
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
-      tokenExpiresAt: response.expiresAt ?? null,
+      accessToken: response.access_token ?? null,
+      refreshToken: response.refresh_token,
+      tokenExpiresAt: response.expires_at ?? null,
     };
 
-    setAuthToken(response.accessToken);
-    if (response.signingKey) {
-      setSigningKey(response.signingKey);
+    setAuthToken(response.access_token);
+    if (response.signing_key) {
+      setSigningKey(response.signing_key);
     }
-    if (response.expiresAt) {
-      scheduleTokenRefresh(response.expiresAt);
+    if (response.expires_at) {
+      scheduleTokenRefresh(response.expires_at);
     }
 
     notifyListeners();

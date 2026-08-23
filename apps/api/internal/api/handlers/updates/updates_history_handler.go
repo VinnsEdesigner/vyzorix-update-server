@@ -5,10 +5,19 @@ import (
 	"strconv"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.UpdatePushHistoryListResult
+	_ openapi.UpdatePushDetailResult
+	_ openapi.UpdateCancelPushResult
+	_ openapi.ErrorResponse
 )
 
 // UpdatesHistoryHandler handles history-related HTTP requests.
@@ -26,6 +35,18 @@ func NewUpdatesHistoryHandler(service *updates.Service, auditLogger *audit.Logge
 }
 
 // GetHistory handles GET /v1/updates/history.
+// @Summary      List update push history
+// @Description  Returns paginated push update history
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        page   query int    false  "page number (default 1)"
+// @Param        limit  query int    false  "page size (default 20)"
+// @Success      200  {object}  openapi.UpdatePushHistoryListResult  "push history"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /updates/history [get]
 func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
@@ -61,6 +82,19 @@ func (h *UpdatesHistoryHandler) GetHistory(c *gin.Context) {
 }
 
 // GetPushDetail handles GET /v1/updates/history/:pushId.
+// @Summary      Get push detail
+// @Description  Returns details for a specific push update including per-device status
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        pushId  path  string  true  "push ID"
+// @Success      200  {object}  openapi.UpdatePushDetailResult  "push detail"
+// @Failure      400  {object}  openapi.ErrorResponse  "pushId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "push not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /updates/history/{pushId} [get]
 func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)
@@ -88,6 +122,20 @@ func (h *UpdatesHistoryHandler) GetPushDetail(c *gin.Context) {
 }
 
 // CancelPush handles POST /v1/updates/history/:pushId/cancel.
+// @Summary      Cancel push
+// @Description  Cancels a pending or in-progress push update
+// @Tags         updates
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        pushId  path  string  true  "push ID"
+// @Success      200  {object}  openapi.UpdateCancelPushResult  "push cancelled"
+// @Failure      400  {object}  openapi.ErrorResponse  "pushId required"
+// @Failure      401  {object}  openapi.ErrorResponse  "not authenticated"
+// @Failure      404  {object}  openapi.ErrorResponse  "push not found"
+// @Failure      409  {object}  openapi.ErrorResponse  "push cannot be cancelled"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /updates/history/{pushId}/cancel [post]
 func (h *UpdatesHistoryHandler) CancelPush(c *gin.Context) {
 	// Get organization ID from context.
 	orgID := middleware.GetOrganizationID(c)

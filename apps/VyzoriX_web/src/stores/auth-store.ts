@@ -1,13 +1,13 @@
 import { createVyzorStore } from '@/lib/state';
 import {
   authContext,
-  getMe,
   type AuthState,
   type LockoutState,
-  type LoginWithTokensResponse,
-  type MeResponse,
-  type MFAVerifyResponse,
+  type LoginWithTokensResult,
+  type MeResult,
+  type MFAVerifyResult,
 } from '@vyzorix/api-client';
+import { getAuth } from '@vyzorix/api-client';
 
 export interface MfaChallenge {
   operatorId: string;
@@ -26,9 +26,9 @@ export type AuthStatus =
 export interface AuthStoreState extends AuthState, LockoutState {
   mfaChallenge: MfaChallenge | null;
   status: AuthStatus;
-  setFromLoginWithTokens: (response: LoginWithTokensResponse) => void;
-  setFromMeResponse: (me: MeResponse) => void;
-  setFromMfaVerify: (response: MFAVerifyResponse) => Promise<MeResponse | null>;
+  setFromLoginWithTokens: (response: LoginWithTokensResult) => void;
+  setFromMeResponse: (me: MeResult) => void;
+  setFromMfaVerify: (response: MFAVerifyResult) => Promise<MeResult | null>;
   setMfaChallenge: (challenge: MfaChallenge | null) => void;
   setOrganization: (orgId: string | null) => void;
   setAccessToken: (token: string | null) => void;
@@ -91,9 +91,9 @@ export const useAuthStore = createVyzorStore<AuthStoreState>('AuthStore', (set) 
       // The MFA verify response carries only a partial operator. Fetch /me
       // to populate organizations/memberships/needs_organization so the
       // derived status (needs_organization vs authenticated) is correct.
-      if (response.success && response.accessToken) {
+      if (response.success && response.access_token) {
         try {
-          const me = await getMe();
+          const me = await getAuth().getAuthMe();
           if (me) {
             authContext.setFromMeResponse(me);
             set(buildSnapshot({ mfaChallenge: null }));

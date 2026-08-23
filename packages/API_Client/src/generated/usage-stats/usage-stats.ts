@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  UpdateCheckerResult
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,10 +16,14 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getUsageStats = () => {
+/**
+ * Checks GitHub for the latest server release and includes usage stats
+ * @summary Check for server updates
+ */
 const getAdminUpdatesCheck = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<UpdateCheckerResult>>,) => {
+      return customAxios<UpdateCheckerResult>(
       {url: `/admin/updates/check`, method: 'GET'
     },
       options);

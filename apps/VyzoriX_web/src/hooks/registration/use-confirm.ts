@@ -1,10 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  registration,
-  type ConfirmDeviceResult,
-} from '@vyzorix/api-client';
+import { getDevices, type DeviceConfirmResult } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
 export interface ConfirmDeviceVariables {
   imei: string;
@@ -13,10 +9,10 @@ export interface ConfirmDeviceVariables {
 
 export function useConfirmDevice() {
   const queryClient = useQueryClient();
-  const organizationId = useCurrentOrganizationId();
+
   return useMutation({
     mutationFn: ({ imei, commandSecret }: ConfirmDeviceVariables) =>
-      registration.confirmDevice(imei, commandSecret, organizationId ?? undefined),
+      getDevices().postDeviceConfirm({ imei, commandSecret }),
     onSuccess: (_, { imei }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.registrationInbox() });
       queryClient.invalidateQueries({ queryKey: queryKeys.registrationInboxEntry(imei) });
@@ -26,4 +22,4 @@ export function useConfirmDevice() {
   });
 }
 
-export type { ConfirmDeviceResult };
+export type { DeviceConfirmResult };

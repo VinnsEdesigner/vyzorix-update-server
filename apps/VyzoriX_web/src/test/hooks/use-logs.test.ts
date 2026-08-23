@@ -21,7 +21,7 @@ import { setupIntegrationTest } from '../helpers/integration-test-setup';
 import { registerGraphQLResponse } from '../msw/vyzor-msw-handlers-graphql';
 import { useAuthStore } from '@/stores/auth-store';
 import { graphqlClient } from '@vyzorix/api-client';
-import { useDeviceLogs, useLog, useLogStats } from '@/hooks/logs/use-logs';
+import { useDeviceLogs } from '@/hooks/logs/use-logs';
 
 const { server, resetApiState } = setupIntegrationTest();
 
@@ -90,46 +90,5 @@ describe('useDeviceLogs', () => {
     expect(result.current.data?.logs[0]?.eventType).toBe('error');
     expect(result.current.data?.logs[0]?.deviceId).toBe('123');
     expect(result.current.data?.hasMore).toBe(false);
-  });
-});
-
-describe('useLog', () => {
-  beforeEach(() => {
-    resetApiState();
-    setOrg('org-1');
-  });
-
-  it('is disabled when id is undefined', () => {
-    const { result } = renderHookWithQueryClient(() => useLog(undefined));
-    expect(result.current.fetchStatus).toBe('idle');
-  });
-
-  it('fetches a single log with organizationId', async () => {
-    const { result } = renderHookWithQueryClient(() => useLog('log-detail-1'));
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.id).toBe('log-detail-1');
-    expect(result.current.data?.eventType).toBe('info');
-    expect(result.current.data?.deviceId).toBe('123');
-  });
-});
-
-describe('useLogStats', () => {
-  beforeEach(() => {
-    resetApiState();
-    setOrg('org-1');
-  });
-
-  it('is disabled when imei is undefined', () => {
-    const { result } = renderHookWithQueryClient(() => useLogStats(undefined));
-    expect(result.current.fetchStatus).toBe('idle');
-  });
-
-  it('fetches stats with organizationId', async () => {
-    const { result } = renderHookWithQueryClient(() => useLogStats('123'));
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.total).toBe(2);
-    expect(result.current.data?.byType.connection).toBe(1);
-    expect(result.current.data?.byType.command).toBe(1);
-    expect(result.current.data?.byType.telemetry).toBe(0);
   });
 });

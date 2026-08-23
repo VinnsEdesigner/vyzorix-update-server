@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.0.01
  */
 import type {
-  AlertRuleWithInstances
+  DashboardStats
 } from '../vyzorixUpdateServerAPI.schemas';
 
 import { customAxios } from '.././rest-bridge';
@@ -16,10 +16,14 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
   export const getDashboard = () => {
+/**
+ * Returns aggregated dashboard statistics for the organization
+ * @summary Get dashboard stats
+ */
 const getDashboardStats = (
 
- options?: SecondParameter<typeof customAxios<AlertRuleWithInstances>>,) => {
-      return customAxios<AlertRuleWithInstances>(
+ options?: SecondParameter<typeof customAxios<DashboardStats>>,) => {
+      return customAxios<DashboardStats>(
       {url: `/dashboard/stats`, method: 'GET'
     },
       options);

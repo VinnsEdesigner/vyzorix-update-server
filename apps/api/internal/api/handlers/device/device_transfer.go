@@ -5,10 +5,18 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 
 	"github.com/gin-gonic/gin"
+)
+
+// Compile-time references for swaggo-annotated openapi DTO types.
+var (
+	_ openapi.DeviceTransferRequest
+	_ openapi.DeviceTransferResult
+	_ openapi.ErrorResponse
 )
 
 // TransferHandler handles device transfer requests.
@@ -32,6 +40,22 @@ type TransferRequest struct {
 }
 
 // Transfer handles POST /v1/organizations/:id/devices/:imei/transfer.
+// @Summary      Transfer device
+// @Description  Transfers a device to another organization. Requires super_admin in source org and membership in target org
+// @Tags         devices
+// @Accept       json
+// @Produce      json
+// @Param        X-Organization-ID  header  string  true  "Organization ID"
+// @Param        id    path  string  true  "source organization ID"
+// @Param        imei  path  string  true  "device IMEI"
+// @Param        body  body  openapi.DeviceTransferRequest  true  "target organization"
+// @Success      200  {object}  openapi.DeviceTransferResult  "transfer result"
+// @Failure      400  {object}  openapi.ErrorResponse  "invalid input / same org"
+// @Failure      401  {object}  openapi.ErrorResponse  "authentication required"
+// @Failure      403  {object}  openapi.ErrorResponse  "access denied / not member of target"
+// @Failure      404  {object}  openapi.ErrorResponse  "device not found"
+// @Failure      500  {object}  openapi.ErrorResponse  "internal error"
+// @Router       /organizations/{id}/devices/{imei}/transfer [post]
 func (h *TransferHandler) Transfer(c *gin.Context) {
 	op := middleware.GetOperatorFromContext(c)
 	if op == nil {

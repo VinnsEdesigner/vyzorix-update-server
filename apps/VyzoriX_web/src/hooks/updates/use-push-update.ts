@@ -1,29 +1,28 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  updates,
-  type UpdatePush,
-  type PushUpdateRequest,
-} from '@vyzorix/api-client';
+import { getUpdates, type UpdatePush, type UpdatePushRequest, type InstallType } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import { useUpdatesStore } from '@/stores/updates-store';
-import { pushUpdateViaGraphQL } from './_graphql-fallback';
+import { pushUpdateViaGraphQL, normalizeWirePushResult } from './_graphql-fallback';
 
 export function usePushUpdate() {
   const queryClient = useQueryClient();
   const organizationId = useCurrentOrganizationId();
 
   return useMutation({
-    mutationFn: async (request: PushUpdateRequest): Promise<UpdatePush> => {
+    mutationFn: async (request: UpdatePushRequest): Promise<UpdatePush> => {
       try {
-        return await updates.pushUpdate(request, organizationId ?? undefined);
+        return normalizeWirePushResult(await getUpdates().postUpdatesPush(request));
       } catch {
         if (!organizationId) throw new Error('No organization selected');
+        if (!request.version || !request.deviceIds || !request.installType) {
+          throw new Error('version, deviceIds, and installType are required');
+        }
         return pushUpdateViaGraphQL(organizationId, {
           version: request.version,
           deviceIds: request.deviceIds,
-          installType: request.installType,
-          scheduledAt: request.scheduledAt,
+          installType: request.installType as InstallType,
+          scheduledAt: request.scheduledAt ? new Date(request.scheduledAt) : undefined,
         });
       }
     },

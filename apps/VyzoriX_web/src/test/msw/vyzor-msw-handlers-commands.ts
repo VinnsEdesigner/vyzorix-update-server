@@ -1,16 +1,16 @@
 import { http, HttpResponse, delay } from 'msw';
 import type {
-  RawCommand,
-  RawCommandListItem,
-  RawCommandHistoryResult,
+  CommandHistoryEntry,
+  CommandHistoryResult,
+  CommandResponse,
 } from '@vyzorix/api-client';
 
 const IMEI = '123456789012345';
 const now = Date.now();
 
 function makeRawCommandListItem(
-  overrides: Partial<RawCommandListItem> = {},
-): RawCommandListItem {
+  overrides: Partial<CommandHistoryEntry> = {},
+): CommandHistoryEntry {
   return {
     id: 'cmd-1',
     dispatchId: 'disp-1',
@@ -22,19 +22,14 @@ function makeRawCommandListItem(
   };
 }
 
-function makeRawCommand(overrides: Partial<RawCommand> = {}): RawCommand {
+function makeRawCommand(overrides: Partial<CommandResponse> = {}): CommandResponse {
   return {
     id: 'cmd-1',
     dispatchId: 'disp-1',
     deviceId: IMEI,
     command: 'FORCE_SPEAKER',
     status: 'pending',
-    failureReason: '',
-    args: {},
-    createdAt: now,
-    updatedAt: now,
-    deliveredAt: undefined,
-    completedAt: undefined,
+    serverTime: now,
     ...overrides,
   };
 }
@@ -53,15 +48,15 @@ export function createCommandsHandlers() {
       const page = Number(url.searchParams.get('page') ?? '1');
       const limit = Number(url.searchParams.get('limit') ?? '20');
 
-      const result: RawCommandHistoryResult = {
+      const result: CommandHistoryResult = {
         commands: historyCommands,
         pagination: {
           page,
           limit,
           total: historyCommands.length,
-          totalPages: 1,
+          total_pages: 1,
         },
-      } as unknown as RawCommandHistoryResult;
+      };
       return HttpResponse.json(result);
     }),
 
@@ -69,7 +64,7 @@ export function createCommandsHandlers() {
     http.get('/v1/device/:imei/commands/pending', async () => {
       await delay(20);
       const pending = [
-        makeRawCommandListItem({ id: 'cmd-1', dispatchId: 'disp-1', status: 'pending' }),
+        makeRawCommand({ id: 'cmd-1', dispatchId: 'disp-1', status: 'pending' }),
       ];
       return HttpResponse.json({ commands: pending });
     }),
@@ -84,31 +79,35 @@ export function createCommandsHandlers() {
     }),
 
     // POST /v1/device/:imei/command — send command
-    http.post('/v1/device/:imei/command', async ({ params }) => {
+    http.post('/v1/device/:imei/command', async () => {
       await delay(40);
-      const imei = params.imei as string;
       return HttpResponse.json({
-        success: true,
         dispatchId: 'disp-1',
-        command: makeRawCommand({ dispatchId: 'disp-1', deviceId: imei, status: 'queued' }),
+        command_id: 'cmd-1',
+        device_online: true,
+        status: 'pending',
+        serverTime: now,
       });
     }),
 
     // DELETE /v1/command/:dispatchId — cancel command
-    http.delete('/v1/command/:dispatchId', async () => {
+    http.delete('/v1/command/:dispatchId', async ({ params }) => {
       await delay(30);
-      return HttpResponse.json({ success: true });
+      return HttpResponse.json({
+        cancelled: true,
+        dispatchId: params.dispatchId as string,
+        serverTime: Date.now(),
+      });
     }),
 
     // POST /v1/command/:dispatchId/retry — retry command
     http.post('/v1/command/:dispatchId/retry', async ({ params }) => {
       await delay(40);
       return HttpResponse.json({
-        success: true,
-        command: makeRawCommand({
-          dispatchId: params.dispatchId as string,
-          status: 'queued',
-        }),
+        command_id: 'cmd-1',
+        dispatchId: params.dispatchId as string,
+        retried: true,
+        serverTime: Date.now(),
       });
     }),
   ];
