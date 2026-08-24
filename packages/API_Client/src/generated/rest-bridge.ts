@@ -2,12 +2,7 @@ import type { AxiosRequestConfig } from 'axios';
 import { restClient } from '../vyzorServer/rest/_shared/rest-client';
 
 // Mutator used by every orval-generated endpoint function. Delegates to the
-// enterprise restClient (circuit breaker, HMAC signing, token refresh, retry
-// with backoff, idempotency keys, offline queue, request batching) so the
-// generated functions inherit all transport infrastructure without duplicating
-// it. Returns Promise<T> (the response data) directly — callers don't need to
-// unwrap .data.
-//
+// restClient ,
 // orval generates URLs without the /v1 prefix (the OpenAPI spec has no
 // basePath), so we prepend it here to match the server's route mounting.
 
