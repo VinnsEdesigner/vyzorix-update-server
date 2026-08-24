@@ -1,0 +1,1612 @@
+"""Action to take on an inbox entry"""
+enum AckAction {
+  """Approve the registration request"""
+  APPROVE
+  """Reject the registration request"""
+  REJECT
+}
+
+"""Result of acknowledging an inbox entry"""
+type AckResult {
+  """When approved (Unix ms)"""
+  approvedAt: Int
+  """Generated command secret (if approved)"""
+  commandSecret: String
+  """Whether FCM push was sent"""
+  fcmPushSent: Boolean
+  """Inbox entry ID"""
+  id: ID!
+  """Device IMEI"""
+  imei: String!
+  """Operator notes"""
+  notes: String
+  """When rejected (Unix ms)"""
+  rejectedAt: Int
+  """New status after acknowledgement"""
+  status: InboxStatus!
+}
+
+"""Detailed activity information"""
+type ActivityDetail {
+  """Commands in the period"""
+  commands: Int!
+  """Device deregistrations in the period"""
+  deregistrations: Int!
+  """Device registrations in the period"""
+  registrations: Int!
+}
+
+"""Activity statistics"""
+type ActivityStats {
+  """Activity in the last 24 hours"""
+  last24h: ActivityDetail!
+}
+
+"""One alert state transition event"""
+type AlertEvent {
+  """Unix milliseconds of the transition"""
+  createdAt: Float!
+  """Previous state"""
+  fromState: String!
+  """Event ID"""
+  id: ID!
+  """Rule ID"""
+  ruleId: ID!
+  """New state"""
+  toState: String!
+  """Observed value at transition"""
+  value: Float!
+}
+
+"""One labeled series state (labels hash key)"""
+type AlertInstance {
+  """Last evaluation time"""
+  evaluatedAt: DateTime
+  """Series labels (e.g. device_class)"""
+  labels: String
+  """Current state"""
+  state: String!
+  """Last observed value"""
+  value: Float!
+}
+
+"""Alert rule with runtime state"""
+type AlertRule {
+  """Comparison operator"""
+  condition: String!
+  """Creation time"""
+  createdAt: DateTime
+  """Whether the rule is evaluated"""
+  enabled: Boolean!
+  """Pending duration before firing"""
+  forSeconds: Int!
+  """Rule ID"""
+  id: ID!
+  """Runtime instance states (one per label set)"""
+  instances: [AlertInstance]
+  """Metric to evaluate"""
+  metric: String!
+  """Rule name"""
+  name: String!
+  """Re-notification interval while firing"""
+  notifyIntervalSeconds: Int!
+  """Source-failure policy: ignore, error, resolve"""
+  onError: String!
+  """No-signal policy: ignore, no_data, resolve"""
+  onNoData: String!
+  """Organization ID"""
+  orgId: ID!
+  """Threshold value"""
+  threshold: Float!
+  """Last update time"""
+  updatedAt: DateTime
+  """Webhook URL to notify"""
+  webhookUrl: String!
+}
+
+"""Fleet timeline annotation with tags and time range"""
+type Annotation {
+  """Creation time"""
+  createdAt: DateTime
+  """End of the annotated range"""
+  endTime: DateTime
+  """Annotation ID"""
+  id: ID!
+  """Organization ID"""
+  orgId: ID!
+  """Source: manual, alert, rollout"""
+  source: String!
+  """Start of the annotated range"""
+  startTime: DateTime
+  """Filterable tags"""
+  tags: [String]
+  """Annotation body"""
+  text: String!
+  """Annotation title"""
+  title: String!
+}
+
+"""The `Boolean` scalar type represents `true` or `false`."""
+scalar Boolean
+
+"""Buffer level statistics"""
+type BufferLevelStats {
+  avg: Float
+}
+
+"""Response when cancelling a command"""
+type CancelCommandResponse {
+  """Timestamp when the command was cancelled"""
+  cancelledAt: Int!
+  """The dispatch ID of the cancelled command"""
+  dispatchId: String!
+  """Status of the cancellation"""
+  status: String!
+}
+
+"""Response from cancelling a push"""
+type CancelPushResponse {
+  """When cancelled (Unix ms)"""
+  cancelledAt: Int!
+  """Who cancelled"""
+  cancelledBy: String!
+  """Push ID"""
+  id: ID!
+  """New status (cancelled)"""
+  status: String!
+}
+
+"""A changelog entry for a release"""
+type ChangelogEntry {
+  """Release date"""
+  date: String!
+  """Change notes"""
+  notes: String!
+  """Change type (added, changed, fixed, removed)"""
+  type: String!
+  """Version this changelog entry belongs to"""
+  version: String!
+}
+
+"""Client settings for dashboard behavior"""
+type ClientSettings {
+  """Auto reconnect on disconnect"""
+  autoReconnect: Boolean!
+  """Default device ID"""
+  deviceId: String
+  """Maximum log buffer size"""
+  logBufferLimit: Int!
+  """Request timeout in milliseconds"""
+  requestTimeoutMs: Int!
+  """Server URL for device connection"""
+  serverUrl: String
+  """Signal history retention limit"""
+  signalHistoryLimit: Int!
+  """Require strict HMAC validation"""
+  strictHmac: Boolean!
+}
+
+"""A command sent to a device"""
+type Command {
+  """Command arguments"""
+  args: JSON
+  """Command name"""
+  command: String!
+  """Internal command identifier"""
+  commandId: ID!
+  """When command was created"""
+  createdAt: DateTime
+  """When command was delivered"""
+  deliveredAt: DateTime
+  """Target device"""
+  deviceId: ID!
+  """Unique dispatch identifier"""
+  dispatchId: ID!
+  """Current command status"""
+  status: CommandStatus!
+}
+
+"""Paginated command history for a device"""
+type CommandHistory {
+  """Command entries"""
+  commands: [Command]
+  """Pagination information"""
+  pagination: CommandPagination!
+}
+
+"""Pagination for command history"""
+type CommandPagination {
+  """Whether more commands exist"""
+  hasMore: Boolean!
+  """Items per page"""
+  limit: Int!
+  """Current page number"""
+  page: Int!
+  """Total number of commands"""
+  total: Int!
+  """Total number of pages"""
+  totalPages: Int!
+}
+
+"""Result of sending a command to a device"""
+type CommandResult {
+  """Command identifier"""
+  commandId: ID!
+  """Whether device was online at send time"""
+  deviceOnline: Boolean!
+  """Dispatch identifier"""
+  dispatchId: ID!
+  """Delivery status: sent, queued, queued_fcm"""
+  status: String!
+}
+
+"""Status of a device command"""
+enum CommandStatus {
+  """Command was cancelled"""
+  CANCELLED
+  """Command completed successfully"""
+  COMPLETED
+  """Command was delivered to device"""
+  DELIVERED
+  """Command delivery failed"""
+  FAILED
+  """Command is pending delivery"""
+  PENDING
+}
+
+"""Statistics about commands"""
+type CommandsStats {
+  """Number of failed commands"""
+  failed: Int!
+  """Number of pending commands"""
+  pending: Int!
+  """Total commands sent today"""
+  totalToday: Int!
+}
+
+"""Device connection information"""
+type ConnectionInfo {
+  """Client IP address"""
+  clientIp: String
+  """WebSocket connection timestamp"""
+  connectedAt: DateTime
+  """FCM status"""
+  fcmStatus: String!
+  """Last seen timestamp"""
+  lastSeen: DateTime
+  """Connection protocol"""
+  protocol: String
+  """WebSocket connection status"""
+  webSocketStatus: String!
+}
+
+"""WebSocket connection status for a device"""
+type ConnectionStatus {
+  """Whether device is connected"""
+  connected: Boolean!
+  """When connection was established"""
+  connectedAt: DateTime
+  """Device identifier"""
+  deviceId: ID!
+  """Last message received from device"""
+  lastMessageAt: DateTime
+  """Connection uptime in seconds"""
+  uptimeSeconds: Int
+}
+
+"""Notification contact point with channel config"""
+type ContactPoint {
+  """Channel: email, webhook, slack"""
+  channel: String!
+  """Channel-specific config"""
+  config: JSON
+  """Creation time"""
+  createdAt: DateTime
+  """Whether the point receives notifications"""
+  enabled: Boolean!
+  """Contact point ID"""
+  id: ID!
+  """Contact point name"""
+  name: String!
+  """Organization ID"""
+  orgId: ID!
+  """Whether a secret is configured"""
+  secret: Boolean!
+  """Last update time"""
+  updatedAt: DateTime
+}
+
+"""Result of creating an organization"""
+type CreateOrganizationPayload {
+  """The creator's membership as super_admin"""
+  membership: Membership!
+  """The created organization"""
+  organization: Organization!
+}
+
+"""Aggregated statistics for the dashboard"""
+type DashboardStats {
+  """Activity in the last 24 hours"""
+  activity: ActivityStats!
+  """Command statistics"""
+  commands: CommandsStats!
+  """Device statistics"""
+  devices: DevicesStats!
+}
+
+"""ISO 8601 datetime string (e.g. 2024-01-15T10:30:00Z)"""
+scalar DateTime
+
+"""Result of deregistering a device"""
+type DeregisterResult {
+  """When deregistered (Unix ms)"""
+  deregisteredAt: Int!
+  """Device IMEI"""
+  imei: String!
+  """When device data will be permanently deleted (Unix ms)"""
+  retentionUntil: Int!
+  """Deregistration status"""
+  status: String!
+}
+
+"""A registered device"""
+type Device {
+  """Device app version"""
+  appVersion: String
+  """Device build ID"""
+  buildId: String
+  """Whether command secret is set"""
+  commandSecretSet: Boolean
+  """Device connection information"""
+  connection: ConnectionInfo
+  """Device registration timestamp"""
+  createdAt: DateTime
+  """Device display name (alias for name)"""
+  deviceName: String
+  """Firebase Cloud Messaging token"""
+  fcmToken: String
+  """Whether FCM token is valid"""
+  fcmTokenValid: Boolean
+  """Unique device identifier"""
+  id: ID!
+  """Device IMEI"""
+  imei: String!
+  """Last time device sent telemetry"""
+  lastSeen: DateTime
+  """Device manufacturer"""
+  manufacturer: String
+  """Device model"""
+  model: String
+  """Device display name"""
+  name: String
+  """Whether device is currently connected"""
+  online: Boolean!
+  """Device OS version"""
+  osVersion: String
+  """Device registration timestamp"""
+  registeredAt: DateTime
+  """Device security patch"""
+  securityPatch: String
+  """Device status"""
+  status: String
+  """Device app version"""
+  version: String
+}
+
+"""Device identity (IMEI + display name)"""
+type DeviceInfo {
+  deviceName: String
+  imei: ID!
+}
+
+"""Full device inspection data for diagnostics"""
+type DeviceInspection {
+  """Device connection information"""
+  connection: ConnectionInfo!
+  """Device identity information"""
+  identity: IdentityInfo!
+  """Device registration information"""
+  registration: RegistrationInfo!
+  """Device software information"""
+  software: SoftwareInfo!
+  """Device telemetry statistics"""
+  telemetry: TelemetryInfo!
+}
+
+"""Complete metrics data for a device"""
+type DeviceMetrics {
+  """Device identification"""
+  device: DeviceInfo!
+  """Threshold breach events"""
+  events: [ThresholdEvent]
+  """All metric data"""
+  metrics: MetricsCollection!
+  """Query time range and resolution"""
+  timeRange: TimeRange!
+}
+
+"""Status of a device push"""
+enum DevicePushStatus {
+  """Device acknowledged the update"""
+  ACKNOWLEDGED
+  """Device push failed"""
+  FAILED
+  """Device push is pending"""
+  PENDING
+  """Update command sent to device"""
+  SENT
+}
+
+"""Settings for a device including custom name, location, and threshold overrides"""
+type DeviceSettings {
+  """When settings were created"""
+  createdAt: DateTime
+  """Custom display name for the device"""
+  customName: String
+  """Device IMEI"""
+  deviceImei: String!
+  """Effective thresholds after applying hierarchy (device → org → default)"""
+  effectiveThresholds: Thresholds!
+  """Unique settings identifier"""
+  id: ID!
+  """Device location description"""
+  location: String
+  """Custom metadata key-value pairs"""
+  metadata: [MetadataEntry!]
+  """Device-specific threshold overrides (null = use org defaults)"""
+  thresholds: Thresholds
+  """When settings were last updated"""
+  updatedAt: DateTime
+}
+
+"""Status of a device"""
+enum DeviceStatus {
+  """Device has been deregistered"""
+  DEREGISTERED
+  """Device is offline"""
+  OFFLINE
+  """Device is currently online"""
+  ONLINE
+}
+
+"""Device alert thresholds (risk/thermal/buffer warn+crit)"""
+input DeviceThresholdsInput {
+  bufferCrit: Int
+  bufferWarn: Int
+  riskCrit: Int
+  riskWarn: Int
+  thermalCrit: Int
+  thermalWarn: Int
+}
+
+"""Device current version and update status"""
+type DeviceUpdateStatus {
+  """Current version installed on device"""
+  currentVersion: String!
+  """Whether device needs an update"""
+  needsUpdate: Boolean!
+}
+
+"""Statistics about devices"""
+type DevicesStats {
+  """Number of offline devices"""
+  offline: Int!
+  """Number of online devices"""
+  online: Int!
+  """Total number of devices"""
+  total: Int!
+}
+
+"""Email notification channel settings"""
+input EmailNotificationInput {
+  commandFailed: Boolean
+  deviceOffline: Boolean
+  deviceOnline: Boolean
+  registrationRequest: Boolean
+  thresholdBreach: Boolean
+  updateAvailable: Boolean
+}
+
+"""The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point). """
+scalar Float
+
+"""The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID."""
+scalar ID
+
+"""Device identity information"""
+type IdentityInfo {
+  """Device display name"""
+  deviceName: String
+  """Device IMEI"""
+  imei: String!
+  """Device manufacturer"""
+  manufacturer: String
+  """Device model"""
+  model: String
+}
+
+"""A device registration request"""
+type InboxEntry {
+  """App version"""
+  appVersion: String
+  """When approved (Unix ms)"""
+  approvedAt: Int
+  """When created (Unix ms)"""
+  createdAt: Int!
+  """Firebase Install ID"""
+  firebaseInstallId: String
+  """Unique inbox entry ID"""
+  id: ID!
+  """Device IMEI"""
+  imei: String!
+  """Device manufacturer"""
+  manufacturer: String
+  """Device model"""
+  model: String
+  """Operator notes"""
+  notes: String
+  """Handling operator ID"""
+  operatorId: String
+  """Device OS version"""
+  osVersion: String
+  """When rejected (Unix ms)"""
+  rejectedAt: Int
+  """Status: pending, approved, rejected"""
+  status: String!
+}
+
+"""Paginated inbox list response"""
+type InboxListResponse {
+  """Pagination info"""
+  pagination: Pagination!
+  """Inbox entries"""
+  requests: [InboxEntry!]!
+}
+
+"""Status of an inbox entry"""
+enum InboxStatus {
+  """Registration request was approved"""
+  APPROVED
+  """Registration request is pending"""
+  PENDING
+  """Registration request was rejected"""
+  REJECTED
+}
+
+"""Install type for update push"""
+enum InstallType {
+  """Install immediately"""
+  IMMEDIATE
+  """Install at scheduled time"""
+  SCHEDULED
+}
+
+"""The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1. """
+scalar Int
+
+"""An organization invitation"""
+type Invitation {
+  """When the invitation was created"""
+  createdAt: DateTime!
+  """Email address the invitation was sent to"""
+  email: String!
+  """When the invitation expires"""
+  expiresAt: DateTime!
+  """Unique invitation identifier"""
+  id: ID!
+  """ID of the invited operator (if accepted)"""
+  inviteeId: ID
+  """Notes from the invitee"""
+  inviteeNotes: String
+  """ID of the operator who sent the invitation"""
+  inviterId: ID!
+  """Name of the inviter"""
+  inviterName: String!
+  """Notes from the inviter"""
+  inviterNotes: String
+  """The organization"""
+  organization: Organization
+  """Organization ID"""
+  organizationId: ID!
+  """Organization name at time of invitation"""
+  organizationName: String!
+  """When the invitation was responded to"""
+  respondedAt: DateTime
+  """Role being invited to"""
+  role: OrgRole!
+  """Invitation status"""
+  status: InvitationStatus!
+  """Unique invitation token"""
+  token: String!
+}
+
+"""Paginated list of invitations"""
+type InvitationListResponse {
+  """List of invitations"""
+  items: [Invitation!]!
+  """Pagination metadata"""
+  pagination: OrgPagination!
+}
+
+"""Status of an organization invitation"""
+enum InvitationStatus {
+  """Invitation was accepted"""
+  ACCEPTED
+  """Invitation was approved (accepted)"""
+  APPROVED
+  """Invitation has expired"""
+  EXPIRED
+  """Invitation is pending"""
+  PENDING
+  """Invitation was rejected"""
+  REJECTED
+}
+
+"""Arbitrary JSON value (object, array, string, number, boolean, or null)"""
+scalar JSON
+
+"""Paginated log entries with cursor-based pagination"""
+type LogConnection {
+  """Log entries"""
+  events: [LogEntry]
+  """Pagination information"""
+  pagination: LogPagination!
+}
+
+"""A log entry from a device"""
+type LogEntry {
+  """Additional log data as JSON"""
+  data: JSON
+  """Unique log entry identifier"""
+  id: ID!
+  """Unix timestamp in milliseconds"""
+  timestamp: Int!
+  """Log type (connection, command, telemetry, error, warning)"""
+  type: String!
+}
+
+"""Cursor-based pagination for logs"""
+type LogPagination {
+  """Whether more entries exist"""
+  hasMore: Boolean!
+  """Items per page"""
+  limit: Int!
+  """Cursor for next page"""
+  nextCursor: String
+}
+
+"""Lifecycle state of an organization member"""
+enum MemberLifecycle {
+  """Member is active in the organization"""
+  ACTIVE
+  """Member has been invited but hasn't joined"""
+  INVITED
+  """Member has been removed from the organization"""
+  REMOVED
+  """Member's access has been suspended"""
+  SUSPENDED
+}
+
+"""Paginated list of organization members"""
+type MemberListResponse {
+  """List of members"""
+  items: [Membership!]!
+  """Pagination metadata"""
+  pagination: OrgPagination!
+}
+
+"""An organization membership"""
+type Membership {
+  """Unique membership identifier"""
+  id: ID!
+  """When the invitation was sent"""
+  invitedAt: DateTime
+  """When the operator joined"""
+  joinedAt: DateTime
+  """Membership lifecycle state"""
+  lifecycle: MemberLifecycle!
+  """The operator associated with this membership"""
+  operator: Operator
+  """Operator ID"""
+  operatorId: ID!
+  """The organization"""
+  organization: Organization
+  """Organization ID"""
+  organizationId: ID!
+  """When the member was removed"""
+  removedAt: DateTime
+  """Member role in the organization"""
+  role: OrgRole!
+  """When the member was suspended"""
+  suspendedAt: DateTime
+}
+
+"""A single device metadata key/value pair"""
+type MetadataEntry {
+  """Metadata key"""
+  key: String!
+  """Metadata value"""
+  value: String!
+}
+
+"""Device metadata entries (key/value)"""
+input MetadataInput {
+  key: String!
+  value: String!
+}
+
+"""A single data point in a metric chart"""
+type MetricChartPoint {
+  """Unix timestamp in milliseconds"""
+  timestamp: Int!
+  """Metric value at this point"""
+  value: Float!
+}
+
+"""Complete metric data including current, average, min, max, chart and thresholds"""
+type MetricData {
+  """Average metric value over the time range"""
+  avg: Float!
+  """Chart data points"""
+  chart: [MetricChartPoint]
+  """Current metric value"""
+  current: Float!
+  """Maximum metric value"""
+  max: Float!
+  """Minimum metric value"""
+  min: Float!
+  """Warning and critical thresholds"""
+  threshold: Threshold
+  """Unit of measurement"""
+  unit: String!
+}
+
+"""Collection of all metrics for a device"""
+type MetricsCollection {
+  """Buffer level percentage"""
+  bufferLevel: MetricData!
+  """Risk score metric (0-100%)"""
+  riskScore: MetricData!
+  """Device temperature in Celsius"""
+  thermalTemp: MetricData!
+  """Device uptime in seconds"""
+  uptime: MetricData!
+}
+
+"""Root mutation — write operations. Risk-gated commands may require a confirmation token."""
+type Mutation {
+  """Accept an invitation to join an organization"""
+  acceptInvitation(notes: String, token: String!): Membership
+  """Acknowledge (approve/reject) an inbox entry"""
+  ackInbox(action: AckAction!, imei: String!, notes: String): AckResult
+  """Cancel a pending command"""
+  cancelCommand(dispatchId: ID!): CancelCommandResponse
+  """Cancel a pending invitation"""
+  cancelInvitation(id: ID!): Boolean
+  """Cancel a pending update push"""
+  cancelUpdate(id: ID!, organizationId: String!): CancelPushResponse
+  """Create an org-scoped alert rule"""
+  createAlertRule(condition: String!, enabled: Boolean, forSeconds: Int, metric: String!, name: String!, notifyIntervalSeconds: Int, onError: String, onNoData: String, organizationId: String!, threshold: Float!, webhookUrl: String): AlertRule
+  """Create an org-scoped annotation"""
+  createAnnotation(endTime: String, organizationId: String!, source: String, startTime: String!, tags: [String], text: String, title: String!): Annotation
+  """Create an org-scoped contact point"""
+  createContactPoint(channel: String!, config: JSON, enabled: Boolean, name: String!, organizationId: String!, secret: String): ContactPoint
+  """Create a new organization"""
+  createOrganization(maxMembers: Int, name: String!): CreateOrganizationPayload
+  """Create an org-scoped service account"""
+  createServiceAccount(name: String!, organizationId: String!): ServiceAccount
+  """Create a service account token (full key returned once)"""
+  createServiceAccountToken(expiresAt: String, name: String, organizationId: String!, scopes: [String], serviceAccountId: ID!): ServiceAccountToken
+  """Delete an org-scoped alert rule"""
+  deleteAlertRule(organizationId: String!, ruleId: ID!): Boolean
+  """Delete an org-scoped annotation"""
+  deleteAnnotation(annotationId: ID!, organizationId: String!): Boolean
+  """Delete an org-scoped contact point"""
+  deleteContactPoint(contactPointId: ID!, organizationId: String!): Boolean
+  """Delete a device"""
+  deleteDevice(id: ID!): Boolean
+  """Delete an organization (soft delete)"""
+  deleteOrganization(id: ID!): Boolean
+  """Delete an org-scoped service account (revokes all tokens)"""
+  deleteServiceAccount(organizationId: String!, serviceAccountId: ID!): Boolean
+  """Deregister a device (soft delete with 30-day retention)"""
+  deregisterDevice(hard: Boolean, imei: String!): DeregisterResult
+  """Force disconnect a device"""
+  disconnectDevice(deviceId: ID!): Boolean
+  """Manually evaluate an alert rule"""
+  evaluateAlertRule(organizationId: String!, ruleId: ID!): Boolean
+  """Invite a member to an organization"""
+  inviteMember(email: String!, notes: String, organizationId: ID!, role: OrgRole!): Invitation
+  """Push an update to devices"""
+  pushUpdate(deviceIds: [ID!]!, installType: String!, organizationId: String!, scheduledAt: Int, version: String!): PushUpdateResponse
+  """Reinstate a suspended member"""
+  reinstateMember(memberId: ID!, organizationId: ID!): Boolean
+  """Reject an invitation"""
+  rejectInvitation(notes: String, token: String!): Boolean
+  """Remove a member from an organization"""
+  removeMember(memberId: ID!, organizationId: ID!): Boolean
+  """Retry a failed command"""
+  retryCommand(dispatchId: ID!): Command
+  """Rotate a service account token (old revoked, new created)"""
+  rotateServiceAccountToken(organizationId: String!, serviceAccountId: ID!, tokenId: ID!): ServiceAccountToken
+  """Send a command to a device"""
+  sendCommand(args: JSON, command: String!, confirmationToken: String, deviceId: ID!): CommandResult
+  """Suspend an active member"""
+  suspendMember(memberId: ID!, organizationId: ID!): Boolean
+  """Trigger a GitHub sync"""
+  syncFromGitHub: SyncResponse
+  """Sync updates from GitHub (spec-compliant name)"""
+  syncUpdates: SyncResponse
+  """Send a test notification to the contact point"""
+  testContactPoint(contactPointId: ID!, organizationId: String!): Boolean
+  """Transfer a device to another organization"""
+  transferDevice(imei: String!, sourceOrganizationId: ID!, targetOrganizationId: ID!): TransferDevicePayload
+  """Transfer super_admin ownership to another member"""
+  transferOwnership(memberId: ID!, organizationId: ID!): Boolean
+  """Update an org-scoped alert rule"""
+  updateAlertRule(condition: String!, enabled: Boolean, forSeconds: Int, metric: String!, name: String!, notifyIntervalSeconds: Int, onError: String, onNoData: String, organizationId: String!, ruleId: ID!, threshold: Float!, webhookUrl: String): AlertRule
+  """Update an org-scoped contact point"""
+  updateContactPoint(channel: String!, config: JSON, contactPointId: ID!, enabled: Boolean, name: String!, organizationId: String!, secret: String): ContactPoint
+  """Update settings for a specific device"""
+  updateDeviceSettings(deviceImei: String!, input: UpdateDeviceSettingsInput!, organizationId: String!): DeviceSettings
+  """Update FCM token for a device"""
+  updateFCMToken(deviceId: ID!, token: String!): Device
+  """Update a member's role"""
+  updateMemberRole(memberId: ID!, organizationId: ID!, role: OrgRole!): Membership
+  """Update current operator's notification settings"""
+  updateMyNotifications(input: UpdateNotificationsInput!): NotificationSettings
+  """Update an organization"""
+  updateOrganization(id: ID!, isActive: Boolean, maxMembers: Int, name: String): Organization
+  """Update settings for an organization"""
+  updateOrganizationSettings(input: UpdateOrganizationSettingsInput!, organizationId: String!): OrganizationSettings
+}
+
+"""Notification preferences"""
+type NotificationSettings {
+  """Enabled notification channels"""
+  channels: [String!]!
+  """Email notification preferences"""
+  email: NotificationTypes!
+  """Whether notifications are enabled"""
+  enabled: Boolean!
+  """Push notification preferences"""
+  push: NotificationTypes!
+  """Webhook notification settings"""
+  webhook: WebhookSettings!
+}
+
+"""Notification type preferences"""
+type NotificationTypes {
+  """Notify when command fails"""
+  commandFailed: Boolean!
+  """Notify when device goes offline"""
+  deviceOffline: Boolean!
+  """Notify when device comes online"""
+  deviceOnline: Boolean!
+  """Notify on registration requests"""
+  registrationRequest: Boolean!
+  """Notify on threshold breach"""
+  thresholdBreach: Boolean!
+  """Notify when update is available"""
+  updateAvailable: Boolean!
+}
+
+"""An operator/user in the system"""
+type Operator {
+  """When the operator was created"""
+  createdAt: DateTime
+  """Operator's email address"""
+  email: String!
+  """Whether the email has been verified"""
+  emailVerified: Boolean!
+  """Unique operator identifier"""
+  id: ID!
+  """Whether MFA is enabled"""
+  mfaEnabled: Boolean!
+  """Operator's display name"""
+  name: String!
+  """When the operator was last updated"""
+  updatedAt: DateTime
+}
+
+"""Complete operator settings"""
+type OperatorSettings {
+  """Client settings"""
+  client: ClientSettings!
+  """Notification settings"""
+  notifications: NotificationSettings!
+}
+
+"""Organization default alert thresholds applied to devices"""
+input OrgDefaultThresholdsInput {
+  bufferCrit: Int!
+  bufferWarn: Int!
+  riskCrit: Int!
+  riskWarn: Int!
+  thermalCrit: Int!
+  thermalWarn: Int!
+}
+
+"""Pagination metadata for organization list queries"""
+type OrgPagination {
+  """Whether there are more pages"""
+  hasMore: Boolean!
+  """Items per page"""
+  limit: Int!
+  """Current page number"""
+  page: Int!
+  """Total number of items"""
+  total: Int!
+  """Total number of pages"""
+  totalPages: Int!
+}
+
+"""Role of an organization member"""
+enum OrgRole {
+  """Admin - can manage members and devices"""
+  ADMIN
+  """Operator - can send commands and manage devices"""
+  OPERATOR
+  """Super admin - full control including deletion"""
+  SUPER_ADMIN
+  """Viewer - read-only access"""
+  VIEWER
+}
+
+"""An organization for multi-tenant device management"""
+type Organization {
+  """Organization creation timestamp"""
+  createdAt: DateTime
+  """ID of the operator who created this organization"""
+  createdBy: ID!
+  """Organization deletion timestamp (soft delete)"""
+  deletedAt: DateTime
+  """Unique organization identifier"""
+  id: ID!
+  """Organization lifecycle state"""
+  lifecycle: OrganizationLifecycle!
+  """Maximum number of members allowed"""
+  maxMembers: Int!
+  """Current number of active members"""
+  memberCount: Int!
+  """Organization name"""
+  name: String!
+  """Organization last update timestamp"""
+  updatedAt: DateTime
+}
+
+"""Lifecycle state of an organization"""
+enum OrganizationLifecycle {
+  """Organization is active"""
+  ACTIVE
+  """Organization has been archived (soft-deleted)"""
+  ARCHIVED
+  """Organization is inactive (suspended)"""
+  INACTIVE
+}
+
+"""Paginated list of organizations"""
+type OrganizationListResponse {
+  """List of organizations"""
+  items: [Organization!]!
+  """Pagination metadata"""
+  pagination: OrgPagination!
+}
+
+"""Settings for an organization including timezone and default thresholds"""
+type OrganizationSettings {
+  """Minimum minutes between repeated alerts"""
+  alertCooldownMinutes: Int!
+  """When settings were created"""
+  createdAt: DateTime
+  """Date format (e.g., YYYY-MM-DD)"""
+  dateFormat: String
+  """Default thresholds for devices without custom thresholds"""
+  defaultThresholds: Thresholds!
+  """Unique settings identifier"""
+  id: ID!
+  """Organization ID"""
+  organizationId: ID!
+  """Organization timezone (e.g., UTC, America/New_York)"""
+  timezone: String
+  """When settings were last updated"""
+  updatedAt: DateTime
+}
+
+"""Pagination information for list queries"""
+type Pagination {
+  """Whether more items exist"""
+  hasMore: Boolean!
+  """Items per page"""
+  limit: Int!
+  """Current offset"""
+  offset: Int!
+  """Total number of items"""
+  total: Int!
+}
+
+"""A device included in an update push"""
+type PushDevice {
+  """When the device acknowledged the update"""
+  acknowledgedAt: DateTime
+  """Device identifier"""
+  deviceId: ID!
+  """Device name (if available)"""
+  deviceName: String
+  """Error message if push failed for this device"""
+  error: String
+  """Push device entry ID"""
+  id: ID!
+  """When the update was sent to this device"""
+  sentAt: DateTime
+  """Push status for this device"""
+  status: DevicePushStatus!
+}
+
+"""Paginated push history"""
+type PushHistoryConnection {
+  """Pagination info"""
+  pagination: Pagination!
+  """Push history entries"""
+  pushes: [PushHistoryEntry!]
+}
+
+"""A single push history entry"""
+type PushHistoryEntry {
+  """Devices that acknowledged"""
+  acknowledged: Int!
+  """When completed (Unix ms)"""
+  completedAt: Int
+  """Total device count"""
+  deviceCount: Int!
+  """Devices that failed"""
+  failed: Int!
+  """Push identifier"""
+  id: ID!
+  """When initiated (Unix ms)"""
+  initiatedAt: Int!
+  """Operator who initiated"""
+  initiatedBy: String!
+  """Install type"""
+  installType: String!
+  """Devices still pending"""
+  pending: Int!
+  """Push status"""
+  status: String!
+  """Version pushed"""
+  version: String!
+}
+
+"""Push notification channel settings"""
+input PushNotificationInput {
+  commandFailed: Boolean
+  deviceOffline: Boolean
+  deviceOnline: Boolean
+  registrationRequest: Boolean
+  thresholdBreach: Boolean
+  updateAvailable: Boolean
+}
+
+"""Response from pushing an update"""
+type PushUpdateResponse {
+  """Total devices"""
+  deviceCount: Int!
+  """When initiated (Unix ms)"""
+  initiatedAt: Int!
+  """Operator who initiated"""
+  initiatedBy: String!
+  """Install type"""
+  installType: String!
+  """Created push ID"""
+  pushId: ID!
+  """When scheduled (Unix ms, null for immediate)"""
+  scheduledAt: Int
+  """Push status"""
+  status: String!
+  """Version being pushed"""
+  version: String!
+}
+
+"""Root query — all read operations are organization-scoped via the organizationId argument (or the org-scoped endpoint path)."""
+type Query {
+  """Get alert transition events for an organization"""
+  alertHistory(limit: Int, organizationId: String!, ruleId: String): [AlertEvent!]
+  """List alert rules for an organization"""
+  alertRules(organizationId: String!): [AlertRule!]
+  """Get all device connection statuses for an organization"""
+  allConnections(organizationId: String!): [ConnectionStatus]
+  """List annotations for an organization, newest first"""
+  annotations(endTime: String, limit: Int, organizationId: String!, startTime: String, tag: String): [Annotation!]
+  """Get command status by dispatch ID within an organization"""
+  command(dispatchId: ID!, organizationId: String!): Command
+  """Get connection status for a device within an organization"""
+  connectionStatus(deviceId: ID!, organizationId: String!): ConnectionStatus
+  """List contact points for an organization"""
+  contactPoints(organizationId: String!): [ContactPoint!]
+  """Get aggregated dashboard statistics for an organization"""
+  dashboardStats(organizationId: String!): DashboardStats
+  """Get a single device by ID within an organization"""
+  device(id: ID!, organizationId: String!): Device
+  """Get paginated command history for a device within an organization"""
+  deviceCommandHistory(endTime: Int, imei: ID!, limit: Int, organizationId: String!, page: Int, startTime: Int, status: String): CommandHistory
+  """Get total device count for an organization"""
+  deviceCount(organizationId: String!): Int
+  """Get full device inspection data for diagnostics"""
+  deviceInspection(imei: String!, organizationId: String!): DeviceInspection
+  """Get paginated device logs with cursor-based pagination for an organization"""
+  deviceLogs(cursor: String, endTime: Int, imei: ID!, limit: Int, organizationId: String!, startTime: Int, type: String): LogConnection
+  """Get aggregated metrics for chart visualization within an organization"""
+  deviceMetrics(endTime: Int, imei: ID!, organizationId: String!, range: String, resolution: String, startTime: Int): DeviceMetrics
+  """Get settings for a specific device including effective thresholds"""
+  deviceSettings(deviceImei: String!, organizationId: String!): DeviceSettings
+  """Get chronological event timeline for a device"""
+  deviceTimeline(cursor: String, endTime: Int, eventType: TimelineEventType, imei: String!, limit: Int, organizationId: String!, startTime: Int): TimelineConnection
+  """List all devices for the authenticated operator in an organization"""
+  devices(limit: Int, offset: Int, organizationId: String!): [Device]
+  """Get paginated inbox entries for an organization"""
+  inbox(limit: Int, organizationId: String!, page: Int, status: String): InboxListResponse
+  """Get a single inbox entry by IMEI within an organization"""
+  inboxEntry(imei: String!, organizationId: String!): InboxEntry
+  """Get an invitation by token"""
+  invitation(token: String!): Invitation
+  """Get the latest telemetry entry for a device within an organization"""
+  latestTelemetry(deviceId: ID!, organizationId: String!): TelemetryEntry
+  """Get all pending invitations for the authenticated operator"""
+  myInvitations: [Invitation]
+  """Get all organization memberships for the authenticated operator"""
+  myMemberships(limit: Int, page: Int): MemberListResponse
+  """Get current operator's notification settings"""
+  myNotifications: NotificationSettings
+  """Get current operator's settings (client and notifications)"""
+  mySettings: OperatorSettings
+  """Get an organization by ID"""
+  organization(id: ID!): Organization
+  """List all pending invitations for an organization"""
+  organizationInvitations(limit: Int, organizationId: ID!, page: Int): InvitationListResponse
+  """List all active members of an organization"""
+  organizationMembers(limit: Int, organizationId: ID!, page: Int): MemberListResponse
+  """Get settings for an organization including default thresholds"""
+  organizationSettings(organizationId: String!): OrganizationSettings
+  """List all organizations for the authenticated operator"""
+  organizations(limit: Int, page: Int): OrganizationListResponse
+  """Get pending commands for a device within an organization"""
+  pendingCommands(deviceId: ID!, organizationId: String!): [Command]
+  """List service accounts for an organization"""
+  serviceAccounts(organizationId: String!): [ServiceAccount!]
+  """Query telemetry history for a device within an organization"""
+  telemetryHistory(deviceId: ID!, endTime: Int, limit: Int, organizationId: String!, startTime: Int): [TelemetryEntry]
+  """Get telemetry statistics for a device within an organization"""
+  telemetryStats(deviceId: ID!, organizationId: String!): TelemetryStats
+  """Get a single update history record by ID (spec-compliant name)"""
+  updateHistory(id: ID!, organizationId: String!): UpdateHistory
+  """Get changelog entries for an organization"""
+  updatesChangelog(limit: Int, organizationId: String!, version: String): [ChangelogEntry!]
+  """Get push history with pagination for an organization"""
+  updatesHistory(limit: Int, organizationId: String!, page: Int, status: String): PushHistoryConnection
+  """Get detailed push information for an organization"""
+  updatesHistoryDetail(id: ID!, organizationId: String!): UpdatePush
+  """Get overall update system status for an organization"""
+  updatesStatus(deviceId: ID, organizationId: String!): UpdateStatus
+  """Get GitHub sync status for an organization"""
+  updatesSyncStatus(organizationId: String!): SyncStatus
+  """List all available update versions for an organization"""
+  updatesVersions(limit: Int, offset: Int, organizationId: String!, status: String): UpdateVersionList
+}
+
+"""Device registration information"""
+type RegistrationInfo {
+  """Whether command secret is configured"""
+  commandSecretSet: Boolean!
+  """FCM token last refresh timestamp"""
+  fcmTokenRefreshedAt: DateTime
+  """Whether FCM token is valid"""
+  fcmTokenValid: Boolean!
+  """Registration timestamp"""
+  registeredAt: DateTime
+  """Device registration status"""
+  status: DeviceStatus!
+}
+
+"""Release type for an update version"""
+enum ReleaseType {
+  """Major release"""
+  MAJOR
+  """Minor release"""
+  MINOR
+  """Patch release"""
+  PATCH
+}
+
+"""Risk score statistics"""
+type RiskScoreStats {
+  avg: Float
+  max: Int
+  min: Int
+}
+
+"""Non-human service account for automation"""
+type ServiceAccount {
+  """Creation time"""
+  createdAt: DateTime
+  """Whether the account is active"""
+  enabled: Boolean!
+  """Service account ID"""
+  id: ID!
+  """Service account name"""
+  name: String!
+  """Organization ID"""
+  orgId: ID!
+  """Number of active tokens"""
+  tokenCount: Int!
+}
+
+"""Service account token (prefix + metadata only)"""
+type ServiceAccountToken {
+  """Creation time"""
+  createdAt: DateTime
+  """Expiry time"""
+  expiresAt: DateTime
+  """Token ID"""
+  id: ID!
+  """Display prefix of the key"""
+  keyPrefix: String!
+  """Token name"""
+  name: String!
+  """Granted scopes"""
+  scopes: [String]
+  """Service account ID"""
+  serviceId: ID!
+  """Whether the token is usable"""
+  valid: Boolean!
+}
+
+"""Device software information"""
+type SoftwareInfo {
+  """Application version"""
+  appVersion: String!
+  """Build identifier"""
+  buildId: String
+  """Operating system version"""
+  osVersion: String!
+  """Security patch level"""
+  securityPatch: String
+}
+
+"""The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
+scalar String
+
+"""Response from triggering a GitHub sync"""
+type SyncResponse {
+  """Status message"""
+  message: String
+  """When sync started (Unix ms)"""
+  startedAt: Int!
+  """Sync status"""
+  status: String!
+  """Versions found in this sync"""
+  versionsFound: Int
+}
+
+"""GitHub sync status information"""
+type SyncStatus {
+  """Error message if sync failed"""
+  error: String
+  """When the last sync completed"""
+  lastSyncAt: DateTime
+  """When the next scheduled sync will run"""
+  nextSyncAt: DateTime
+  """Sync status: idle, syncing, synced, error"""
+  status: String!
+  """Number of versions found in last sync"""
+  versionsFound: Int
+}
+
+"""Telemetry data from a device"""
+type TelemetryEntry {
+  """Buffer level percentage"""
+  bufferLevel: Int
+  """Device that sent this telemetry"""
+  deviceId: ID!
+  """Unique entry identifier"""
+  id: ID!
+  """Raw telemetry payload"""
+  payload: String
+  """When telemetry was received"""
+  receivedAt: DateTime
+  """Risk score (0-100)"""
+  riskScore: Int
+  """Device temperature in Celsius"""
+  thermalTemp: Float
+}
+
+"""Device telemetry statistics"""
+type TelemetryInfo {
+  """Average WebSocket latency in milliseconds"""
+  avgLatencyMs: Int
+  """Number of frames received today"""
+  framesToday: Int!
+  """Last telemetry timestamp"""
+  lastTimestamp: DateTime!
+  """Number of sessions today"""
+  sessionsToday: Int!
+  """Total bytes transferred today"""
+  totalBytesToday: Int!
+}
+
+"""Aggregated telemetry statistics"""
+type TelemetryStats {
+  """Buffer level statistics"""
+  bufferLevel: BufferLevelStats
+  """Device identifier"""
+  deviceId: ID!
+  """Risk score statistics"""
+  riskScore: RiskScoreStats
+  """Number of samples in calculation"""
+  sampleCount: Int!
+  """Temperature statistics"""
+  thermalTemp: ThermalTempStats
+}
+
+"""Temperature statistics"""
+type ThermalTempStats {
+  avg: Float
+  max: Float
+  min: Float
+}
+
+"""Warning and critical thresholds for a metric"""
+type Threshold {
+  """Critical threshold value"""
+  critical: Float!
+  """Warning threshold value"""
+  warning: Float!
+}
+
+"""Event when a metric exceeds a threshold"""
+type ThresholdEvent {
+  """Which metric was breached"""
+  metric: String!
+  """Threshold that was breached"""
+  threshold: Float!
+  """When the threshold was breached"""
+  timestamp: Int!
+  """Event type (threshold_breach)"""
+  type: String!
+  """Value at time of breach"""
+  value: Float!
+}
+
+"""Alert thresholds for device telemetry"""
+type Thresholds {
+  """Buffer critical threshold (0-100)"""
+  bufferCrit: Int!
+  """Buffer warning threshold (0-100)"""
+  bufferWarn: Int!
+  """Risk critical threshold (0-100)"""
+  riskCrit: Int!
+  """Risk warning threshold (0-100)"""
+  riskWarn: Int!
+  """Thermal critical threshold (0-100)"""
+  thermalCrit: Int!
+  """Thermal warning threshold (0-100)"""
+  thermalWarn: Int!
+}
+
+"""Time range information for metrics queries"""
+type TimeRange {
+  """End timestamp in milliseconds"""
+  end: Int!
+  """Range preset (1h, 6h, 24h, 7d)"""
+  range: String!
+  """Data resolution (1m, 5m, 15m, 1h)"""
+  resolution: String!
+  """Start timestamp in milliseconds"""
+  start: Int!
+}
+
+"""Paginated timeline connection"""
+type TimelineConnection {
+  """Timeline events"""
+  events: [TimelineEvent!]!
+  """Whether there are more results"""
+  hasMore: Boolean!
+  """Cursor for next page"""
+  nextCursor: String
+}
+
+"""A timeline event for a device"""
+type TimelineEvent {
+  """Additional event data"""
+  data: JSON
+  """Event unique identifier"""
+  id: ID!
+  """Event timestamp"""
+  timestamp: DateTime!
+  """Event type"""
+  type: TimelineEventType!
+}
+
+"""Type of device timeline event"""
+enum TimelineEventType {
+  COMMAND_ACK
+  COMMAND_FAILED
+  COMMAND_SENT
+  CONNECTION_LOST
+  CONNECTION_OPEN
+  DEREGISTERED
+  ERROR
+  FCM_FALLBACK
+  RECONNECTED
+  REGISTERED
+  TELEMETRY
+  THRESHOLD_BREACH
+}
+
+"""Result of transferring a device between organizations"""
+type TransferDevicePayload {
+  """The transferred device ID"""
+  deviceId: ID!
+  """Source organization ID"""
+  sourceOrganizationId: ID!
+  """Whether the transfer was successful"""
+  success: Boolean!
+  """Target organization ID"""
+  targetOrganizationId: ID!
+}
+
+"""Per-device settings update (custom name, location, metadata, thresholds)"""
+input UpdateDeviceSettingsInput {
+  customName: String
+  location: String
+  metadata: [MetadataInput!]
+  thresholds: DeviceThresholdsInput
+}
+
+"""An update push history record"""
+type UpdateHistory {
+  """When the push was cancelled"""
+  cancelledAt: DateTime
+  """When the push completed"""
+  completedAt: DateTime
+  """Total devices in this push"""
+  deviceCount: Int!
+  """Devices in this push"""
+  devices: [PushDevice!]
+  """Unique push identifier"""
+  id: ID!
+  """When the push was initiated"""
+  initiatedAt: DateTime
+  """Operator who initiated the push"""
+  initiatedBy: String!
+  """Install type (immediate or scheduled)"""
+  installType: InstallType!
+  """Push status"""
+  status: UpdatePushStatus!
+  """Version that was pushed"""
+  version: String!
+}
+
+"""Notification settings update (per-channel toggles + webhook config)"""
+input UpdateNotificationsInput {
+  channels: [String!]
+  email: EmailNotificationInput
+  enabled: Boolean
+  push: PushNotificationInput
+  webhook: WebhookNotificationInput
+}
+
+"""Organization settings update (timezone, date format, alert cooldown, default thresholds)"""
+input UpdateOrganizationSettingsInput {
+  alertCooldownMinutes: Int
+  dateFormat: String
+  defaultThresholds: OrgDefaultThresholdsInput
+  timezone: String
+}
+
+"""An update push to devices"""
+type UpdatePush {
+  """When the push was cancelled"""
+  cancelledAt: DateTime
+  """When the push completed"""
+  completedAt: DateTime
+  """Total number of devices in this push"""
+  deviceCount: Int!
+  """Devices in this push"""
+  devices: [PushDevice!]
+  """Unique push identifier"""
+  id: ID!
+  """When the push was initiated"""
+  initiatedAt: DateTime
+  """Operator ID who initiated the push"""
+  initiatedBy: String!
+  """Install type (immediate or scheduled)"""
+  installType: InstallType!
+  """When the push is scheduled (null for immediate)"""
+  scheduledAt: DateTime
+  """Push status"""
+  status: UpdatePushStatus!
+  """Version being pushed"""
+  version: String!
+}
+
+"""Status of an update push"""
+enum UpdatePushStatus {
+  """Push was cancelled"""
+  CANCELLED
+  """Push completed successfully"""
+  COMPLETED
+  """Push failed"""
+  FAILED
+  """Push is in progress"""
+  IN_PROGRESS
+  """Push is pending"""
+  PENDING
+}
+
+"""Overall update system status"""
+type UpdateStatus {
+  """APK filename for the update"""
+  apkFilename: String
+  """Device current version and update status"""
+  device: DeviceUpdateStatus!
+  """Latest available version"""
+  latest: UpdateVersion
+  """SHA256 hash for the update"""
+  sha256: String
+  """GitHub sync status"""
+  sync: SyncStatus!
+  """Device current version (alias for device)"""
+  version: String!
+}
+
+"""An available update version"""
+type UpdateVersion {
+  """APK filename"""
+  apkFilename: String!
+  """APK size in bytes"""
+  apkSize: Int!
+  """When the version was added to the system"""
+  createdAt: DateTime
+  """Unique version identifier"""
+  id: ID!
+  """Whether this is the latest version"""
+  isLatest: Boolean
+  """Release notes for this version"""
+  releaseNotes: String
+  """Release type (MAJOR, MINOR, PATCH)"""
+  releaseType: ReleaseType!
+  """Release timestamp"""
+  releasedAt: DateTime
+  """SHA256 hash of the APK"""
+  sha256: String!
+  """Version string (e.g. v1.2.0)"""
+  version: String!
+}
+
+"""Paginated list of update versions"""
+type UpdateVersionList {
+  """Pagination information"""
+  pagination: Pagination
+  """List of versions"""
+  versions: [UpdateVersion!]!
+}
+
+"""Webhook notification channel settings (URL + signing secret)"""
+input WebhookNotificationInput {
+  enabled: Boolean
+  types: [String!]
+  url: String
+}
+
+"""Webhook notification configuration"""
+type WebhookSettings {
+  """Whether webhook is enabled"""
+  enabled: Boolean!
+  """Webhook secret (hidden)"""
+  secret: String
+  """Notification types to send"""
+  types: [String!]!
+  """Webhook URL"""
+  url: String
+}
+

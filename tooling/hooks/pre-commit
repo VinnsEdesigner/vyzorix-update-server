@@ -54,5 +54,20 @@ if command -v swag &>/dev/null; then
 else
   info "swag not installed — skipping swagger drift check."
 fi
+
+# --- GraphQL schema drift gate: schema code stays in sync with generated SDL ---
+info "Checking GraphQL schema drift (schema code -> SDL)..."
+GQL_TMP=$(mktemp -d)
+if go run ./cmd/graphql-schema -out "$GQL_TMP" >/dev/null 2>&1; then
+  if ! cmp -s "$GQL_TMP/schema.graphql" "$API_DIR/swag/graphql/schema.graphql" 2>/dev/null; then
+    rm -rf "$GQL_TMP"
+    fail "schema.graphql drift detected — run 'go run ./cmd/graphql-schema -out swag/graphql' from apps/api."
+  fi
+  rm -rf "$GQL_TMP"
+  pass "graphql schema drift: clean"
+else
+  rm -rf "$GQL_TMP"
+  info "graphql-schema generator failed — skipping graphql drift check."
+fi
 echo ""
 pass "All checks passed. Commit proceeding."

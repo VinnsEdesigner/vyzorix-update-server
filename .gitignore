@@ -83,3 +83,4 @@ playwright-report/
 # Build artifacts
 apps/api/api
 
+apps/api/graphql-schema

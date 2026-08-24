@@ -673,7 +673,8 @@ var DeviceMetricsType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"device": &graphql.Field{
 			Type: graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
-				Name: "DeviceInfo",
+				Name:        "DeviceInfo",
+				Description: "Device identity (IMEI + display name)",
 				Fields: graphql.Fields{
 					"imei":       &graphql.Field{Type: graphql.NewNonNull(graphql.ID)},
 					"deviceName": &graphql.Field{Type: graphql.String},
@@ -1823,7 +1824,8 @@ var DeviceSettingsType = graphql.NewObject(graphql.ObjectConfig{
 		},
 		"metadata": &graphql.Field{
 			Type: graphql.NewList(graphql.NewNonNull(graphql.NewObject(graphql.ObjectConfig{
-				Name: "MetadataEntry",
+				Name:        "MetadataEntry",
+				Description: "A single device metadata key/value pair",
 				Fields: graphql.Fields{
 					"key": &graphql.Field{
 						Type:        graphql.NewNonNull(graphql.String),

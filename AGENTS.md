@@ -50,6 +50,21 @@
   Go struct json tags, not intuition). The pre-existing connectivity test mocked
   `/api/v1/health` but the monitor probes `/health` — now aligned.
 
+## GraphQL schema generation (2026-08-24)
+- The GraphQL schema is **code-first** (`graphql-go`); there is no `.graphqls` SDL file.
+  The canonical generated artifact is `apps/api/swag/graphql/schema.graphql` (SDL), produced by
+  `cd apps/api && go run ./cmd/graphql-schema -out swag/graphql`.
+- The generator renders SDL directly from the built type system with a **nil resolver**
+  (BuildSchema only reads field/type defs). graphql-go's executor does NOT execute the standard
+  introspection `__schema` query and has no SDL printer — that's why the tool walks
+  `Schema.TypeMap()` instead. Output is deterministic (types/fields/args/enums sorted).
+- **Drift gate** (same contract as swagger): pre-commit (`tooling/hooks/pre-commit`) and Server
+  Gate CI (`.github/workflows/server-gate.yml` step "GraphQL schema drift") both regenerate to a
+  temp dir and fail if `swag/graphql/schema.graphql` is stale.
+- **Annotating** = editing `Description:` strings on objects/fields/enums in
+  `internal/api/graphql/schema/*.go`; they flow into SDL as `"""..."""` doc comments. All 112
+  types are documented.
+
 ## Spec realignment (documents/)
 - The `documents/*.md` front-end specs predate the **organization model**. When updating one,
   pull correct context from BOTH the server spec (`documents/SERVER_BACKEND_*_API.md`) AND the

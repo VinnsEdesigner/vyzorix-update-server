@@ -79,6 +79,19 @@ jobs:
         working-directory: apps/api
         run: go test ./... -count=1
 
+      # --- Step 5: GraphQL schema drift ---
+      - name: GraphQL schema drift
+        id: gql-drift
+        if: always()
+        working-directory: apps/api
+        run: |
+          TMP=$(mktemp -d)
+          go run ./cmd/graphql-schema -out "$TMP"
+          if ! cmp -s "$TMP/schema.graphql" swag/graphql/schema.graphql; then
+            echo "schema.graphql drift — run: go run ./cmd/graphql-schema -out swag/graphql"
+            exit 1
+          fi
+
       # --- Gate failed: revert main, push bad commit to fix branch ---
       - name: Gate failed — revert and branch
         if: ${{ failure() }}

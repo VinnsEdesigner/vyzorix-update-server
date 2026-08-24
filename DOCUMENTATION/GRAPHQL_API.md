@@ -16,13 +16,42 @@ GraphQL routes go through the same middleware chain as REST: cookie auth, API ke
 
 ## Schema
 
-The schema is generated from Go types in `internal/api/graphql/schema/`. It includes:
+The schema is code-first, built from Go types in `internal/api/graphql/schema/`. It includes:
 
 - **Queries** — devices, device details, command history, telemetry, update versions, organization info
 - **Mutations** — execute command, cancel command, push update, create API key, update settings
 - **Subscriptions** — realtime telemetry updates, command status changes, device connection events
 
 The schema types are defined in `internal/api/graphql/schema/objects.go` and `internal/api/graphql/schema/schema.go`.
+
+### Schema generation + drift gate
+
+The canonical SDL is generated from the code-first schema and checked in at
+`apps/api/swag/graphql/schema.graphql`. Regenerate it after any change to
+`internal/api/graphql/schema/`:
+
+```
+cd apps/api && go run ./cmd/graphql-schema -out swag/graphql
+```
+
+The generator (`apps/api/cmd/graphql-schema`) builds the schema with a nil
+resolver (BuildSchema only reads field/type definitions, never invokes
+resolvers) and renders SDL directly from the type system — graphql-go has no
+SDL printer and its executor does not execute the standard introspection
+`__schema` query. Output is deterministic (types, fields, args, and enum values
+are sorted).
+
+Drift is enforced two ways (same contract as the swagger drift gate):
+- **Pre-commit** (`tooling/hooks/pre-commit`): regenerates to a temp dir and
+  fails the commit if `schema.graphql` is stale.
+- **Server Gate CI** (`.github/workflows/server-gate.yml`): the
+  "GraphQL schema drift" step does the same on every push to main that touches
+  `apps/api/`.
+
+**Annotating the schema** = editing the `Description:` strings on the Go
+objects/fields/enums in `internal/api/graphql/schema/*.go`. They flow into the
+generated SDL as `"""..."""` doc comments. Every named type must have a
+description (the generator output is checked for this in review).
 
 ## Resolvers
 
