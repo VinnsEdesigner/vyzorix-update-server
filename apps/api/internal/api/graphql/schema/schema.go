@@ -10,10 +10,12 @@ import (
 func BuildSchema(res *resolver.Resolver) (graphql.Schema, error) {
 	queryType := buildQueryType(res)
 	mutationType := buildMutationType(res)
+	subscriptionType := BuildSubscriptionType(res)
 
 	return graphql.NewSchema(graphql.SchemaConfig{
-		Query:    queryType,
-		Mutation: mutationType,
+		Query:        queryType,
+		Mutation:     mutationType,
+		Subscription: subscriptionType,
 	})
 }
 
@@ -836,7 +838,7 @@ func updateOrganizationMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        OrganizationType,
 		Description: "Update an organization",
 		Args: graphql.FieldConfigArgument{
-			"id":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"id":         &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"name":       &graphql.ArgumentConfig{Type: graphql.String, Description: "New organization name"},
 			"maxMembers": &graphql.ArgumentConfig{Type: graphql.Int, Description: "Maximum number of members"},
 			"isActive":   &graphql.ArgumentConfig{Type: graphql.Boolean, Description: "Whether the organization is active"},
@@ -850,7 +852,7 @@ func deleteOrganizationMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        graphql.Boolean,
 		Description: "Delete an organization (soft delete)",
 		Args: graphql.FieldConfigArgument{
-			"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"id": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 		},
 		Resolve: res.DeleteOrganization,
 	}
@@ -861,7 +863,7 @@ func inviteMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        InvitationType,
 		Description: "Invite a member to an organization",
 		Args: graphql.FieldConfigArgument{
-			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"email":          &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Email address to invite"},
 			"role":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(OrgRoleEnum), Description: "Role to assign"},
 			"notes":          &graphql.ArgumentConfig{Type: graphql.String, Description: "Optional notes for the invitation"},
@@ -875,7 +877,7 @@ func removeMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        graphql.Boolean,
 		Description: "Remove a member from an organization",
 		Args: graphql.FieldConfigArgument{
-			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to remove"},
 		},
 		Resolve: res.RemoveMember,
@@ -887,7 +889,7 @@ func updateMemberRoleMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        MembershipType,
 		Description: "Update a member's role",
 		Args: graphql.FieldConfigArgument{
-			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to update"},
 			"role":           &graphql.ArgumentConfig{Type: graphql.NewNonNull(OrgRoleEnum), Description: "New role"},
 		},
@@ -948,7 +950,7 @@ func transferOwnershipMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        graphql.Boolean,
 		Description: "Transfer super_admin ownership to another member",
 		Args: graphql.FieldConfigArgument{
-			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID of the new super_admin"},
 		},
 		Resolve: res.TransferOwnership,
@@ -960,7 +962,7 @@ func suspendMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        graphql.Boolean,
 		Description: "Suspend an active member",
 		Args: graphql.FieldConfigArgument{
-			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to suspend"},
 		},
 		Resolve: res.SuspendMember,
@@ -972,7 +974,7 @@ func reinstateMemberMutation(res *resolver.Resolver) *graphql.Field {
 		Type:        graphql.Boolean,
 		Description: "Reinstate a suspended member",
 		Args: graphql.FieldConfigArgument{
-			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Organization ID"},
+			"organizationId": &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.String), Description: "Organization ID"},
 			"memberId":       &graphql.ArgumentConfig{Type: graphql.NewNonNull(graphql.ID), Description: "Membership ID to reinstate"},
 		},
 		Resolve: res.ReinstateMember,

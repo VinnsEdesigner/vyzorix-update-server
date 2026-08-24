@@ -1,11 +1,6 @@
 import {
-  queryUpdates,
-  queryUpdatesStatus,
-  queryUpdatesChangelog,
-  queryUpdatesHistory,
-  mutatePushUpdate,
-  mutateCancelUpdate,
-  mutateSyncUpdates,
+  gqlQuery,
+  gqlMutate,
   type UpdateVersion,
   type UpdatePush,
   type VersionListResult,
@@ -25,6 +20,22 @@ import {
   type UpdateChangelogResult,
   type UpdateStatusResult,
 } from '@vyzorix/api-client';
+import {
+  GetUpdatesDocument,
+  GetUpdatesStatusDocument,
+  GetUpdatesChangelogDocument,
+  GetUpdatesHistoryDocument,
+  PushUpdateDocument,
+  CancelUpdateDocument,
+  SyncUpdatesDocument,
+  type GetUpdatesQuery,
+  type GetUpdatesStatusQuery,
+  type GetUpdatesChangelogQuery,
+  type GetUpdatesHistoryQuery,
+  type PushUpdateMutation,
+  type CancelUpdateMutation,
+  type SyncUpdatesMutation,
+} from '@vyzorix/api-client/generated-graphql';
 
 interface VersionFallbackParams {
   status?: string;
@@ -57,62 +68,105 @@ export async function fetchVersionsViaGraphQL(
   organizationId: string,
   params?: VersionFallbackParams,
 ): Promise<VersionListResult> {
-  return queryUpdates({
+  const data = await gqlQuery<GetUpdatesQuery>(GetUpdatesDocument, {
     organizationId,
     status: params?.status,
     limit: params?.limit,
     offset: params?.offset,
   });
+  const connection = data.updatesVersions;
+  const wirePagination = connection?.pagination;
+  return {
+    versions: (connection?.versions ?? []).map((v) => normalizeWireVersion(v)),
+    pagination: wirePagination
+      ? {
+          page: Math.floor((wirePagination.offset ?? 0) / (wirePagination.limit || 20)) + 1,
+          limit: wirePagination.limit,
+          total: wirePagination.total,
+          totalPages: Math.ceil((wirePagination.total ?? 0) / (wirePagination.limit || 20)),
+        }
+      : { page: 1, limit: 20, total: 0, totalPages: 0 },
+  };
 }
 
 export async function fetchUpdateStatusViaGraphQL(
   organizationId: string,
 ): Promise<UpdateStatusResponse> {
-  const result = await queryUpdatesStatus({ organizationId });
-  return {
-    sync: result.sync,
-    latest: result.latest,
-  };
+  const data = await gqlQuery<GetUpdatesStatusQuery>(GetUpdatesStatusDocument, { organizationId });
+  const status = data.updatesStatus;
+  if (!status) throw new Error('GraphQL updatesStatus returned no data');
+  return normalizeWireUpdateStatus(status as unknown as UpdateStatusResult);
 }
 
 export async function fetchChangelogViaGraphQL(
   organizationId: string,
   version?: string,
 ): Promise<ChangelogEntry[]> {
-  return queryUpdatesChangelog({ organizationId, version });
+  const data = await gqlQuery<GetUpdatesChangelogQuery>(GetUpdatesChangelogDocument, { organizationId, version });
+  return (data.updatesChangelog ?? []).map((e) => ({
+    version: e.version,
+    date: toDate(e.date) ?? new Date(),
+    type: (e.type ?? 'patch') as ReleaseType,
+    notes: e.notes,
+  }));
 }
 
 export async function fetchUpdateHistoryViaGraphQL(
   organizationId: string,
   params?: HistoryFallbackParams,
 ): Promise<UpdateHistoryResult> {
-  return queryUpdatesHistory({
+  const data = await gqlQuery<GetUpdatesHistoryQuery>(GetUpdatesHistoryDocument, {
     organizationId,
     status: params?.status,
     page: params?.page,
     limit: params?.limit,
   });
+  const connection = data.updatesHistory;
+  const wirePagination = connection?.pagination;
+  return {
+    pushes: (connection?.pushes ?? []).filter((p): p is NonNullable<typeof p> => p != null).map((p) => normalizeWireHistoryEntry({
+      id: p.id,
+      version: p.version,
+      installType: p.installType,
+      status: p.status,
+      initiatedBy: p.initiatedBy,
+      initiatedAt: p.initiatedAt,
+      completedAt: p.completedAt ?? undefined,
+      deviceCount: p.deviceCount,
+      devices: { pending: p.pending, acknowledged: p.acknowledged, failed: p.failed },
+    })),
+    pagination: wirePagination
+      ? {
+          page: Math.floor((wirePagination.offset ?? 0) / (wirePagination.limit || 20)) + 1,
+          limit: wirePagination.limit,
+          total: wirePagination.total,
+          totalPages: Math.ceil((wirePagination.total ?? 0) / (wirePagination.limit || 20)),
+        }
+      : { page: 1, limit: 20, total: 0, totalPages: 0 },
+  };
 }
 
 export async function pushUpdateViaGraphQL(
   organizationId: string,
   params: PushFallbackParams,
 ): Promise<UpdatePush> {
-  const result = await mutatePushUpdate({
+  const data = await gqlMutate<PushUpdateMutation>(PushUpdateDocument, {
     organizationId,
     version: params.version,
     deviceIds: params.deviceIds,
     installType: params.installType,
     scheduledAt: params.scheduledAt?.getTime(),
   });
+  const result = data.pushUpdate;
+  if (!result) throw new Error('GraphQL pushUpdate returned no data');
   return {
     id: result.pushId,
     version: result.version,
-    installType: result.installType,
-    status: result.status,
+    installType: result.installType as InstallType,
+    status: result.status as UpdateStatus,
     initiatedBy: result.initiatedBy,
-    initiatedAt: result.initiatedAt,
-    scheduledAt: result.scheduledAt,
+    initiatedAt: toDate(result.initiatedAt) ?? new Date(),
+    scheduledAt: toDate(result.scheduledAt),
     devices: { ...EMPTY_DEVICES, total: result.deviceCount },
   };
 }
@@ -121,28 +175,32 @@ export async function cancelUpdateViaGraphQL(
   organizationId: string,
   pushId: string,
 ): Promise<UpdatePush> {
-  const result = await mutateCancelUpdate({ organizationId, id: pushId });
+  const data = await gqlMutate<CancelUpdateMutation>(CancelUpdateDocument, { organizationId, id: pushId });
+  const result = data.cancelUpdate;
+  if (!result) throw new Error('GraphQL cancelUpdate returned no data');
   return {
     id: result.id,
     version: '',
     installType: 'immediate',
-    status: result.status,
+    status: result.status as UpdateStatus,
     initiatedBy: '',
-    initiatedAt: result.cancelledAt,
-    cancelledAt: result.cancelledAt,
+    initiatedAt: toDate(result.cancelledAt) ?? new Date(),
+    cancelledAt: toDate(result.cancelledAt),
     cancelledBy: result.cancelledBy,
     devices: { ...EMPTY_DEVICES },
   };
 }
 
 export async function syncUpdatesViaGraphQL(
-  organizationId: string,
+  _organizationId: string,
 ): Promise<{ status: string; startedAt: Date; versionsFound?: number }> {
-  const result = await mutateSyncUpdates({ organizationId });
+  const data = await gqlMutate<SyncUpdatesMutation>(SyncUpdatesDocument, {});
+  const result = data.syncUpdates;
+  if (!result) throw new Error('GraphQL syncUpdates returned no data');
   return {
     status: result.status,
-    startedAt: result.startedAt,
-    versionsFound: result.versionsFound,
+    startedAt: toDate(result.startedAt) ?? new Date(),
+    versionsFound: result.versionsFound ?? undefined,
   };
 }
 
@@ -176,14 +234,14 @@ function normalizePagination(raw?: { page?: number; limit?: number; total?: numb
 }
 
 export function normalizeWireVersion(v: {
-  version?: string;
-  apkFilename?: string;
-  apkSize?: number;
-  sha256?: string;
-  releaseType?: string;
-  releaseNotes?: string;
-  releasedAt?: number;
-  isLatest?: boolean;
+  version?: string | null;
+  apkFilename?: string | null;
+  apkSize?: number | null;
+  sha256?: string | null;
+  releaseType?: string | null;
+  releaseNotes?: string | null;
+  releasedAt?: number | string | null;
+  isLatest?: boolean | null;
 }): UpdateVersion {
   const releasedAt = toDate(v.releasedAt) ?? new Date();
   return {
@@ -193,7 +251,7 @@ export function normalizeWireVersion(v: {
     apkSize: v.apkSize ?? 0,
     sha256: v.sha256 ?? '',
     releaseType: (v.releaseType ?? 'patch') as ReleaseType,
-    releaseNotes: v.releaseNotes,
+    releaseNotes: v.releaseNotes ?? undefined,
     releaseDate: releasedAt,
     isLatest: v.isLatest ?? false,
     createdAt: releasedAt,

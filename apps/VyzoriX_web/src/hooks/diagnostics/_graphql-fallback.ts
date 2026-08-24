@@ -1,10 +1,7 @@
 import {
-  queryDeviceInspection,
-  queryDeviceTimeline,
+  gqlQuery,
   graphqlDeviceInspectionFromRaw,
   graphqlTimelineResultFromRaw,
-  type RawGraphQLDeviceInspection,
-  type RawGraphQLTimelineConnection,
   type DeviceInspection,
   type TimelineResult,
   type TimelineEvent,
@@ -12,36 +9,22 @@ import {
   type DeviceInspectionResult,
   type DeviceStatus,
 } from '@vyzorix/api-client';
+import {
+  GetDeviceInspectionDocument,
+  GetDeviceTimelineDocument,
+  type GetDeviceInspectionQuery,
+  type GetDeviceTimelineQuery,
+} from '@vyzorix/api-client/generated-graphql';
 import type { TimelineParams } from './use-diagnostics';
-
-interface ApolloQueryResponse<T> {
-  data?: { deviceInspection?: T };
-}
-
-interface ApolloTimelineResponse<T> {
-  data?: { deviceTimeline?: T };
-}
-
-function extractInspection(response: unknown): RawGraphQLDeviceInspection {
-  const r = response as ApolloQueryResponse<RawGraphQLDeviceInspection> | null;
-  const raw = r?.data?.deviceInspection;
-  if (!raw) throw new Error('GraphQL deviceInspection returned no data');
-  return raw;
-}
-
-function extractTimeline(response: unknown): RawGraphQLTimelineConnection {
-  const r = response as ApolloTimelineResponse<RawGraphQLTimelineConnection> | null;
-  const raw = r?.data?.deviceTimeline;
-  if (!raw) throw new Error('GraphQL deviceTimeline returned no data');
-  return raw;
-}
 
 export async function fetchInspectionViaGraphQL(
   imei: string,
   organizationId: string,
 ): Promise<DeviceInspection> {
-  const response = await queryDeviceInspection({ imei, organizationId });
-  return graphqlDeviceInspectionFromRaw(extractInspection(response));
+  const data = await gqlQuery<GetDeviceInspectionQuery>(GetDeviceInspectionDocument, { imei, organizationId });
+  const raw = data.deviceInspection;
+  if (!raw) throw new Error('GraphQL deviceInspection returned no data');
+  return graphqlDeviceInspectionFromRaw(raw as unknown as never);
 }
 
 export async function fetchTimelineViaGraphQL(
@@ -49,7 +32,7 @@ export async function fetchTimelineViaGraphQL(
   organizationId: string,
   params?: TimelineParams,
 ): Promise<TimelineResult> {
-  const response = await queryDeviceTimeline({
+  const data = await gqlQuery<GetDeviceTimelineQuery>(GetDeviceTimelineDocument, {
     imei,
     organizationId,
     eventType: params?.eventType,
@@ -58,8 +41,13 @@ export async function fetchTimelineViaGraphQL(
     limit: params?.limit,
     cursor: params?.cursor,
   });
-  const connection = extractTimeline(response);
-  const result = graphqlTimelineResultFromRaw(connection);
+  const connection = data.deviceTimeline;
+  if (!connection) throw new Error('GraphQL deviceTimeline returned no data');
+  const result = graphqlTimelineResultFromRaw({
+    events: (connection.events ?? []).filter((e): e is NonNullable<typeof e> => e != null) as unknown as never,
+    hasMore: connection.hasMore,
+    nextCursor: connection.nextCursor ?? undefined,
+  });
   // GraphQL TimelineEvent does not expose deviceId; inject the known imei.
   result.events = result.events.map((e) => ({ ...e, deviceId: imei }));
   return result;

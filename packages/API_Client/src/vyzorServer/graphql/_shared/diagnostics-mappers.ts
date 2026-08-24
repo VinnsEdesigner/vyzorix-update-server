@@ -10,7 +10,7 @@ import type { DeviceStatus } from '../../../domain/_shared';
 import type {
   RawDeviceInspection,
   RawTimelineConnection,
-} from './graphql-diagnostics-types';
+} from './diagnostics-types';
 
 /** Aliases kept for the web hooks' GraphQL fallback imports. */
 export type RawGraphQLDeviceInspection = RawDeviceInspection;

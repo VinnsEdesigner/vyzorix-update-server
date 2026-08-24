@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   graphqlDeviceInspectionFromRaw,
   graphqlTimelineResultFromRaw,
-  type RawGraphQLDeviceInspection,
-  type RawGraphQLTimelineConnection,
+  type RawDeviceInspection,
+  type RawTimelineConnection,
 } from '@vyzorix/api-client';
 import { getEventCategory, timelineEventTypeLabel } from '@vyzorix/api-client';
 
@@ -40,7 +40,7 @@ describe('getEventCategory', () => {
 
 describe('graphqlTimelineResultFromRaw', () => {
   it('maps events and pagination fields', () => {
-    const raw: RawGraphQLTimelineConnection = {
+    const raw: RawTimelineConnection = {
       events: [{ id: 'evt-1', type: 'TELEMETRY', timestamp: '2024-06-20T12:00:00Z', data: { riskScore: 45 } }],
       hasMore: true,
       nextCursor: 'eyJ0Ijoi...',
@@ -63,7 +63,7 @@ describe('graphqlTimelineResultFromRaw', () => {
 
 describe('graphqlDeviceInspectionFromRaw', () => {
   it('maps a full inspection (ISO timestamps -> Date)', () => {
-    const raw: RawGraphQLDeviceInspection = {
+    const raw: RawDeviceInspection = {
       identity: { imei: '861234567890123', deviceName: 'Pixel 8', model: 'Pixel 8', manufacturer: 'Google' },
       software: { osVersion: 'Android 14', appVersion: '2.1.0', securityPatch: '2024-03-01', buildId: 'UP1A' },
       registration: { status: 'registered', registeredAt: '2024-06-20T11:00:00Z', fcmTokenValid: true, commandSecretSet: true },
@@ -79,7 +79,7 @@ describe('graphqlDeviceInspectionFromRaw', () => {
   });
 
   it('handles missing optional fields without throwing', () => {
-    const raw: RawGraphQLDeviceInspection = {
+    const raw: RawDeviceInspection = {
       identity: { imei: '123' },
       software: {},
       registration: { status: 'offline', fcmTokenValid: false, commandSecretSet: false },

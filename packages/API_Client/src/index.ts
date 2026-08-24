@@ -27,3 +27,7 @@ export { getDiagnostics } from './generated/diagnostics/diagnostics';
 export { getConnections } from './generated/connections/connections';
 export { getTelemetry } from './generated/telemetry/telemetry';
 export { getUpdater } from './generated/updater/updater';
+
+// GraphQL: generated typed documents + the executor bridge over graphqlClient.
+export * as generatedGraphql from './generated/graphql';
+export { query as gqlQuery, mutate as gqlMutate, execute as gqlExecute } from './generated/graphql/executor';

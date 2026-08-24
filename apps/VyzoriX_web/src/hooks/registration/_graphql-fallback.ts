@@ -1,8 +1,6 @@
 import {
-  queryInboxEntries,
-  queryInboxEntry,
-  mutateAckInbox,
-  mutateDeregisterDevice,
+  gqlQuery,
+  gqlMutate,
   type InboxEntry,
   type RegisteredDevice,
   type InboxEntriesResult,
@@ -13,6 +11,17 @@ import {
   type InboxStatus,
   type Pagination,
 } from '@vyzorix/api-client';
+import {
+  GetInboxEntriesDocument,
+  GetInboxEntryDocument,
+  AckInboxDocument,
+  DeregisterDeviceDocument,
+  type GetInboxEntriesQuery,
+  type GetInboxEntryQuery,
+  type AckInboxMutation,
+  type DeregisterDeviceMutation,
+  type AckAction,
+} from '@vyzorix/api-client/generated-graphql';
 
 interface RawInboxEntryFields {
   id?: string;
@@ -80,33 +89,18 @@ function normalizePagination(raw: RawPaginationFields): Pagination {
   };
 }
 
-function extractData<T>(response: unknown, primary: string, fallback?: string): T | null {
-  const r = response as Record<string, unknown> | null;
-  if (!r) return null;
-  const primaryData = r[primary] as T | undefined;
-  if (primaryData !== undefined) return primaryData;
-  // The registration GraphQL wrappers return the raw Apollo QueryResult, which
-  // nests the operation payload under `.data` (e.g. `{ data: { inbox: {...} } }`).
-  const nested = r.data as Record<string, unknown> | undefined;
-  if (nested) {
-    const nestedPrimary = nested[primary] as T | undefined;
-    if (nestedPrimary !== undefined) return nestedPrimary;
-  }
-  if (fallback) return (r[fallback] as T | undefined) ?? null;
-  return null;
-}
 
 export async function fetchInboxViaGraphQL(
   organizationId: string,
   params?: { status?: InboxStatus | 'all'; page?: number; limit?: number },
 ): Promise<InboxEntriesResult> {
-  const response = await queryInboxEntries({
+  const data = await gqlQuery<GetInboxEntriesQuery>(GetInboxEntriesDocument, {
     organizationId,
     status: params?.status === 'all' ? undefined : params?.status,
     page: params?.page,
     limit: params?.limit,
   });
-  const connection = extractData<Record<string, unknown>>(response, 'inbox', 'data');
+  const connection = data.inbox;
   const requests = (connection?.requests as RawInboxEntryFields[] | undefined) ?? [];
   const paginationRaw = (connection?.pagination as RawPaginationFields | undefined) ?? {};
   return {
@@ -119,8 +113,8 @@ export async function fetchInboxEntryViaGraphQL(
   organizationId: string,
   imei: string,
 ): Promise<InboxEntry | null> {
-  const response = await queryInboxEntry({ organizationId, imei });
-  const raw = extractData<RawInboxEntryFields>(response, 'inboxEntry', 'data');
+  const data = await gqlQuery<GetInboxEntryQuery>(GetInboxEntryDocument, { organizationId, imei });
+  const raw = data.inboxEntry as RawInboxEntryFields | null;
   if (!raw?.imei) return null;
   return normalizeInboxEntry(raw);
 }
@@ -139,27 +133,18 @@ export async function fetchRegisteredDeviceViaGraphQL(
   throw new Error('GraphQL fallback for a single registered device is not implemented');
 }
 
-interface RawAckResultFields {
-  id: string;
-  imei: string;
-  status: InboxStatus;
-  acknowledgedAt?: number | null;
-  approvingAt?: number | null;
-  approvedAt?: number | null;
-  rejectedAt?: number | null;
-  commandSecret?: string | null;
-  fcmPushSent?: boolean;
-  notes?: string | null;
-}
-
 export async function acknowledgeViaGraphQL(
   _organizationId: string,
   imei: string,
   action: AcknowledgeAction,
   notes?: string,
 ): Promise<AckResult> {
-  const response = await mutateAckInbox({ imei, action, notes });
-  const result = extractData<RawAckResultFields>(response, 'ackInbox', 'data');
+  const data = await gqlMutate<AckInboxMutation>(AckInboxDocument, {
+    imei,
+    action: action.toUpperCase() as AckAction,
+    notes,
+  });
+  const result = data.ackInbox;
   if (!result) {
     return {
       id: '',
@@ -177,9 +162,9 @@ export async function acknowledgeViaGraphQL(
   return {
     id: result.id,
     imei: result.imei,
-    status: result.status,
-    acknowledgedAt: toDate(result.acknowledgedAt),
-    approvingAt: toDate(result.approvingAt),
+    status: result.status as InboxStatus,
+    acknowledgedAt: null,
+    approvingAt: null,
     approvedAt: toDate(result.approvedAt),
     rejectedAt: toDate(result.rejectedAt),
     commandSecret: result.commandSecret ?? null,
@@ -188,20 +173,13 @@ export async function acknowledgeViaGraphQL(
   };
 }
 
-interface RawDeregisterResultFields {
-  imei: string;
-  status: string;
-  deregisteredAt?: number;
-  retentionUntil?: number;
-}
-
 export async function deregisterViaGraphQL(
   _organizationId: string,
   imei: string,
   hard?: boolean,
 ): Promise<DeregisterResult> {
-  const response = await mutateDeregisterDevice({ imei, hard });
-  const result = extractData<RawDeregisterResultFields>(response, 'deregisterDevice', 'data');
+  const data = await gqlMutate<DeregisterDeviceMutation>(DeregisterDeviceDocument, { imei, hard });
+  const result = data.deregisterDevice;
   if (!result) {
     return {
       imei,

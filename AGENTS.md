@@ -65,6 +65,25 @@
   `internal/api/graphql/schema/*.go`; they flow into SDL as `"""..."""` doc comments. All 112
   types are documented.
 
+## GraphQL client codegen (2026-08-24)
+- `packages/API_Client/src/generated/graphql/` is graphql-codegen output from
+  `apps/api/swag/graphql/schema.graphql` (config: `codegen.graphql.ts`, preset `client`).
+  It emits typed `XDocument` (TypedDocumentNode) + `XQuery`/`XMutation`/`XQueryVariables` per
+  operation. Run: `pnpm exec graphql-codegen --config codegen.graphql.ts` from repo root.
+- The generated documents execute through the **existing Apollo `graphqlClient`** via
+  `src/generated/graphql/executor.ts` (`gqlQuery`/`gqlMutate`/`gqlExecute`) — HMAC signing,
+  org-scoped `/:org/graphql` path, and batching all come from that transport. No new client.
+- The hand-rolled `vyzorServer/graphql/{device,settings,updates,diagnostics,logs,commands,
+  registration,invitation,membership,organization,realtime}` modules are deleted. The web
+  hooks' `_graphql-fallback.ts` import the generated documents from
+  `@vyzorix/api-client/generated-graphql` and normalize wire → domain types locally.
+- Codegen validation surfaced real drift that was fixed: `organizationId` args were `ID!` in
+  some server fields but `String!` in others (unified to `String!`); `AckResult`/`DeregisterResult`
+  had no `success`/`error` fields; `ClientSettings` didn't have `theme`/`language`/`timezone`;
+  `RegistrationLog`/`DiagnosticLog` types existed in the server schema but were never referenced
+  by any field (dead) so the client fragments on them were dropped; the `Subscription` root type
+  was defined but never wired into `BuildSchema` (now wired — subscriptions are in the SDL).
+
 ## Spec realignment (documents/)
 - The `documents/*.md` front-end specs predate the **organization model**. When updating one,
   pull correct context from BOTH the server spec (`documents/SERVER_BACKEND_*_API.md`) AND the

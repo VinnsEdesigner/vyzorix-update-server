@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  DEVICE_UPDATED_SUBSCRIPTION,
-  TELEMETRY_RECEIVED_SUBSCRIPTION,
-  COMMAND_STATUS_SUBSCRIPTION,
-  ORGANIZATION_EVENT_SUBSCRIPTION,
-  MEMBER_EVENT_SUBSCRIPTION,
 } from '@vyzorix/api-client';
+import {
+  OnDeviceUpdatedDocument as DEVICE_UPDATED_SUBSCRIPTION,
+  OnTelemetryReceivedDocument as TELEMETRY_RECEIVED_SUBSCRIPTION,
+  OnCommandStatusChangedDocument as COMMAND_STATUS_SUBSCRIPTION,
+  OnOrganizationEventDocument as ORGANIZATION_EVENT_SUBSCRIPTION,
+  OnMemberEventDocument as MEMBER_EVENT_SUBSCRIPTION,
+} from '@vyzorix/api-client/generated-graphql';
 import { useWebSocketStore } from '@/stores';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import { queryKeys } from '@/lib/query-keys';

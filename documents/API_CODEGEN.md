@@ -69,3 +69,23 @@ pnpm --filter @vyzorix/web run build
 - Body params are consumed via `requestBody` in OpenAPI 3 — swag outputs Swagger 2.0 so the conversion script normalizes.
 - Field names in the web app match Go `json:"..."` tags directly (snake_case) after codegen — no camelCase shim in the generated SDK.
 - Tag names come from `// @Tags <name>`; each tag emits one file.
+
+## GraphQL (code-first schema → typed client)
+
+The GraphQL schema is code-first (`graphql-go`, `internal/api/graphql/schema/`). The canonical SDL is generated and checked in:
+
+```
+cd apps/api && go run ./cmd/graphql-schema -out swag/graphql
+```
+
+From `apps/api/swag/graphql/schema.graphql`, graphql-codegen produces typed operations:
+
+```
+pnpm exec graphql-codegen --config codegen.graphql.ts
+```
+
+Output: `packages/API_Client/src/generated/graphql/` — typed `XDocument` (TypedDocumentNode) + `XQuery`/`XMutation` + `XQueryVariables` per operation. The hand-written executor (`src/generated/graphql/executor.ts`) runs them through the existing Apollo `graphqlClient` (HMAC signing, org-scoped `/:org/graphql` path, batching) — queries via `gqlQuery`, mutations via `gqlMutate`.
+
+The hand-rolled `vyzorServer/graphql/{device,settings,updates,diagnostics,logs,commands,registration,...}` modules are deleted; the web hooks' `_graphql-fallback.ts` call the generated documents via the executor. Wire→domain normalization (epoch-millis → `Date`, etc.) lives in those fallback files.
+
+Drift: pre-commit + Server Gate CI regenerate `schema.graphql` and fail if stale; pre-commit then re-runs graphql-codegen so the typed surface tracks the schema.

@@ -21,6 +21,7 @@
     "./vyzorServer": "./src/vyzorServer/index.ts",
     "./generated": "./src/generated/rest-bridge.ts",
     "./generated/*": "./src/generated/*",
+    "./generated-graphql": "./src/generated/graphql/index.ts",
     "./generated/auth": "./src/generated/auth/auth.ts",
     "./generated/mfa": "./src/generated/mfa/mfa.ts",
     "./generated/devices": "./src/generated/devices/devices.ts",

@@ -63,6 +63,18 @@ if go run ./cmd/graphql-schema -out "$GQL_TMP" >/dev/null 2>&1; then
     rm -rf "$GQL_TMP"
     fail "schema.graphql drift detected — run 'go run ./cmd/graphql-schema -out swag/graphql' from apps/api."
   fi
+  # Schema SDL is fresh — also regenerate the typed client documents so the
+  # generated GraphQL surface stays in sync with the schema.
+  if command -v pnpm &>/dev/null; then
+    info "Regenerating typed GraphQL documents (graphql-codegen)..."
+    if (cd "$REPO_ROOT" && pnpm exec graphql-codegen --config codegen.graphql.ts >/dev/null 2>&1); then
+      pass "graphql-codegen: regenerated"
+    else
+      fail "graphql-codegen failed — run 'pnpm exec graphql-codegen --config codegen.graphql.ts' from the repo root."
+    fi
+  else
+    info "pnpm not installed — skipping graphql-codegen."
+  fi
   rm -rf "$GQL_TMP"
   pass "graphql schema drift: clean"
 else

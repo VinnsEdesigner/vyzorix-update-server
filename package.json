@@ -23,6 +23,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@graphql-codegen/cli": "7.3.1",
+    "@graphql-codegen/typescript": "6.1.0",
+    "@graphql-codegen/typescript-generic-sdk": "5.0.1",
+    "@graphql-codegen/typescript-operations": "6.1.6",
     "@playwright/test": "^1.62.1",
     "@tanstack/react-start": "^1.168.25",
     "@typescript-eslint/eslint-plugin": "^8.61.1",
@@ -49,6 +53,7 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
+    "@graphql-typed-document-node/core": "3.2.0",
     "@tanstack/react-start-server": "^1.167.19",
     "picocolors": "^1.1.1"
   },

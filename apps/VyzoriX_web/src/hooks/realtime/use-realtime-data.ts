@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  TELEMETRY_RECEIVED_SUBSCRIPTION,
-  ORGANIZATION_EVENT_SUBSCRIPTION,
-  COMMAND_STATUS_SUBSCRIPTION,
   getCommands,
   validateTelemetry,
   telemetryFromRaw,
@@ -12,6 +9,11 @@ import {
   type WSEventType,
   type WSCommandType,
 } from '@vyzorix/api-client';
+import {
+  OnTelemetryReceivedDocument as TELEMETRY_RECEIVED_SUBSCRIPTION,
+  OnOrganizationEventDocument as ORGANIZATION_EVENT_SUBSCRIPTION,
+  OnCommandStatusChangedDocument as COMMAND_STATUS_SUBSCRIPTION,
+} from '@vyzorix/api-client/generated-graphql';
 import { useWebSocketStore } from '@/stores';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import { queryKeys } from '@/lib/query-keys';

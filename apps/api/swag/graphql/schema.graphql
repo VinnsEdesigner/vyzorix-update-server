@@ -1,3 +1,7 @@
+schema {
+  subscription: Subscription
+}
+
 """Action to take on an inbox entry"""
 enum AckAction {
   """Approve the registration request"""
@@ -675,6 +679,44 @@ type LogPagination {
   nextCursor: String
 }
 
+"""An event related to an organization member"""
+type MemberEvent {
+  """Additional event data (e.g., old/new role)"""
+  data: JSON
+  """Unique event identifier"""
+  id: ID!
+  """Membership ID affected"""
+  memberId: ID!
+  """The membership"""
+  membership: Membership
+  """Operator who triggered the event"""
+  operatorId: ID!
+  """The organization"""
+  organization: Organization
+  """Organization ID"""
+  organizationId: ID!
+  """Event timestamp"""
+  timestamp: DateTime!
+  """Event type"""
+  type: MemberEventType!
+}
+
+"""Type of member event"""
+enum MemberEventType {
+  """A member was invited"""
+  MEMBER_INVITED
+  """A member joined the organization"""
+  MEMBER_JOINED
+  """A member was reactivated"""
+  MEMBER_REACTIVATED
+  """A member was removed"""
+  MEMBER_REMOVED
+  """A member was suspended"""
+  MEMBER_SUSPENDED
+  """A member's role was changed"""
+  ROLE_CHANGED
+}
+
 """Lifecycle state of an organization member"""
 enum MemberLifecycle {
   """Member is active in the organization"""
@@ -806,7 +848,7 @@ type Mutation {
   """Delete a device"""
   deleteDevice(id: ID!): Boolean
   """Delete an organization (soft delete)"""
-  deleteOrganization(id: ID!): Boolean
+  deleteOrganization(id: String!): Boolean
   """Delete an org-scoped service account (revokes all tokens)"""
   deleteServiceAccount(organizationId: String!, serviceAccountId: ID!): Boolean
   """Deregister a device (soft delete with 30-day retention)"""
@@ -816,15 +858,15 @@ type Mutation {
   """Manually evaluate an alert rule"""
   evaluateAlertRule(organizationId: String!, ruleId: ID!): Boolean
   """Invite a member to an organization"""
-  inviteMember(email: String!, notes: String, organizationId: ID!, role: OrgRole!): Invitation
+  inviteMember(email: String!, notes: String, organizationId: String!, role: OrgRole!): Invitation
   """Push an update to devices"""
   pushUpdate(deviceIds: [ID!]!, installType: String!, organizationId: String!, scheduledAt: Int, version: String!): PushUpdateResponse
   """Reinstate a suspended member"""
-  reinstateMember(memberId: ID!, organizationId: ID!): Boolean
+  reinstateMember(memberId: ID!, organizationId: String!): Boolean
   """Reject an invitation"""
   rejectInvitation(notes: String, token: String!): Boolean
   """Remove a member from an organization"""
-  removeMember(memberId: ID!, organizationId: ID!): Boolean
+  removeMember(memberId: ID!, organizationId: String!): Boolean
   """Retry a failed command"""
   retryCommand(dispatchId: ID!): Command
   """Rotate a service account token (old revoked, new created)"""
@@ -832,7 +874,7 @@ type Mutation {
   """Send a command to a device"""
   sendCommand(args: JSON, command: String!, confirmationToken: String, deviceId: ID!): CommandResult
   """Suspend an active member"""
-  suspendMember(memberId: ID!, organizationId: ID!): Boolean
+  suspendMember(memberId: ID!, organizationId: String!): Boolean
   """Trigger a GitHub sync"""
   syncFromGitHub: SyncResponse
   """Sync updates from GitHub (spec-compliant name)"""
@@ -842,7 +884,7 @@ type Mutation {
   """Transfer a device to another organization"""
   transferDevice(imei: String!, sourceOrganizationId: ID!, targetOrganizationId: ID!): TransferDevicePayload
   """Transfer super_admin ownership to another member"""
-  transferOwnership(memberId: ID!, organizationId: ID!): Boolean
+  transferOwnership(memberId: ID!, organizationId: String!): Boolean
   """Update an org-scoped alert rule"""
   updateAlertRule(condition: String!, enabled: Boolean, forSeconds: Int, metric: String!, name: String!, notifyIntervalSeconds: Int, onError: String, onNoData: String, organizationId: String!, ruleId: ID!, threshold: Float!, webhookUrl: String): AlertRule
   """Update an org-scoped contact point"""
@@ -852,11 +894,11 @@ type Mutation {
   """Update FCM token for a device"""
   updateFCMToken(deviceId: ID!, token: String!): Device
   """Update a member's role"""
-  updateMemberRole(memberId: ID!, organizationId: ID!, role: OrgRole!): Membership
+  updateMemberRole(memberId: ID!, organizationId: String!, role: OrgRole!): Membership
   """Update current operator's notification settings"""
   updateMyNotifications(input: UpdateNotificationsInput!): NotificationSettings
   """Update an organization"""
-  updateOrganization(id: ID!, isActive: Boolean, maxMembers: Int, name: String): Organization
+  updateOrganization(id: String!, isActive: Boolean, maxMembers: Int, name: String): Organization
   """Update settings for an organization"""
   updateOrganizationSettings(input: UpdateOrganizationSettingsInput!, organizationId: String!): OrganizationSettings
 }
@@ -973,6 +1015,38 @@ type Organization {
   name: String!
   """Organization last update timestamp"""
   updatedAt: DateTime
+}
+
+"""An event related to an organization"""
+type OrganizationEvent {
+  """Additional event data"""
+  data: JSON
+  """Unique event identifier"""
+  id: ID!
+  """Operator who triggered the event"""
+  operatorId: ID!
+  """The organization"""
+  organization: Organization
+  """Organization ID"""
+  organizationId: ID!
+  """Event timestamp"""
+  timestamp: DateTime!
+  """Event type"""
+  type: OrganizationEventType!
+}
+
+"""Type of organization event"""
+enum OrganizationEventType {
+  """Organization was activated"""
+  ACTIVATED
+  """Organization was created"""
+  CREATED
+  """Organization was deactivated"""
+  DEACTIVATED
+  """Organization was deleted"""
+  DELETED
+  """Organization was updated"""
+  UPDATED
 }
 
 """Lifecycle state of an organization"""
@@ -1274,6 +1348,19 @@ type SoftwareInfo {
 
 """The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text."""
 scalar String
+
+type Subscription {
+  """Subscribe to command status changes"""
+  commandStatusChanged(dispatchId: ID): Command
+  """Subscribe to device update events"""
+  deviceUpdated(deviceId: ID): Device
+  """Subscribe to organization member events"""
+  memberEvent(orgId: ID!): MemberEvent
+  """Subscribe to organization events"""
+  organizationEvent(orgId: ID!): OrganizationEvent
+  """Subscribe to real-time telemetry from devices"""
+  telemetryReceived(deviceId: ID): TelemetryEntry
+}
 
 """Response from triggering a GitHub sync"""
 type SyncResponse {

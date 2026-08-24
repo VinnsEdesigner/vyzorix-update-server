@@ -1,10 +1,15 @@
 import {
-  queryPendingCommands,
-  queryCommand,
+  gqlQuery,
   type Command,
   type CommandListItem,
   type CommandResponse,
 } from '@vyzorix/api-client';
+import {
+  GetPendingCommandsDocument,
+  GetCommandDocument,
+  type GetPendingCommandsQuery,
+  type GetCommandQuery,
+} from '@vyzorix/api-client/generated-graphql';
 
 interface RawCommandFields {
   dispatchId: string;
@@ -48,44 +53,26 @@ function normalizeCommandListItem(raw: RawCommandFields): CommandListItem {
   };
 }
 
-// queryPendingCommands / queryCommand return the raw Apollo QueryResult. The
-// GraphQL payload lives under its `data` field; unwrap it before extracting.
-function unwrapApolloData(response: unknown): Record<string, unknown> | null {
-  const r = response as { data?: Record<string, unknown> } | null;
-  return r?.data ?? null;
-}
 
-function extractArray<T>(response: unknown, key: string): T[] {
-  const r = unwrapApolloData(response);
-  if (!r) return [];
-  const value = r[key];
-  return Array.isArray(value) ? (value as T[]) : [];
-}
 
-function extractObject<T>(response: unknown, key: string): T | null {
-  const r = unwrapApolloData(response);
-  if (!r) return null;
-  const value = r[key];
-  return (value as T | undefined) ?? null;
-}
 
 export async function fetchPendingCommandsViaGraphQL(
   organizationId: string,
   imei: string,
 ): Promise<CommandListItem[]> {
-  const response = await queryPendingCommands({ organizationId, deviceId: imei });
-  const raw = extractArray<RawCommandFields>(response, 'pendingCommands');
-  return raw.map(normalizeCommandListItem);
+  const data = await gqlQuery<GetPendingCommandsQuery>(GetPendingCommandsDocument, { organizationId, deviceId: imei });
+  const raw = (data.pendingCommands ?? []).filter((c): c is NonNullable<typeof c> => c != null);
+  return raw.map((c) => normalizeCommandListItem(c as RawCommandFields));
 }
 
 export async function fetchCommandViaGraphQL(
   organizationId: string,
   dispatchId: string,
 ): Promise<Command | null> {
-  const response = await queryCommand({ organizationId, dispatchId });
-  const raw = extractObject<RawCommandFields>(response, 'command');
+  const data = await gqlQuery<GetCommandQuery>(GetCommandDocument, { organizationId, dispatchId });
+  const raw = data.command;
   if (!raw?.dispatchId) return null;
-  return normalizeCommand(raw);
+  return normalizeCommand(raw as RawCommandFields);
 }
 
 /** Maps the REST wire DTO onto the domain Command shape so hook consumers get
