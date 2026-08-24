@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Convert Swagger 2.0 (swaggo) → OpenAPI 3.0 for orval.
 
-Source of truth: Go handler swaggo annotations + the request/response DTO
+: Go handler swaggo annotations + the request/response DTO
 structs in internal/api/openapi/schemas.go. `swag init` parses those into
 swagger.json `definitions`; this script lifts them into OpenAPI3
-`components.schemas` so orval emits real TypeScript types instead of
+`components.schemas` so orval emits TypeScript types instead of
 placeholder `object` shapes.
 
 The conversion is fully derived from swagger.json — no hand-maintained
