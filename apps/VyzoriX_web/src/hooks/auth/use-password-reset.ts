@@ -2,18 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import { getAuth } from '@vyzorix/api-client';
 import type { MessageResult, SuccessResult } from '@vyzorix/api-client';
 
-export interface ForgotPasswordInput {
-  email: string;
-}
-
-export interface ResetPasswordInput {
-  token: string;
-  newPassword: string;
-}
-
-export interface ResendResetInput {
-  email: string;
-}
+export interface ForgotPasswordInput { email: string; }
+export interface ResetPasswordInput { token: string; newPassword: string; }
+export interface ResendResetInput { email: string; }
 
 export function useForgotPassword() {
   return useMutation<MessageResult, Error, ForgotPasswordInput>({

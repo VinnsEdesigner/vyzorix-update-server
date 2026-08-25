@@ -1,29 +1,25 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { getInbox, type InboxEntry } from '@vyzorix/api-client';
-import { fetchInboxEntryViaGraphQL, normalizeInboxEntry } from './_graphql-fallback';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import { fetchInboxEntryViaGraphQL } from './_graphql-fallback';
+import { useGetDeviceInboxImei, getDeviceInboxImei } from '@/generated-rq/inbox/device-inbox';
 
-export function useInboxEntry(
-  imei: string | undefined,
-  options?: Omit<UseQueryOptions<InboxEntry | null>, 'queryKey' | 'queryFn'>,
-) {
+export function useInboxEntry(imei: string | undefined) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.registrationInboxEntry(imei ?? ''),
-    queryFn: async (): Promise<InboxEntry | null> => {
-      if (!imei) return null;
-      try {
-        const result = await getInbox().getDeviceInboxImei(imei);
-        return result ? normalizeInboxEntry(result) : null;
-      } catch (restError) {
-        if (!organizationId) throw restError;
-        return fetchInboxEntryViaGraphQL(organizationId, imei);
-      }
+  return useGetDeviceInboxImei(
+    imei ?? '',
+    {
+      query: {
+        queryKey: ['inbox', imei, organizationId] as const,
+        enabled: imei !== undefined && organizationId !== null,
+        // REST primary; fall back to GraphQL on REST failure.
+        queryFn: async () => {
+          try {
+            return await getDeviceInboxImei(imei!);
+          } catch (restError) {
+            if (!organizationId) throw restError;
+            return fetchInboxEntryViaGraphQL(organizationId, imei!) as unknown as Awaited<ReturnType<typeof getDeviceInboxImei>>;
+          }
+        },
+      },
     },
-    enabled: imei !== undefined && imei !== '' && organizationId !== null,
-    ...options,
-  });
+  );
 }
-
-export type { InboxEntry };

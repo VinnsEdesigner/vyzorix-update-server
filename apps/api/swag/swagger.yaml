@@ -108,14 +108,34 @@ definitions:
     type: object
   github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClient:
     properties:
-      clientId:
-        type: string
-      createdAt:
-        type: string
+      allowed_origins:
+        items:
+          type: string
+        type: array
+      allowed_paths:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: integer
       id:
         type: string
+      is_active:
+        type: boolean
+      last_request_at:
+        type: integer
       name:
         type: string
+      operator_id:
+        type: string
+      platform:
+        type: string
+      rate_limit:
+        type: integer
+      request_count:
+        type: integer
+      updated_at:
+        type: integer
     type: object
   github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClientListResult:
     properties:

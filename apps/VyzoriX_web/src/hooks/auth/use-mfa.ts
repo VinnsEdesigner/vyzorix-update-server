@@ -10,7 +10,6 @@ export interface MfaVerifyInput {
 
 export function useMfaVerify() {
   const setFromMfaVerify = useAuthStore((s) => s.setFromMfaVerify);
-
   return useMutation<MFAVerifyResult, Error, MfaVerifyInput>({
     mutationFn: (input) => getMfa().postAuthMfaVerify({ operator_id: input.operatorId, code: input.code }),
     onSuccess: async (response) => {

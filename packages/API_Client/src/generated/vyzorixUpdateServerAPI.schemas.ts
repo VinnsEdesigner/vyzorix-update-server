@@ -72,10 +72,18 @@ export interface AdminAPIKeyListResult {
 }
 
 export interface AdminClient {
-  clientId?: string;
-  createdAt?: string;
+  allowed_origins?: string[];
+  allowed_paths?: string[];
+  created_at?: number;
   id?: string;
+  is_active?: boolean;
+  last_request_at?: number;
   name?: string;
+  operator_id?: string;
+  platform?: string;
+  rate_limit?: number;
+  request_count?: number;
+  updated_at?: number;
 }
 
 export interface AdminClientListResult {

@@ -39,7 +39,7 @@ export function useAuthCallback(options: UseAuthCallbackOptions = {}): AuthCallb
   });
 
   const setFromMeResponse = useAuthStore((s) => s.setFromMeResponse);
-  const meQuery = useMe({ enabled: false });
+  const meQuery = useMe();
   // Extract the stable refetch fn so the effect doesn't re-run on every render
   // (the full `meQuery` result object changes identity each render, which would
   // cause an infinite effect → refetch → re-render loop).
@@ -70,8 +70,8 @@ export function useAuthCallback(options: UseAuthCallbackOptions = {}): AuthCallb
         try {
           const me = await meRefetch();
           if (cancelled) return;
-          if (me.data) {
-            setFromMeResponse(me.data);
+          if (me) {
+            setFromMeResponse(me);
           }
         } catch {
           // Session may still be valid via cookie; non-fatal.

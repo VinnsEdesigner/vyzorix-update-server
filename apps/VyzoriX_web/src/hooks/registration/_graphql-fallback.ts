@@ -9,7 +9,7 @@ import {
   type DeregisterResult,
   type AcknowledgeAction,
   type InboxStatus,
-  type Pagination,
+  type DomainPagination as Pagination,
 } from '@vyzorix/api-client';
 import {
   GetInboxEntriesDocument,

@@ -135,10 +135,10 @@ describe('useInbox', () => {
   it('fetches inbox via REST when organization is set', async () => {
     const { result } = renderHookWithQueryClient(() => useInbox({ status: 'pending' }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.requests).toHaveLength(1);
-    expect(result.current.data?.requests[0]?.imei).toBe('123');
-    expect(result.current.data?.requests[0]?.status).toBe('pending');
-    expect(result.current.data?.pagination.total).toBe(1);
+    expect(result.current.data?.requests ?? []).toHaveLength(1);
+    expect((result.current.data?.requests ?? [])[0]?.imei).toBe('123');
+    expect((result.current.data?.requests ?? [])[0]?.status).toBe('pending');
+    expect(result.current.data?.pagination?.total).toBe(1);
   });
 
   it('falls back to GraphQL when REST rejects', async () => {
@@ -152,8 +152,8 @@ describe('useInbox', () => {
     }));
     const { result } = renderHookWithQueryClient(() => useInbox());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.requests).toHaveLength(1);
-    expect(result.current.data?.requests[0]?.imei).toBe('123');
+    expect(result.current.data?.requests ?? []).toHaveLength(1);
+    expect((result.current.data?.requests ?? [])[0]?.imei).toBe('123');
   });
 });
 
@@ -196,7 +196,7 @@ describe('useAcknowledgeInbox', () => {
 
   it('calls acknowledgeInbox via REST', async () => {
     const { result } = renderHookWithQueryClient(() => useAcknowledgeInbox());
-    result.current.mutate({ imei: '123', action: 'approve' });
+    result.current.mutate({ imei: '123', data: { action: 'approve' } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.imei).toBe('123');
     expect(result.current.data?.status).toBe('approved');
@@ -220,7 +220,7 @@ describe('useAcknowledgeInbox', () => {
       },
     }));
     const { result } = renderHookWithQueryClient(() => useAcknowledgeInbox());
-    result.current.mutate({ imei: '123', action: 'reject', notes: 'no' });
+    result.current.mutate({ imei: '123', data: { action: 'reject', notes: 'no' } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.imei).toBe('123');
     expect(result.current.data?.status).toBe('rejected');
@@ -234,7 +234,7 @@ describe('useCreateInboxRequest', () => {
   it('calls createInboxRequest with org', async () => {
     const { result } = renderHookWithQueryClient(() => useCreateInboxRequest());
     const request = { imei: '123', fcmToken: 't', firebaseInstallId: 'f' };
-    result.current.mutate(request);
+    result.current.mutate({ data: request });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.imei).toBe('123');
     expect(result.current.data?.status).toBe('pending');
@@ -259,7 +259,7 @@ describe('useDismissInbox', () => {
 
   it('calls dismissInbox with org', async () => {
     const { result } = renderHookWithQueryClient(() => useDismissInbox());
-    result.current.mutate('123');
+    result.current.mutate({ imei: '123', data: { status: 'rejected' } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.status).toBe('rejected');
   });
@@ -270,7 +270,7 @@ describe('useResendInboxApproval', () => {
 
   it('calls resendInboxApproval with org', async () => {
     const { result } = renderHookWithQueryClient(() => useResendInboxApproval());
-    result.current.mutate('123');
+    result.current.mutate({ imei: '123' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.fcmPushSent).toBe(true);
     expect(result.current.data?.status).toBe('approved');
@@ -382,7 +382,7 @@ describe('useRegisterDevice', () => {
   it('calls createInboxRequest with org', async () => {
     const { result } = renderHookWithQueryClient(() => useRegisterDevice());
     const request = { imei: '123', fcmToken: 't', firebaseInstallId: 'f' };
-    result.current.mutate(request);
+    result.current.mutate({ data: request });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.imei).toBe('123');
     expect(result.current.data?.status).toBe('pending');

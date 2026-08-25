@@ -12,7 +12,7 @@ import {
   type UpdateStatus,
   type UpdateStatusResponse,
   type ReleaseType,
-  type Pagination,
+  type DomainPagination as Pagination,
   type UpdateVersionListResult,
   type UpdatePushHistoryListResult,
   type UpdatePushResult as WireUpdatePushResult,

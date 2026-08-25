@@ -1,7 +1,7 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import { getDiagnostics,
   type DeviceInspection,
-  type TimelineResult,
+  type DomainTimelineResult as TimelineResult,
   type TimelineEventType,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';

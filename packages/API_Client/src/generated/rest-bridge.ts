@@ -26,22 +26,55 @@ function mergeConfig(
 	return merged;
 }
 
+/** Options accepted from generated callers. The react-query SDK passes a
+ * fetch-style RequestInit ({ method, headers: HeadersInit, body }); the axios
+ * SDK passes AxiosRequestConfig. The `headers` member is typed as HeadersInit
+ * so generated hooks' header access (`options?.headers`) satisfies the
+ * fetch-style getHeaders helper. */
+export type GeneratedCallOptions = Omit<RequestInit, 'headers'> & { headers?: HeadersInit };
+
+// Normalize fetch-style options (RequestInit) into an axios config.
+function toAxiosConfig(opts: GeneratedCallOptions | undefined): AxiosRequestConfig {
+	if (!opts) return {};
+	const o = opts as RequestInit & { headers?: HeadersInit };
+	const cfg: AxiosRequestConfig = {};
+	if (o.method) cfg.method = o.method;
+	if (o.body !== undefined) cfg.data = o.body;
+	if (o.headers !== undefined) {
+		const h = o.headers;
+		cfg.headers = h instanceof Headers
+			? Object.fromEntries(h.entries())
+			: Array.isArray(h)
+				? Object.fromEntries(h)
+				: (h as Record<string, string>);
+	}
+	if (o.signal) cfg.signal = o.signal;
+	return cfg;
+}
+
 export async function customAxios<T>(
-	config: AxiosRequestConfig,
-	options?: AxiosRequestConfig,
+	config: AxiosRequestConfig | string,
+	options?: GeneratedCallOptions,
 ): Promise<T> {
-	const method = (config.method ?? 'GET').toUpperCase();
-	const merged = mergeConfig(config, options);
+	// Support both generated call shapes: orval's axios SDK passes a full
+	// config object; the react-query SDK passes the URL as the first arg
+	// with fetch-style options in the second.
+	const optsCfg = toAxiosConfig(options);
+	const cfg: AxiosRequestConfig = typeof config === 'string'
+		? { ...optsCfg, url: config }
+		: { ...config };
+	const method = (cfg.method ?? 'GET').toUpperCase();
+	const merged = mergeConfig(cfg, optsCfg);
 
 	switch (method) {
 		case 'GET':
 			return restClient.get<T>(merged.url!, merged);
 		case 'POST':
-			return restClient.post<T>(merged.url!, config.data, merged);
+			return restClient.post<T>(merged.url!, merged.data, merged);
 		case 'PUT':
-			return restClient.put<T>(merged.url!, config.data, merged);
+			return restClient.put<T>(merged.url!, merged.data, merged);
 		case 'PATCH':
-			return restClient.patch<T>(merged.url!, config.data, merged);
+			return restClient.patch<T>(merged.url!, merged.data, merged);
 		case 'DELETE':
 			return restClient.delete<T>(merged.url!, merged);
 		default:

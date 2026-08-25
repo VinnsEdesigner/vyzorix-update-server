@@ -86,6 +86,12 @@ export function createRegistrationHandlers() {
       return HttpResponse.json({ ...INBOX_ENTRY_RAW, imei });
     }),
 
+    // PATCH /v1/device/inbox/:imei — dismiss (update status)
+    http.patch('/v1/device/inbox/:imei', async ({ params }) => {
+      await delay(30);
+      return HttpResponse.json({ ...INBOX_ENTRY_RAW, imei: params.imei as string, status: 'rejected' });
+    }),
+
     // POST /v1/device/inbox/:imei/ack — acknowledge inbox entry
     http.post('/v1/device/inbox/:imei/ack', async ({ request, params }) => {
       await delay(40);

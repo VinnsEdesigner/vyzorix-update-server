@@ -20,6 +20,7 @@
     "./domain": "./src/domain/index.ts",
     "./vyzorServer": "./src/vyzorServer/index.ts",
     "./generated": "./src/generated/rest-bridge.ts",
+    "./generated/schemas": "./src/generated/vyzorixUpdateServerAPI.schemas.ts",
     "./generated/*": "./src/generated/*",
     "./generated-graphql": "./src/generated/graphql/index.ts",
     "./generated/auth": "./src/generated/auth/auth.ts",

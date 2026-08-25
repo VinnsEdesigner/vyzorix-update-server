@@ -81,6 +81,12 @@ linters:
       - path: "swag/"
         linters:
           - godot
+      # Machine-generated schema structs (build_schemas.py) — field order is
+      # generator-controlled and re-emitted on every regen; hand-tuning
+      # fieldalignment here is futile.
+      - path: "internal/api/schema/zz_generated"
+        linters:
+          - govet
   settings:
     errcheck:
       check-type-assertions: true

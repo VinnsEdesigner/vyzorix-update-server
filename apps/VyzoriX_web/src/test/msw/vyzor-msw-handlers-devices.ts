@@ -35,10 +35,39 @@ export function createDevicesHandlers() {
     }),
 
 
+    // GET /v1/device/:imei — device-management SDK path for a single device.
     http.get('/v1/device/count', async () => {
       await delay(20);
       return HttpResponse.json({ count: devices.length });
     }),
+    http.get('/v1/device/:imei', async ({ params }) => {
+      await delay(30);
+      const imei = params.imei as string;
+      // Don't shadow the inbox routes (/v1/device/inbox*) — return undefined so
+      // MSW falls through to the registration handlers.
+      if (imei === 'inbox') {
+        return undefined;
+      }
+      const item = devices.find((d) => d.imei === imei);
+      if (!item) {
+        return HttpResponse.json({ error: 'device not found' }, { status: 404 });
+      }
+      const now = Date.now();
+      const detail: DeviceDetailResult = {
+        id: item.id,
+        imei: item.imei,
+        device_name: item.device_name,
+        model: item.model,
+        manufacturer: item.manufacturer,
+        app_version: item.app_version,
+        status: item.status,
+        registered_at: now - 86_400_000,
+        last_seen: now,
+      };
+      return HttpResponse.json(detail);
+    }),
+
+    // GET /v1/device/count — device count (SDK path).
 
     http.get(`${API_BASE}/:imei`, async ({ params }) => {
       await delay(30);

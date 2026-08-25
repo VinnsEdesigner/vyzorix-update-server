@@ -497,10 +497,18 @@ type DeviceDisconnectResult struct {
 // ---- Admin clients --------------------------------------------------------.
 
 type AdminClient struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	ClientID  string `json:"clientId"`
-	CreatedAt string `json:"createdAt,omitempty"`
+	ID             string   `json:"id"`
+	LastRequestAt  *int64   `json:"last_request_at,omitempty"`
+	Name           string   `json:"name"`
+	OperatorID     string   `json:"operator_id"`
+	Platform       string   `json:"platform"`
+	AllowedOrigins []string `json:"allowed_origins"`
+	AllowedPaths   []string `json:"allowed_paths"`
+	CreatedAt      int64    `json:"created_at"`
+	RateLimit      int      `json:"rate_limit"`
+	RequestCount   int64    `json:"request_count"`
+	UpdatedAt      int64    `json:"updated_at"`
+	IsActive       bool     `json:"is_active"`
 }
 
 type AdminClientListResult struct {

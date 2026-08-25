@@ -3,11 +3,11 @@ import {
   graphqlDeviceInspectionFromRaw,
   graphqlTimelineResultFromRaw,
   type DeviceInspection,
-  type TimelineResult,
+  type DomainTimelineResult as TimelineResult,
   type TimelineEvent,
   type TimelineEventType,
   type DeviceInspectionResult,
-  type DeviceStatus,
+  type DomainDeviceStatus as DeviceStatus,
 } from '@vyzorix/api-client';
 import {
   GetDeviceInspectionDocument,

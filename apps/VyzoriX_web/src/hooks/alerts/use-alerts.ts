@@ -1,58 +1,52 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAlerts, type AlertRuleRequest } from '@vyzorix/api-client';
-
-const alertsKeys = {
-  rules: (orgId: string | null) => ['alerts', 'rules', orgId] as const,
-  history: (orgId: string | null, ruleId?: string) => ['alerts', 'history', orgId, ruleId] as const,
-};
+// Re-export generated TanStack Query hooks for alerts.
+// GETs use generated useQuery hooks, mutations use generated useMutation
+// hooks — both properly typed and auto-keyed by orval.
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useGetAlertsRules,
+  useGetAlertsRulesIdHistory,
+  usePostAlertsRules,
+  usePatchAlertsRulesId,
+  useDeleteAlertsRulesId,
+  usePostAlertsRulesIdEvaluate,
+} from '@/generated-rq/alerts/alert-rules';
 
 export function useAlertRules() {
-  return useQuery({
-    queryKey: alertsKeys.rules(null),
-    queryFn: () => getAlerts().getAlertsRules(),
-    enabled: true,
-    refetchInterval: 30_000,
-  });
+  return useGetAlertsRules({ query: { queryKey: ['alerts', 'rules'] as const, refetchInterval: 30_000 } });
 }
 
 export function useAlertHistory(ruleId?: string, limit?: number) {
-  return useQuery({
-    queryKey: alertsKeys.history(null, ruleId),
-    queryFn: () => getAlerts().getAlertsRulesIdHistory(ruleId ?? '', { limit }),
-    enabled: ruleId !== undefined,
-    refetchInterval: 60_000,
-  });
+  return useGetAlertsRulesIdHistory(
+    ruleId ?? '',
+    { limit },
+    { query: { queryKey: ['alerts', 'history', ruleId] as const, enabled: ruleId !== undefined, refetchInterval: 60_000 } },
+  );
 }
 
 export function useCreateAlertRule() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (req: AlertRuleRequest) => getAlerts().postAlertsRules(req),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }),
+  return usePostAlertsRules({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
   });
 }
 
 export function useUpdateAlertRule() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, req }: { id: string; req: AlertRuleRequest }) =>
-      getAlerts().patchAlertsRulesId(id, req),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }),
+  return usePatchAlertsRulesId({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
   });
 }
 
 export function useDeleteAlertRule() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => getAlerts().deleteAlertsRulesId(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }),
+  return useDeleteAlertsRulesId({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
   });
 }
 
 export function useEvaluateAlertRule() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => getAlerts().postAlertsRulesIdEvaluate(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }),
+  return usePostAlertsRulesIdEvaluate({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
   });
 }

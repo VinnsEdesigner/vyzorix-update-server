@@ -1,88 +1,55 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import { getSettings,
-  type OperatorThresholds,
-  type NotificationSettings,
-  type ClientSettings,
-  type SettingsResponseResult,
-  type ThresholdsResult,
-} from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useGetMeSettings,
+  usePatchMeSettings,
+  useGetMeThresholds,
+  usePatchMeThresholds,
+  useGetMeNotifications,
+  usePatchMeNotifications,
+  usePostMeNotificationsWebhookTest,
+  usePostMeNotificationsWebhookRotate,
+} from '@/generated-rq/settings/operator-settings';
 
-export function useSettings(
-  options?: Omit<UseQueryOptions<SettingsResponseResult>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.settings,
-    queryFn: () => getSettings().getMeSettings(),
-    ...options,
-  });
-}
-
-export function useThresholds(
-  options?: Omit<UseQueryOptions<ThresholdsResult>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.thresholds,
-    queryFn: () => getSettings().getMeThresholds(),
-    ...options,
-  });
-}
-
-export function useNotifications(
-  options?: Omit<UseQueryOptions<NotificationSettings>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.notifications,
-    queryFn: () => getSettings().getMeNotifications(),
-    ...options,
-  });
+export function useSettings() {
+  return useGetMeSettings({ query: { queryKey: ['me-settings'] as const } });
 }
 
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: { client?: Partial<ClientSettings> }) => getSettings().patchMeSettings(data),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.settings, updated);
-    },
+  return usePatchMeSettings({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-settings'] }) },
   });
+}
+
+export function useThresholds() {
+  return useGetMeThresholds({ query: { queryKey: ['me-thresholds'] as const } });
 }
 
 export function useUpdateThresholds() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: Partial<OperatorThresholds>) => getSettings().patchMeThresholds(data),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.thresholds, updated);
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings });
-    },
+  return usePatchMeThresholds({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-thresholds'] }) },
   });
+}
+
+export function useNotifications() {
+  return useGetMeNotifications({ query: { queryKey: ['me-notifications'] as const } });
 }
 
 export function useUpdateNotifications() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: Partial<NotificationSettings>) => getSettings().patchMeNotifications(data),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.notifications, updated);
-    },
+  return usePatchMeNotifications({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-notifications'] }) },
   });
 }
 
 export function useTestWebhook() {
-  return useMutation({
-    mutationFn: (url: string) => getSettings().postMeNotificationsWebhookTest({ url }),
-  });
+  return usePostMeNotificationsWebhookTest();
 }
 
 export function useRotateWebhookSecret() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => getSettings().postMeNotificationsWebhookRotate(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
-    },
+  return usePostMeNotificationsWebhookRotate({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-notifications'] }) },
   });
 }
-
-export type { OperatorThresholds, NotificationSettings, ClientSettings };

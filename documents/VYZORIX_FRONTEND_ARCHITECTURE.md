@@ -7,21 +7,21 @@ TypeScript frontend (Vite + React + TanStack Query). The current data layer pipe
 
 ```
 Go handler annotations (swaggo)
-  → swag init → swagger.json (Swagger 2.0)
-  → build_openapi3.py → openapi3.json (OpenAPI 3.0)
-  → orval → packages/API_Client/src/generated/ (typed axios functions)
-  → build_zod.py → vyzorixUpdateServerAPI.zod.ts (zod schemas)
-  → domain/ modules (re-exports + hand-rolled business rules)
-  → apps/VyzoriX_web/src/hooks/ (manual TanStack Query wrappers)
+  ‚Üí swag init ‚Üí swagger.json (Swagger 2.0)
+  ‚Üí build_openapi3.py ‚Üí openapi3.json (OpenAPI 3.0)
+  ‚Üí orval ‚Üí packages/API_Client/src/generated/ (typed axios functions)
+  ‚Üí build_zod.py ‚Üí vyzorixUpdateServerAPI.zod.ts (zod schemas)
+  ‚Üí domain/ modules (re-exports + hand-rolled business rules)
+  ‚Üí apps/VyzoriX_web/src/hooks/ (manual TanStack Query wrappers)
 ```
 
 This document outlines six architectural improvements, inspired by patterns
-observed in production observability platforms, that Vyzorix can adopt — with
+observed in production observability platforms, that Vyzorix can adopt ‚Äî with
 naming conventions unique to Vyzorix's device-management domain.
 
 ---
 
-## 1. Vyzorix Query SDK — Auto-Generated Typed Hooks
+## 1. Vyzorix Query SDK ‚Äî Auto-Generated Typed Hooks
 
 ### Problem
 
@@ -50,7 +50,7 @@ should refetch related queries, the developer must remember to wire it.
 
 Replace orval with `@rtk-query/codegen-openapi` (or a similar OpenAPI-to-hook
 codegen) that reads `openapi3.json` and generates typed query/mutation hooks
-directly — no manual hook files.
+directly ‚Äî no manual hook files.
 
 The swaggo `@Tags` annotations already partition the API into tags:
 `@Tags devices`, `@Tags updates`, `@Tags auth`, etc. These map directly to
@@ -86,13 +86,36 @@ export const {
 } = vyzorixApi;
 ```
 
-### What gets deleted
+### What gets deleted (~30 pure API wrapper hooks)
 
-- All 40+ hand-written hooks in `apps/VyzoriX_web/src/hooks/`
+Vyzorix has 58 hook files total. They fall into three categories:
+
+**~30 pure API wrappers (deleted)** — files like `use-devices.ts`,
+`use-alerts.ts`, `use-versions.ts`, `use-sessions.ts`, `use-settings.ts`,
+`use-contact-points.ts`, `use-organizations.ts`. These are thin wrappers
+that call a generated function inside `useQuery`/`useMutation`. No business
+logic. RTK Query generates these automatically.
+
 - Manual `queryClient.invalidateQueries` calls
-- Manual `queryKey` definitions (auto-generated from endpoint name + args)
+- Manual `queryKey` definitions in `lib/query-keys.ts`
 
-### What stays
+### What stays (~28 hooks)
+
+**~15 orchestration hooks (kept but simplified)** — files like
+`use-commands.ts` (command polling with state machine callbacks),
+`use-realtime.ts` (WebSocket subscriptions), `_graphql-fallback.ts`
+files (REST fails → try GraphQL), `use-login.ts` (MFA challenge flow),
+`use-auth-session.ts` (auth context). These have real logic beyond
+"call API X" — they stay, but get simpler because cache invalidation
+is automatic and they call generated hooks directly.
+
+**~13 non-API hooks (kept, unchanged)** — files like
+`use-vyzor-analytics.ts`, `use-connectivity.ts`, `use-debounce.ts`,
+`use-pagination.ts`, `use-time-range.ts`, `use-vyzor-language.ts`,
+`use-vyzor-error-recovery.ts`. These don't call the API at all — they're
+UI utilities that are unaffected by the codegen change.
+
+### What else stays
 
 - `domain/` layer (zod schemas + business validators)
 - `restClient` transport (wrapped as `vyzorixBaseQuery`)
@@ -110,14 +133,14 @@ export const {
 
 ---
 
-## 2. Vyzorix Schema Definitions — CUE-Based Config Types
+## 2. Vyzorix Schema Definitions ‚Äî CUE-Based Config Types
 
 ### Problem
 
 Device settings, thresholds, notification settings, and update push configs are
 defined as Go structs in `openapi/schemas.go`. These must manually mirror the
 `gin.H` keys that handlers emit. If a handler changes a JSON key, the schema
-silently drifts — the generated TypeScript type says one thing, the server
+silently drifts ‚Äî the generated TypeScript type says one thing, the server
 sends another.
 
 Current drift detection: the pre-commit swagger drift gate checks that
@@ -132,11 +155,11 @@ language with type constraints, defaults, and validation built in.
 
 ```
 tooling/schema/
-├── device_settings.cue      → device thresholds, custom name, location, metadata
-├── notification_settings.cue → email/push/webhook notification config
-├── update_push.cue           → push update request shape
-├── inbox_request.cue         → device registration request
-└── gen.go                    → reads .cue, outputs Go + TS
+‚îú‚îÄ‚îÄ device_settings.cue      ‚Üí device thresholds, custom name, location, metadata
+‚îú‚îÄ‚îÄ notification_settings.cue ‚Üí email/push/webhook notification config
+‚îú‚îÄ‚îÄ update_push.cue           ‚Üí push update request shape
+‚îú‚îÄ‚îÄ inbox_request.cue         ‚Üí device registration request
+‚îî‚îÄ‚îÄ gen.go                    ‚Üí reads .cue, outputs Go + TS
 ```
 
 Example `.cue` file:
@@ -177,14 +200,14 @@ export interface DeviceThresholds {
 ### Pipeline change
 
 ```
-.cue files → [cuetsy] → Go structs + TS types
-Go structs → [swaggo] → swagger.json → openapi3.json
-TS types → imported by domain/ modules
+.cue files ‚Üí [cuetsy] ‚Üí Go structs + TS types
+Go structs ‚Üí [swaggo] ‚Üí swagger.json ‚Üí openapi3.json
+TS types ‚Üí imported by domain/ modules
 ```
 
 The handler returns the generated Go struct directly (not `gin.H`), so the
 wire format is always consistent with the schema. The OpenAPI spec is generated
-from the Go struct, which is generated from CUE — one source of truth.
+from the Go struct, which is generated from CUE ‚Äî one source of truth.
 
 ### What gets deleted
 
@@ -201,31 +224,31 @@ from the Go struct, which is generated from CUE — one source of truth.
 
 ---
 
-## 3. Vyzorix Request Deduplicator — Transport-Level Request Sharing
+## 3. Vyzorix Request Deduplicator ‚Äî Transport-Level Request Sharing
 
 ### Problem
 
 The current `_batching/request-batcher.ts` collapses duplicate GETs within a
 50ms window. POST/PUT/PATCH/DELETE have basic in-flight dedup (exact body
 hash match). But with the multi-conversation WebSocket manager, each background
-conversation fires `useUserConversation()` independently — if two conversations
+conversation fires `useUserConversation()` independently ‚Äî if two conversations
 share the same backend, they can fire duplicate API calls that aren't deduped.
 
 ### Proposal
 
-Port a transport-level request queue that deduplicates ALL HTTP methods —
+Port a transport-level request queue that deduplicates ALL HTTP methods ‚Äî
 not just GETs. The queue accepts requests, the worker processes them with
 dedup, and the response is shared across all callers that requested the same
 operation.
 
 ```
-Component A → restClient.get('/v1/devices')
-Component B → restClient.get('/v1/devices')  (fired 5ms later)
-                    ↓
+Component A ‚Üí restClient.get('/v1/devices')
+Component B ‚Üí restClient.get('/v1/devices')  (fired 5ms later)
+                    ‚Üì
             VyzorixRequestQueue
-                    ↓
+                    ‚Üì
             One HTTP request to server
-                    ↓
+                    ‚Üì
             Response shared to both A and B
 ```
 
@@ -247,7 +270,7 @@ Replace the current `request-batcher.ts` with a `VyzorixRequestQueue` that:
 
 ---
 
-## 4. Vyzorix Realtime Channel — Centrifuge-Based WebSocket Manager
+## 4. Vyzorix Realtime Channel ‚Äî Centrifuge-Based WebSocket Manager
 
 ### Problem
 
@@ -269,16 +292,16 @@ JavaScript client). The Go backend runs a Centrifugo server; the frontend
 uses `centrifuge-js` to connect and subscribe to channels.
 
 ```
-Go backend → Centrifugo server (embedded or sidecar)
-    ↓
+Go backend ‚Üí Centrifugo server (embedded or sidecar)
+    ‚Üì
 Centrifugo handles:
   - WebSocket connection lifecycle (connect, reconnect, backoff)
   - Authentication (JWT or token-based)
   - Channel subscriptions (per-conversation, per-device, per-org)
   - Message delivery guarantees (at-least-once)
   - Connection state notifications
-    ↓
-Frontend (centrifuge-js) → subscribes to channels
+    ‚Üì
+Frontend (centrifuge-js) ‚Üí subscribes to channels
   - vyzorix:device:{imei}:telemetry
   - vyzorix:device:{imei}:events
   - vyzorix:updates:push:{pushId}
@@ -287,7 +310,7 @@ Frontend (centrifuge-js) → subscribes to channels
 
 ### What gets deleted
 
-- `use-websocket.ts` (entire file — replaced by centrifuge-js)
+- `use-websocket.ts` (entire file ‚Äî replaced by centrifuge-js)
 - `PersistentWebSocketProvider` (centrifuge manages multiple subscriptions
   over a single connection, not multiple WS connections)
 - Manual keepalive/reconnect logic
@@ -298,7 +321,7 @@ Frontend (centrifuge-js) → subscribes to channels
 ### What stays
 
 - The event processing logic in `ConversationWebSocketProvider` (what to do
-  with received events — addEvent, setExecutionStatus, etc.)
+  with received events ‚Äî addEvent, setExecutionStatus, etc.)
 - The event store (`use-event-store`)
 - The REST history preloading (`useConversationHistory`)
 
@@ -316,7 +339,7 @@ Frontend (centrifuge-js) → subscribes to channels
 
 ---
 
-## 5. Vyzorix Data Pipeline — RxJS Unified Data Layer
+## 5. Vyzorix Data Pipeline ‚Äî RxJS Unified Data Layer
 
 ### Problem
 
@@ -353,7 +376,7 @@ const events = useObservable(deviceEvents$, []);
 ### What gets deleted
 
 - The `useLayoutEffect` that clears events on conversation switch (RxJS
-  `switchMap` handles this naturally — unsubscribe from old, subscribe to new)
+  `switchMap` handles this naturally ‚Äî unsubscribe from old, subscribe to new)
 - The timestamp-based dedup logic (RxJS `distinctUntilChanged` by event ID)
 - The manual "is REST done before WS connects?" gate (RxJS `combineLatest`
   waits for both)
@@ -361,7 +384,7 @@ const events = useObservable(deviceEvents$, []);
 
 ### What stays
 
-- TanStack Query for non-realtime data (settings, org list, etc.) — wrapped
+- TanStack Query for non-realtime data (settings, org list, etc.) ‚Äî wrapped
   via `lastValueFrom()` where RxJS is needed
 - The domain layer (zod schemas, validators)
 - The event store (fed by the RxJS subscription)
@@ -369,21 +392,21 @@ const events = useObservable(deviceEvents$, []);
 ### Naming
 
 - Package: `packages/API_Client/src/vyzorServer/data/`
-- REST wrapper: `VyzorixDataPipeline.fromRest(url)` → `Observable<T>`
-- WS wrapper: `VyzorixDataPipeline.fromRealtime(channel)` → `Observable<T>`
-- Merged: `VyzorixDataPipeline.combine(history$, live$)` → `Observable<T[]>`
+- REST wrapper: `VyzorixDataPipeline.fromRest(url)` ‚Üí `Observable<T>`
+- WS wrapper: `VyzorixDataPipeline.fromRealtime(channel)` ‚Üí `Observable<T>`
+- Merged: `VyzorixDataPipeline.combine(history$, live$)` ‚Üí `Observable<T[]>`
 - Event type: `VyzorixEvent` (replaces the current `OpenHandsEvent`-inspired type)
 
 ### Effort
 
-This is the highest-risk change — it's a paradigm shift from Promises to
+This is the highest-risk change ‚Äî it's a paradigm shift from Promises to
 Observables across the data layer. Recommend doing this LAST, after the other
 five improvements are in place, and only if the WS event handler complexity
 justifies it.
 
 ---
 
-## 6. Vyzorix Test Selectors — Version-Aware E2E Selectors
+## 6. Vyzorix Test Selectors ‚Äî Version-Aware E2E Selectors
 
 ### Problem
 
@@ -393,7 +416,7 @@ await page.goto('/v1/devices/123');
 await expect(page.locator('[data-testid="device-list"]')).toBeVisible();
 ```
 
-When a route changes, tests break silently — no compiler, no type check.
+When a route changes, tests break silently ‚Äî no compiler, no type check.
 
 ### Proposal
 
@@ -431,7 +454,7 @@ await expect(page.locator(`[data-testid="${vyzorixSelectors.pages.devices.list.t
 ### Generation
 
 A script reads `openapi3.json` paths + route definitions and generates the
-selectors file. When an API path changes, only the selector file updates —
+selectors file. When an API path changes, only the selector file updates ‚Äî
 tests reference the selector, not the raw URL.
 
 ### Naming
@@ -464,16 +487,16 @@ attempted after all others are complete, as it's a paradigm shift.
 ## Current State (as of this writing)
 
 Already completed:
-- ✅ swaggo annotations for all 191 operations (146 paths)
-- ✅ build_openapi3.py (Swagger 2 → OpenAPI 3 normalization)
-- ✅ orval generated SDK (207 schemas, 0 untyped responses)
-- ✅ build_zod.py (207 zod schemas generated)
-- ✅ domain layer migrated (generated types + zod + hand-rolled .refine())
-- ✅ restClient mutator (circuit breaker, HMAC signing, retry, offline queue)
-- ✅ openapi/schemas.go (207 typed wire types, all 24 unknowns fixed)
+- ‚úÖ swaggo annotations for all 191 operations (146 paths)
+- ‚úÖ build_openapi3.py (Swagger 2 ‚Üí OpenAPI 3 normalization)
+- ‚úÖ orval generated SDK (207 schemas, 0 untyped responses)
+- ‚úÖ build_zod.py (207 zod schemas generated)
+- ‚úÖ domain layer migrated (generated types + zod + hand-rolled .refine())
+- ‚úÖ restClient mutator (circuit breaker, HMAC signing, retry, offline queue)
+- ‚úÖ openapi/schemas.go (207 typed wire types, all 24 unknowns fixed)
 
 Not yet started:
-- ❌ Vyzorix Query SDK (RTK Query or equivalent)
+- ❌ Vyzorix Query SDK (RTK Query — would delete ~30 pure API wrapper hooks)
 - ❌ CUE schema definitions
 - ❌ Request deduplicator
 - ❌ Centrifuge realtime channel

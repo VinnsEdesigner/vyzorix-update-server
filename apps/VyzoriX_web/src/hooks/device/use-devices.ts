@@ -1,21 +1,20 @@
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  type UseQueryOptions,
-} from '@tanstack/react-query';
-import { getDevices,
-  type DeviceListItem,
-  type DeviceListResult,
-  type GetTelemetryResponse,
-  type DeviceSettingsResult,
-  type UpdateDeviceSettingsRequest,
-  type ThresholdUpdateRequest,
-  type ConnectionStatusResult,
-  type Thresholds,
-} from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import {
+  useGetDevices,
+  useGetDeviceImei,
+  useGetDeviceCount,
+  useGetDevicesImeiSettings,
+  usePatchDevicesImeiSettings,
+  useGetDevicesImeiSettingsThresholds,
+  usePatchDevicesImeiSettingsThresholds,
+  useGetDeviceImeiConnectionStatus,
+  usePostDeviceImeiDisconnect,
+  useDeleteDevicesImei,
+  useGetDevicesImeiTags,
+  usePutDevicesImeiTags,
+  usePostOrganizationsIdDevicesImeiTransfer,
+} from '@/generated-rq/devices/device-management';
 
 export interface DeviceParams {
   page?: number;
@@ -25,113 +24,91 @@ export interface DeviceParams {
 
 export function useDevices(params?: DeviceParams) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.devices({ ...params, organizationId }),
-    queryFn: () => getDevices().getDevices({ ...params}),
-    enabled: organizationId !== null,
-  });
+  return useGetDevices(
+    { page: params?.page, limit: params?.limit, search: params?.search },
+    { query: { queryKey: ['devices', params, organizationId] as const, enabled: organizationId !== null } },
+  );
 }
 
-export function useDevice(
-  imei: string | undefined,
-  options?: Omit<UseQueryOptions<DeviceListItem | null>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.device(imei ?? ''),
-    queryFn: () => getDevices().getDevicesImei(imei!),
-    enabled: imei !== undefined && imei !== '',
-    ...options,
-  });
-}
-
-export function useDeviceConnectionStatus(imei: string | undefined) {
-  return useQuery({
-    queryKey: queryKeys.deviceConnectionStatus(imei ?? ''),
-    queryFn: () => getDevices().getDeviceImeiConnectionStatus(imei!),
-    enabled: imei !== undefined && imei !== '',
-    refetchInterval: 15_000,
-  });
-}
-
-export function useDeviceSettings(imei: string | undefined) {
-  return useQuery({
-    queryKey: queryKeys.deviceSettings(imei ?? ''),
-    queryFn: () => getDevices().getDevicesImeiSettings(imei!),
-    enabled: imei !== undefined && imei !== '',
-  });
-}
-
-export function useUpdateDeviceSettings(imei: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (settings: UpdateDeviceSettingsRequest) =>
-      getDevices().patchDevicesImeiSettings(imei, settings),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.deviceSettings(imei), updated);
-    },
-  });
-}
-
-export function useDeviceThresholds(imei: string | undefined) {
-  return useQuery({
-    queryKey: queryKeys.deviceThresholds(imei ?? ''),
-    queryFn: () => getDevices().getDevicesImeiSettingsThresholds(imei!),
-    enabled: imei !== undefined && imei !== '',
-  });
-}
-
-export function useUpdateDeviceThresholds(imei: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (thresholds: ThresholdUpdateRequest) =>
-      getDevices().patchDevicesImeiSettingsThresholds(imei, thresholds),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.deviceThresholds(imei), updated);
-      queryClient.invalidateQueries({ queryKey: queryKeys.deviceSettings(imei) });
-    },
-  });
+export function useDevice(imei: string | undefined) {
+  const organizationId = useCurrentOrganizationId();
+  return useGetDeviceImei(
+    imei ?? '',
+    { query: { queryKey: ['devices', imei, organizationId] as const, enabled: imei !== undefined && imei !== '' && organizationId !== null } },
+  );
 }
 
 export function useDeviceCount() {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.deviceCount,
-    queryFn: () => getDevices().getDeviceCount(),
-    enabled: organizationId !== null,
+  return useGetDeviceCount({ query: { queryKey: ['devices', 'count', organizationId] as const, enabled: organizationId !== null } });
+}
+
+export function useDeviceSettings(imei: string | undefined) {
+  return useGetDevicesImeiSettings(
+    imei ?? '',
+    { query: { queryKey: ['devices', imei, 'settings'] as const, enabled: imei !== undefined } },
+  );
+}
+
+export function useUpdateDeviceSettings() {
+  const queryClient = useQueryClient();
+  return usePatchDevicesImeiSettings({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
   });
 }
 
-export function useGetTelemetryResponse(
-  imei: string | undefined,
-  options?: Omit<UseQueryOptions<GetTelemetryResponse>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.deviceStats,
-    queryFn: () => getDevices().getDashboardDeviceImeiMetrics(imei!),
-    enabled: imei !== undefined && imei !== '',
-    ...options,
+export function useDeviceThresholds(imei: string | undefined) {
+  return useGetDevicesImeiSettingsThresholds(
+    imei ?? '',
+    { query: { queryKey: ['devices', imei, 'thresholds'] as const, enabled: imei !== undefined } },
+  );
+}
+
+export function useUpdateDeviceThresholds() {
+  const queryClient = useQueryClient();
+  return usePatchDevicesImeiSettingsThresholds({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
+  });
+}
+
+export function useDeviceConnectionStatus(imei: string | undefined) {
+  return useGetDeviceImeiConnectionStatus(
+    imei ?? '',
+    { query: { queryKey: ['devices', imei, 'connection'] as const, enabled: imei !== undefined } },
+  );
+}
+
+export function useDisconnectDevice() {
+  const queryClient = useQueryClient();
+  return usePostDeviceImeiDisconnect({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
+  });
+}
+
+export function useDeviceTags(imei: string | undefined) {
+  return useGetDevicesImeiTags(
+    imei ?? '',
+    { query: { queryKey: ['devices', imei, 'tags'] as const, enabled: imei !== undefined } },
+  );
+}
+
+export function useSetDeviceTags() {
+  const queryClient = useQueryClient();
+  return usePutDevicesImeiTags({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
   });
 }
 
 export function useDeregisterDevice() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (imei: string) => getDevices().deleteDevicesImei(imei),
-    onSuccess: (_, imei) => {
-      queryClient.invalidateQueries({ queryKey: ['devices'] });
-      queryClient.removeQueries({ queryKey: queryKeys.device(imei) });
-    },
+  return useDeleteDevicesImei({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
   });
 }
 
-export function useDisconnectDevice() {
+export function useTransferDevice() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (imei: string) => getDevices().postDeviceImeiDisconnect(imei),
-    onSuccess: (_, imei) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.deviceConnectionStatus(imei) });
-    },
+  return usePostOrganizationsIdDevicesImeiTransfer({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
   });
 }
-
-export type { DeviceListResult, DeviceListItem, GetTelemetryResponse, DeviceSettingsResult, UpdateDeviceSettingsRequest, ThresholdUpdateRequest, ConnectionStatusResult, Thresholds };

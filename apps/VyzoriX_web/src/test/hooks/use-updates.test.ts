@@ -264,7 +264,7 @@ describe('useCancelUpdate', () => {
 
   it('cancels via REST', async () => {
     const { result } = renderHookWithQueryClient(() => useCancelUpdate());
-    result.current.mutate('push-test-1');
+    result.current.mutate({ pushId: 'push-test-1' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.status).toBe('cancelled');
   });
@@ -280,7 +280,7 @@ describe('useCancelUpdate', () => {
       },
     }));
     const { result } = renderHookWithQueryClient(() => useCancelUpdate());
-    result.current.mutate('push-gql-1');
+    result.current.mutate({ pushId: 'push-gql-1' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.id).toBe('push-gql-1');
     expect(result.current.data?.status).toBe('cancelled');

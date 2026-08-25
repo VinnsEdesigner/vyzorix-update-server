@@ -134,14 +134,14 @@ function ContactPointCard({ point }: { point: ContactPoint }) {
             {point.channel}
           </span>
           <button
-            onClick={() => point.id && testPoint.mutate(point.id)}
+            onClick={() => point.id && testPoint.mutate({ id: point.id })}
             className="rounded border px-2 py-1 text-xs"
             title="Send test notification"
           >
             Test
           </button>
           <button
-            onClick={() => point.id && deletePoint.mutate(point.id)}
+            onClick={() => point.id && deletePoint.mutate({ id: point.id })}
             className="rounded border px-2 py-1 text-xs text-red-600"
             title="Delete"
           >
@@ -170,7 +170,7 @@ function NotificationsPage() {
 
       <div className="mb-8 rounded border p-4">
         <h2 className="mb-4 font-semibold">New contact point</h2>
-        <ContactPointForm onSubmit={(req) => createPoint.mutate(req)} disabled={createPoint.isPending} />
+        <ContactPointForm onSubmit={(req) => createPoint.mutate({ data: req })} disabled={createPoint.isPending} />
       </div>
 
       {points.isLoading && <p>Loading contact points…</p>}

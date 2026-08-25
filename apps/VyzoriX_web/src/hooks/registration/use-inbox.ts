@@ -1,51 +1,36 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { getInbox, type InboxEntriesResult, type InboxStatus, type Pagination } from '@vyzorix/api-client';
-import { fetchInboxViaGraphQL, normalizeInboxEntry } from './_graphql-fallback';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import { fetchInboxViaGraphQL } from './_graphql-fallback';
+import {
+  useGetDeviceInbox,
+} from '@/generated-rq/inbox/device-inbox';
 
-export interface UseInboxParams {
-  status?: InboxStatus | 'all';
-  page?: number;
-  limit?: number;
-}
+import type { InboxStatus } from '@vyzorix/api-client';
 
-const EMPTY_PAGINATION: Pagination = { page: 1, limit: 20, total: 0, totalPages: 0 };
-
-export function useInbox(
-  params?: UseInboxParams,
-  options?: Omit<UseQueryOptions<InboxEntriesResult>, 'queryKey' | 'queryFn'>,
-) {
+export function useInbox(params?: { status?: InboxStatus | 'all'; page?: number; limit?: number }) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.registrationInbox({ ...params, organizationId }),
-    queryFn: async (): Promise<InboxEntriesResult> => {
-      try {
-        const result = await getInbox().getDeviceInbox({
-          status: params?.status === 'all' ? undefined : params?.status,
-          page: params?.page,
-          limit: params?.limit,
-        });
-        const rawPagination = result.pagination;
-        return {
-          requests: (result.requests ?? []).map(normalizeInboxEntry),
-          pagination: rawPagination
-            ? {
-                page: rawPagination.page ?? 1,
-                limit: rawPagination.limit ?? 20,
-                total: rawPagination.total ?? 0,
-                totalPages: rawPagination.total_pages ?? 0,
-              }
-            : EMPTY_PAGINATION,
-        };
-      } catch (restError) {
-        if (!organizationId) throw restError;
-        return fetchInboxViaGraphQL(organizationId, params);
-      }
+  return useGetDeviceInbox(
+    { status: params?.status, page: params?.page, limit: params?.limit },
+    {
+      query: {
+        queryKey: ['inbox', params, organizationId] as const,
+        enabled: organizationId !== null,
+        // REST primary; fall back to GraphQL on REST failure.
+        queryFn: async () => {
+          try {
+            return await import('@/generated-rq/inbox/device-inbox').then((m) =>
+              m.getDeviceInbox({ status: params?.status, page: params?.page, limit: params?.limit }),
+            );
+          } catch (restError) {
+            if (!organizationId) throw restError;
+            return fetchInboxViaGraphQL(organizationId, params) as unknown as Awaited<ReturnType<typeof import('@/generated-rq/inbox/device-inbox').getDeviceInbox>>;
+          }
+        },
+      },
     },
-    enabled: organizationId !== null,
-    ...options,
-  });
+  );
 }
 
-export type { InboxEntriesResult, InboxStatus };
+
+
+
+

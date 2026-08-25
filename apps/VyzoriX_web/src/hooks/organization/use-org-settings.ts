@@ -1,65 +1,35 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  getOrganizations,
-  type OrganizationSettingsResult,
-  type ThresholdUpdateRequest,
-  type UpdateOrganizationSettingsRequest,
-  type OperatorThresholds,
-  type ThresholdsResult,
-} from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
+  useGetOrganizationsIdSettings,
+  usePatchOrganizationsIdSettings,
+  useGetOrganizationsIdSettingsThresholds,
+  usePatchOrganizationsIdSettingsThresholds,
+} from '@/generated-rq/organizations/organization-management';
 
-export function useOrgSettings(
-  orgId: string | undefined,
-  options?: Omit<UseQueryOptions<OrganizationSettingsResult>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.orgSettings(orgId ?? ''),
-    queryFn: () => getOrganizations().getOrganizationsIdSettings(orgId!),
-    enabled: orgId !== undefined && orgId !== '',
-    ...options,
-  });
+export function useOrgSettings(id: string | undefined) {
+  return useGetOrganizationsIdSettings(
+    id ?? '',
+    { query: { queryKey: ['org-settings', id] as const, enabled: id !== undefined && id !== '' } },
+  );
 }
 
 export function useUpdateOrgSettings() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ orgId, request }: { orgId: string; request: UpdateOrganizationSettingsRequest }) =>
-      getOrganizations().patchOrganizationsIdSettings(orgId, request),
-    onSuccess: (updated, { orgId }) => {
-      queryClient.setQueryData(queryKeys.orgSettings(orgId), updated);
-      if (updated.defaultThresholds) {
-        queryClient.setQueryData(
-          queryKeys.orgThresholds(orgId),
-          { thresholds: updated.defaultThresholds },
-        );
-      }
-    },
+  return usePatchOrganizationsIdSettings({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['org-settings'] }) },
   });
 }
 
-export function useOrgThresholds(
-  orgId: string | undefined,
-  options?: Omit<UseQueryOptions<ThresholdsResult>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.orgThresholds(orgId ?? ''),
-    queryFn: () => getOrganizations().getOrganizationsIdSettingsThresholds(orgId!),
-    enabled: orgId !== undefined && orgId !== '',
-    ...options,
-  });
+export function useOrgThresholds(id: string | undefined) {
+  return useGetOrganizationsIdSettingsThresholds(
+    id ?? '',
+    { query: { queryKey: ['org-thresholds', id] as const, enabled: id !== undefined && id !== '' } },
+  );
 }
 
-export function useUpdateOrgThresholds(orgId: string) {
+export function useUpdateOrgThresholds() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: ThresholdUpdateRequest) =>
-      getOrganizations().patchOrganizationsIdSettingsThresholds(orgId, data),
-    onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.orgThresholds(orgId), updated);
-      queryClient.invalidateQueries({ queryKey: queryKeys.orgSettings(orgId) });
-    },
+  return usePatchOrganizationsIdSettingsThresholds({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['org-thresholds'] }) },
   });
 }
-
-export type { OrganizationSettingsResult, ThresholdUpdateRequest, UpdateOrganizationSettingsRequest, OperatorThresholds, ThresholdsResult };

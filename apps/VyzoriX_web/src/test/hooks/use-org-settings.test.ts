@@ -64,7 +64,7 @@ describe('useUpdateOrgSettings', () => {
 
   it('calls update and caches the patched result', async () => {
     const { result } = renderHookWithQueryClient(() => useUpdateOrgSettings());
-    result.current.mutate({ orgId: 'org-1', request: { timezone: 'Europe/Stockholm' } });
+    result.current.mutate({ id: 'org-1', data: { timezone: 'Europe/Stockholm' } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.timezone).toBe('Europe/Stockholm');
     expect(result.current.data?.dateFormat).toBe('YYYY-MM-DD');
@@ -97,8 +97,8 @@ describe('useUpdateOrgThresholds', () => {
   });
 
   it('calls updateThresholds and caches the patched result', async () => {
-    const { result } = renderHookWithQueryClient(() => useUpdateOrgThresholds('org-1'));
-    result.current.mutate({ riskWarn: 75 });
+    const { result } = renderHookWithQueryClient(() => useUpdateOrgThresholds());
+    result.current.mutate({ id: 'org-1', data: { riskWarn: 75 } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.thresholds?.riskWarn).toBe(75);
     expect(result.current.data?.thresholds?.riskCrit).toBe(buildThresholds().riskCrit);

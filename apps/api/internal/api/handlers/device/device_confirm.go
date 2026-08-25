@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/gin-gonic/gin"
@@ -62,10 +63,7 @@ func NewConfirmHandlerWithCleanup(deviceService *device.Service, inboxCleanup In
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
 // @Router       /device/confirm [post]
 func (h *ConfirmHandler) Handle(c *gin.Context) {
-	var req struct {
-		IMEI          string `json:"imei" binding:"required"`
-		CommandSecret string `json:"commandSecret" binding:"required"`
-	}
+	var req schema.DeviceConfirmRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid JSON in request body: imei and commandSecret are required"))

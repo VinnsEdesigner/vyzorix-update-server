@@ -12,6 +12,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
@@ -322,7 +323,7 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 		return
 	}
 
-	var req UpdateInboxEntryRequest
+	var req schema.UpdateInboxEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
 		return

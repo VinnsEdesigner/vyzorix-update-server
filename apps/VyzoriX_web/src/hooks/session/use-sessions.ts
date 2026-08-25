@@ -1,62 +1,49 @@
-import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import { getSessions,
-  type SessionListResult,
-  type ConcurrentSessionsResult,
-  type SuccessResult,
-  type RevokeResult,
-} from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useGetAuthSessions,
+  useGetAuthSessionsConcurrent,
+  useDeleteAuthSessionsId,
+  useDeleteAuthSessions,
+  usePostAuthSessionsRevokeAll,
+} from '@/generated-rq/sessions/auth-sessions';
 
-export function useSessions(
-  options?: Omit<UseQueryOptions<SessionListResult>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.sessions,
-    queryFn: () => getSessions().getAuthSessions(),
-    ...options,
-  });
+export function useSessions() {
+  return useGetAuthSessions({ query: { queryKey: ['sessions'] as const } });
 }
 
-export function useConcurrentSessions(
-  options?: Omit<UseQueryOptions<ConcurrentSessionsResult>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.concurrentSessions,
-    queryFn: () => getSessions().getAuthSessionsConcurrent(),
-    ...options,
-  });
+export function useConcurrentSessions() {
+  return useGetAuthSessionsConcurrent({ query: { queryKey: ['concurrent-sessions'] as const } });
 }
 
 export function useRevokeSession() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (sessionId: string) => getSessions().deleteAuthSessionsId(sessionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
-      queryClient.invalidateQueries({ queryKey: queryKeys.concurrentSessions });
+  return useDeleteAuthSessionsId({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['sessions'] });
+        queryClient.invalidateQueries({ queryKey: ['concurrent-sessions'] });
+      },
     },
   });
 }
 
 export function useRevokeAllSessions() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => getSessions().deleteAuthSessions(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+  return useDeleteAuthSessions({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sessions'] }),
     },
   });
 }
 
 export function useRevokeAllDevices() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => getSessions().postAuthSessionsRevokeAll(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
-      queryClient.invalidateQueries({ queryKey: queryKeys.concurrentSessions });
+  return usePostAuthSessionsRevokeAll({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['sessions'] });
+        queryClient.invalidateQueries({ queryKey: ['concurrent-sessions'] });
+      },
     },
   });
 }
-
-export type { SessionListResult, ConcurrentSessionsResult, SuccessResult, RevokeResult };

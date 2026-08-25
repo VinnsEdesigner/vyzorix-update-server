@@ -1,17 +1,8 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { getUpdates, type UpdatePushDetailResult } from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
+import { useGetUpdatesHistoryPushId } from '@/generated-rq/updates/update-management';
 
-export function usePushDetail(
-  pushId: string | undefined,
-  options?: Omit<UseQueryOptions<UpdatePushDetailResult | null>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: queryKeys.updatePushDetail(pushId ?? ''),
-    queryFn: () => getUpdates().getUpdatesHistoryPushId(pushId!),
-    enabled: pushId !== undefined && pushId !== '',
-    ...options,
-  });
+export function usePushDetail(pushId: string | undefined) {
+  return useGetUpdatesHistoryPushId(
+    pushId ?? '',
+    { query: { queryKey: ['updates-push-detail', pushId] as const, enabled: pushId !== undefined } },
+  );
 }
-
-export type { UpdatePushDetailResult };

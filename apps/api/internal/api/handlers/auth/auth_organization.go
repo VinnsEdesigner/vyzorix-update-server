@@ -6,6 +6,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -95,7 +96,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, dto.SelectOrganizationResponse{
+	h.presenter.OK(c, schema.SelectOrganizationResult{
 		OrganizationID:   result.OrganizationID,
 		OrganizationName: result.OrganizationName,
 		Role:             string(result.Role),

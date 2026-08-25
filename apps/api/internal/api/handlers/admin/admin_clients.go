@@ -6,6 +6,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -22,6 +23,26 @@ var (
 	_ openapi.SuccessResult
 	_ openapi.ErrorResponse
 )
+
+// adminClientToSchema maps the application DTO onto the CUE-generated wire
+// struct (tooling/schema/admin_schemas.cue → schema.AdminClient). The two are
+// shape-identical; the generated struct is the OpenAPI source of truth.
+func adminClientToSchema(r *dto.ClientResponse) schema.AdminClient {
+	return schema.AdminClient{
+		ID:             r.ID,
+		LastRequestAt:  r.LastRequestAt,
+		Name:           r.Name,
+		OperatorID:     r.OperatorID,
+		Platform:       r.Platform,
+		AllowedOrigins: r.AllowedOrigins,
+		AllowedPaths:   r.AllowedPaths,
+		CreatedAt:      r.CreatedAt,
+		RateLimit:      r.RateLimit,
+		RequestCount:   r.RequestCount,
+		UpdatedAt:      r.UpdatedAt,
+		IsActive:       r.IsActive,
+	}
+}
 
 // ClientsHandler handles admin client management endpoints.
 type ClientsHandler struct {
@@ -80,7 +101,11 @@ func (h *ClientsHandler) List(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"clients": clients, "total": total})
+	items := make([]schema.AdminClient, len(clients))
+	for i := range clients {
+		items[i] = adminClientToSchema(&clients[i])
+	}
+	c.JSON(http.StatusOK, schema.AdminClientListResult{Clients: items, Total: total})
 }
 
 // Get handles GET /v1/admin/clients/:clientId.
@@ -115,7 +140,7 @@ func (h *ClientsHandler) Get(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"client": clientResp})
+	c.JSON(http.StatusOK, schema.AdminClientResult{Client: adminClientToSchema(clientResp)})
 }
 
 // Update handles PATCH /v1/admin/clients/:clientId.
@@ -160,7 +185,7 @@ func (h *ClientsHandler) Update(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"client": clientResp})
+	c.JSON(http.StatusOK, schema.AdminClientResult{Client: adminClientToSchema(clientResp)})
 }
 
 // Delete handles DELETE /v1/admin/clients/:clientId.

@@ -117,8 +117,8 @@ describe('useUpdateDeviceSettings', () => {
   });
 
   it('calls updateSettings and returns the result', async () => {
-    const { result } = renderHookWithQueryClient(() => useUpdateDeviceSettings('111111111111111'));
-    result.current.mutate({ customName: 'My Device' });
+    const { result } = renderHookWithQueryClient(() => useUpdateDeviceSettings());
+    result.current.mutate({ imei: '111111111111111', data: { customName: 'My Device' } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.customName).toBe('My Device');
     expect(result.current.data?.deviceImei).toBe('111111111111111');
@@ -149,8 +149,8 @@ describe('useUpdateDeviceThresholds', () => {
   });
 
   it('calls updateSettingsThresholds and caches result', async () => {
-    const { result } = renderHookWithQueryClient(() => useUpdateDeviceThresholds('111111111111111'));
-    result.current.mutate({ riskWarn: 75 });
+    const { result } = renderHookWithQueryClient(() => useUpdateDeviceThresholds());
+    result.current.mutate({ imei: '111111111111111', data: { riskWarn: 75 } });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.thresholds?.riskWarn).toBe(75);
   });
@@ -163,7 +163,7 @@ describe('useDeregisterDevice', () => {
 
   it('calls deregister with imei and org', async () => {
     const { result } = renderHookWithQueryClient(() => useDeregisterDevice());
-    result.current.mutate('111111111111111');
+    result.current.mutate({ imei: '111111111111111' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.success).toBe(true);
   });

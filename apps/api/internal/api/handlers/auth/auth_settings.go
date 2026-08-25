@@ -11,6 +11,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -220,14 +221,14 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":             op.ID,
-		"email":          op.Email,
-		"name":           op.Name,
-		"role":           h.getOperatorRole(c, op),
-		"mfa_enabled":    op.MFAEnabled,
-		"email_verified": op.EmailVerified,
-		"client":         op.ClientSettings,
+	h.presenter.OK(c, schema.OperatorSettingsResultLegacy{
+		ID:            op.ID,
+		Email:         op.Email,
+		Name:          op.Name,
+		Role:           h.getOperatorRole(c, op),
+		MFAEnabled:    op.MFAEnabled,
+		EmailVerified: op.EmailVerified,
+		Client:        &schema.ClientSettings{ServerURL: op.ClientSettings.ServerURL, DeviceID: op.ClientSettings.DeviceID, RequestTimeoutMs: op.ClientSettings.RequestTimeoutMs, LogBufferLimit: op.ClientSettings.LogBufferLimit, SignalHistoryLimit: op.ClientSettings.SignalHistoryLimit, AutoReconnect: op.ClientSettings.AutoReconnect, StrictHmac: op.ClientSettings.StrictHmac, NotificationsEnabled: op.ClientSettings.NotificationsEnabled},
 	})
 }
 

@@ -1,20 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getInbox, type CreateInboxRequest, type InboxEntryResponse } from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
+import { useQueryClient } from '@tanstack/react-query';
+import { usePostDeviceInbox } from '@/generated-rq/inbox/device-inbox';
 
 export function useRegisterDevice() {
   const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (request: CreateInboxRequest) =>
-      getInbox().postDeviceInbox(request),
-    onSuccess: (_, request) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.registrationInbox() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.registrationInboxEntry(request.imei),
-      });
-    },
+  return usePostDeviceInbox({
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['inbox'] }) },
   });
 }
-
-export type { CreateInboxRequest, InboxEntryResponse };

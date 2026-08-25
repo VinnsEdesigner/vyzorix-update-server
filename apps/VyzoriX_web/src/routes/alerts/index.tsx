@@ -130,14 +130,14 @@ function RuleCard({ rule }: { rule: AlertRule }) {
             {rule.instances?.[0]?.state ?? 'inactive'}
           </span>
           <button
-            onClick={() => evaluateRule.mutate(rule.id!)}
+            onClick={() => evaluateRule.mutate({ id: rule.id! })}
             className="rounded border px-2 py-1 text-xs"
             title="Evaluate now"
           >
             Evaluate
           </button>
           <button
-            onClick={() => deleteRule.mutate(rule.id!)}
+            onClick={() => deleteRule.mutate({ id: rule.id! })}
             className="rounded border px-2 py-1 text-xs text-red-600"
             title="Delete rule"
           >
@@ -165,7 +165,7 @@ function AlertsPage() {
 
       <div className="mb-8 rounded border p-4">
         <h2 className="mb-4 font-semibold">New rule</h2>
-        <RuleForm onSubmit={(req) => createRule.mutate(req)} disabled={createRule.isPending} />
+        <RuleForm onSubmit={(req) => createRule.mutate({ data: req })} disabled={createRule.isPending} />
       </div>
 
       {rules.isLoading && <p>Loading rules…</p>}

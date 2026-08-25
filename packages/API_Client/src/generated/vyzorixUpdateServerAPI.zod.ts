@@ -61,10 +61,18 @@ export const AdminAPIKeyListResultSchema = z.object({
   pagination: z.lazy(() => PaginationSchema).optional(),
 });
 export const AdminClientSchema = z.object({
-  clientId: z.string().optional(),
-  createdAt: z.string().optional(),
+  allowed_origins: z.array(z.string()).optional(),
+  allowed_paths: z.array(z.string()).optional(),
+  created_at: z.number().int().optional(),
   id: z.string().optional(),
+  is_active: z.boolean().optional(),
+  last_request_at: z.number().int().optional(),
   name: z.string().optional(),
+  operator_id: z.string().optional(),
+  platform: z.string().optional(),
+  rate_limit: z.number().int().optional(),
+  request_count: z.number().int().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const AdminClientListResultSchema = z.object({
   clients: z.array(z.lazy(() => AdminClientSchema)).optional(),

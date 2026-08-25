@@ -11040,17 +11040,47 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminClient": {
             "type": "object",
             "properties": {
-                "clientId": {
-                    "type": "string"
+                "allowed_origins": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
-                "createdAt": {
-                    "type": "string"
+                "allowed_paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "created_at": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "last_request_at": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
+                },
+                "operator_id": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "request_count": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "integer"
                 }
             }
         },
