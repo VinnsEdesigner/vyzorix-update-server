@@ -20,7 +20,7 @@ import (
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
-	_ openapi.TelemetryHistoryRequest
+	_ openapi.TelemetryHistoryQueryResult
 	_ openapi.TelemetryHistoryResponse
 	_ openapi.ErrorResponse
 )

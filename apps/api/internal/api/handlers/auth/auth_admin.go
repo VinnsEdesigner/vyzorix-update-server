@@ -134,10 +134,10 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 
 	h.presenter.AdminAction(c, op.ID, "create_operator", "operator", newOp.ID, nil)
 	h.presenter.Created(c, schema.AdminOperator{
-		ID:           newOp.ID,
-		Email:        newOp.Email,
-		Name:         newOp.Name,
-		CreatedAt:    newOp.CreatedAt.UnixMilli(),
+		ID:        newOp.ID,
+		Email:     newOp.Email,
+		Name:      newOp.Name,
+		CreatedAt: newOp.CreatedAt.UnixMilli(),
 	})
 }
 
@@ -182,13 +182,13 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, schema.AdminOperator{
-		ID:              targetOp.ID,
-		Email:            targetOp.Email,
-		Name:             targetOp.Name,
-		MFAEnabled:       targetOp.MFASecret != "",
-		EmailVerified:    targetOp.EmailVerified,
-		CreatedAt:        targetOp.CreatedAt.UnixMilli(),
-		UpdatedAt:        targetOp.UpdatedAt.UnixMilli(),
+		ID:            targetOp.ID,
+		Email:         targetOp.Email,
+		Name:          targetOp.Name,
+		MFAEnabled:    targetOp.MFASecret != "",
+		EmailVerified: targetOp.EmailVerified,
+		CreatedAt:     targetOp.CreatedAt.UnixMilli(),
+		UpdatedAt:     targetOp.UpdatedAt.UnixMilli(),
 	})
 }
 
@@ -254,10 +254,10 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, schema.AdminOperator{
-		ID:           updatedOp.ID,
-		Email:        updatedOp.Email,
-		Name:         updatedOp.Name,
-		UpdatedAt:    updatedOp.UpdatedAt.UnixMilli(),
+		ID:        updatedOp.ID,
+		Email:     updatedOp.Email,
+		Name:      updatedOp.Name,
+		UpdatedAt: updatedOp.UpdatedAt.UnixMilli(),
 	})
 }
 

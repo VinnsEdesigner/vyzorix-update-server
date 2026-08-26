@@ -10,6 +10,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	svcapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
@@ -165,7 +166,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"deleted": true})
+	c.JSON(http.StatusOK, schema.DeletedResult{Deleted: true})
 }
 
 // ListTokens handles GET /v1/service-accounts/:id/tokens.
@@ -258,7 +259,7 @@ func (h *Handler) RevokeToken(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"revoked": true})
+	c.JSON(http.StatusOK, schema.RevokedResult{Revoked: true})
 }
 
 // RotateToken handles POST /v1/service-accounts/:id/tokens/:token_id/rotate.

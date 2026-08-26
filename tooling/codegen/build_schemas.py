@@ -47,6 +47,25 @@ CUE_TO_TS = {
 }
 
 
+def split_types(content):
+    """Split a .cue file into (name, body) type blocks with brace-balanced
+    bodies — a naive `[^}]*` stops at the `}` inside an open map
+    (`{[string]: _}`) and silently truncates those structs."""
+    types = []
+    for m in re.finditer(r"#(\w+):\s*\{", content):
+        name = m.group(1)
+        depth = 1
+        i = m.end()
+        while i < len(content) and depth > 0:
+            if content[i] == "{":
+                depth += 1
+            elif content[i] == "}":
+                depth -= 1
+            i += 1
+        types.append((name, content[m.end():i - 1]))
+    return types
+
+
 def parse_cue_file(filepath):
     """Parse a simplified CUE file into schema definitions."""
     with open(filepath) as f:
@@ -54,18 +73,37 @@ def parse_cue_file(filepath):
 
     # First pass: collect all type definitions (including nested refs)
     type_defs = {}
-    for match in re.finditer(r"#(\w+):\s*\{([^}]*)\}", content, re.DOTALL):
-        name = match.group(1)
-        body = match.group(2)
+    for name, body in split_types(content):
         fields = []
 
         for line in body.strip().split("\n"):
             line = line.strip()
             if not line or line.startswith("//"):
                 continue
+            # Open map: fieldName?: {[string]: _} (map[string]any / interface{}).
+            map_match = re.match(r"(\w+)(\?)?:\s*\{\[string\]:\s*_\}(?:\s*\|\s*\*(.+?))?$", line)
+            if map_match:
+                fields.append({
+                    "name": map_match.group(1),
+                    "type": "map",
+                    "optional": map_match.group(2) == "?",
+                    "default": map_match.group(3),
+                    "is_nested": False,
+                })
+                continue
+            # Any field: fieldName?: _ (interface{} / any / json.RawMessage).
+            any_match = re.match(r"(\w+)(\?)?:\s*_(?:\s*\|\s*\*(.+?))?$", line)
+            if any_match:
+                fields.append({
+                    "name": any_match.group(1),
+                    "type": "any",
+                    "optional": any_match.group(2) == "?",
+                    "default": any_match.group(3),
+                    "is_nested": False,
+                })
+                continue
             # Match: fieldName: type | *default  or  fieldName?: type
-            # Handles nested refs (#TypeName), arrays of primitives
-            # ([...string]) and arrays of nested refs ([...#TypeName]).
+            # Handles nested refs (#TypeName), arrays ([...T] / [...#T]).
             field_match = re.match(
                 r"(\w+)(\?)?:\s*(?:#(\w+)|(\[\.\.\.#?(\w+)\])|(\w+))(?:\s*\|\s*\*(.+?))?$", line
             )
@@ -122,7 +160,11 @@ def to_go_struct(schema):
     # Resolve Go types first so we can sort by alignment cost.
     resolved = []
     for field in schema["fields"]:
-        if field.get("is_nested"):
+        if field["type"] == "map":
+            go_type = "map[string]any"
+        elif field["type"] == "any":
+            go_type = "any"
+        elif field.get("is_nested"):
             go_type = f"*{field['type']}" if field["optional"] else field["type"]
         elif field["type"].startswith("[..."):
             elem = field["type"].replace("[...", "").replace("]", "")
@@ -166,7 +208,11 @@ def to_ts_interface(schema):
     lines = [f"export interface {schema['name']} {{"]
     for field in schema["fields"]:
         # Handle nested type refs
-        if field.get("is_nested"):
+        if field["type"] == "map":
+            ts_type = "Record<string, unknown>"
+        elif field["type"] == "any":
+            ts_type = "unknown"
+        elif field.get("is_nested"):
             ts_type = field["type"]
         elif field["type"].startswith("[..."):
             elem = field["type"].replace("[...", "").replace("]", "")

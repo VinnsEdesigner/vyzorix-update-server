@@ -14390,7 +14390,7 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UpdateInboxEntryRequest": {
             "type": "object",
             "properties": {
-                "status": {
+                "notes": {
                     "type": "string"
                 }
             }

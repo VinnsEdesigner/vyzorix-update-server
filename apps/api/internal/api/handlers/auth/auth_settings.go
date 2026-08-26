@@ -225,7 +225,7 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		ID:            op.ID,
 		Email:         op.Email,
 		Name:          op.Name,
-		Role:           h.getOperatorRole(c, op),
+		Role:          h.getOperatorRole(c, op),
 		MFAEnabled:    op.MFAEnabled,
 		EmailVerified: op.EmailVerified,
 		Client:        &schema.ClientSettings{ServerURL: op.ClientSettings.ServerURL, DeviceID: op.ClientSettings.DeviceID, RequestTimeoutMs: op.ClientSettings.RequestTimeoutMs, LogBufferLimit: op.ClientSettings.LogBufferLimit, SignalHistoryLimit: op.ClientSettings.SignalHistoryLimit, AutoReconnect: op.ClientSettings.AutoReconnect, StrictHmac: op.ClientSettings.StrictHmac, NotificationsEnabled: op.ClientSettings.NotificationsEnabled},

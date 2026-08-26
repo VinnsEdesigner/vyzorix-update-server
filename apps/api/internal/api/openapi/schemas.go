@@ -1247,7 +1247,7 @@ type InboxResendResult struct {
 }
 
 type UpdateInboxEntryRequest struct {
-	Status string `json:"status"`
+	Notes string `json:"notes,omitempty"`
 }
 
 // ---- Telemetry ------------------------------------------------------------.
@@ -1255,13 +1255,6 @@ type UpdateInboxEntryRequest struct {
 type TelemetryEntry struct {
 	Timestamp time.Time          `json:"timestamp"`
 	Metrics   map[string]float64 `json:"metrics"`
-}
-
-type TelemetryHistoryRequest struct {
-	DeviceID  string `form:"device_id"`
-	StartTime int64  `form:"start_time"`
-	EndTime   int64  `form:"end_time"`
-	Limit     int    `form:"limit"`
 }
 
 type TelemetryHistoryResponse struct {

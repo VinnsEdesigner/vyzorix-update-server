@@ -16933,7 +16933,7 @@
       "UpdateInboxEntryRequest": {
         "type": "object",
         "properties": {
-          "status": {
+          "notes": {
             "type": "string"
           }
         }

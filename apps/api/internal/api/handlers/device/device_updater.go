@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 
@@ -61,7 +62,7 @@ func (h *UpdaterHandler) UpdateFCMToken(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, schema.SuccessResult{Success: true})
 }
 
 // Delete handles DELETE /v1/device/:imei.
@@ -88,5 +89,5 @@ func (h *UpdaterHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, schema.SuccessResult{Success: true})
 }
