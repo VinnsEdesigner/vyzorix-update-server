@@ -730,7 +730,7 @@ func (h *SettingsHandler) GetPreferences(c *gin.Context) {
 		h.presenter.InternalError(c, "failed to get preferences")
 		return
 	}
-	h.presenter.OK(c, gin.H{"preferences": prefs})
+	h.presenter.OK(c, schema.PreferencesResult{Preferences: prefs})
 }
 
 // UpdatePreferences handles PATCH /v1/auth/me/preferences.

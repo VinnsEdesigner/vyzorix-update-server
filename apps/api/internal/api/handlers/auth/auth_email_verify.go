@@ -70,7 +70,7 @@ func (h *EmailVerifyHandler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"verified": true, "email": result.Email})
+	h.presenter.OK(c, schema.EmailVerifyResult{Verified: true, Email: result.Email})
 }
 
 // ResendVerification handles POST /v1/auth/resend-verification.

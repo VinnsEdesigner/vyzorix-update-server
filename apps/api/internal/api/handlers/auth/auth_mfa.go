@@ -85,7 +85,7 @@ func (h *MFAHandler) GetMFAStatus(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"mfa_enabled": mfaEnabled})
+	h.presenter.OK(c, schema.MFAStatusResult{MFAEnabled: mfaEnabled})
 }
 
 // EnrollMFA handles POST /v1/auth/mfa/enroll.

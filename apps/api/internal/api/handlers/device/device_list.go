@@ -12,6 +12,8 @@ import (
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -370,7 +372,7 @@ func (h *ListHandler) GetTags(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"tags": d.Tags})
+	c.JSON(http.StatusOK, schema.DeviceTagsResult{Tags: d.Tags})
 }
 
 // SetTags handles PUT /v1/devices/:imei/tags.

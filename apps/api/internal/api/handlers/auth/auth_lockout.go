@@ -7,6 +7,8 @@ import (
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -112,9 +114,5 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	h.lockout.RecordSuccessfulAttempt(targetOp.Email)
 
 	h.presenter.AdminAction(c, op.ID, "unlock_account", "operator", targetOperatorID, nil)
-	h.presenter.OK(c, gin.H{
-		"success":     true,
-		"message":     "Account unlocked successfully",
-		"operator_id": targetOperatorID,
-	})
+	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "Account unlocked successfully"})
 }

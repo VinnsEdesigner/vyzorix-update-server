@@ -11,6 +11,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	wschannel "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws/channel"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -46,7 +48,7 @@ func NewHandler(bridge *wschannel.HubBridge, presenter *response.Presenter) *Han
 func (h *Handler) Status(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	streams := h.bridge.Manager().StreamCount()
-	c.JSON(http.StatusOK, gin.H{"org": orgID, "active_streams": streams})
+	c.JSON(http.StatusOK, schema.ChannelStatusResult{Org: orgID, ActiveStreams: streams})
 }
 
 // Subscribe registers a logical subscription to a channel scope for the

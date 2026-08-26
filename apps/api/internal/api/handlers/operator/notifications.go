@@ -10,6 +10,8 @@ import (
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // NotificationHandler handles notification endpoints.
@@ -115,5 +117,5 @@ func (h *NotificationHandler) RotateWebhookSecret(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"secret": secret})
+	c.JSON(http.StatusOK, schema.WebhookSecretResult{Secret: secret})
 }

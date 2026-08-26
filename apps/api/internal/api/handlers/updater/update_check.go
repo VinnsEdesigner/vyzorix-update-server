@@ -17,6 +17,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -224,7 +226,7 @@ func (h *Handler) DownloadProgress(c *gin.Context) {
 	}
 
 	h.log.Info("download progress", "deviceId", req.DeviceID, "filename", req.Filename, "progress", req.Progress)
-	c.JSON(http.StatusOK, gin.H{"recorded": true})
+	c.JSON(http.StatusOK, schema.DownloadProgressResult{Recorded: true})
 }
 
 // serveJSON serves a static JSON file with proper headers.
