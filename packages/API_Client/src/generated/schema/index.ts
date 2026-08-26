@@ -157,3 +157,107 @@ export interface OperatorSettingsResultLegacy {
 	client?: ClientSettings;
 }
 
+export interface MessageResult {
+	message: string;
+}
+
+export interface SuccessResult {
+	success: boolean;
+	message?: string;
+}
+
+export interface LockoutStatusResult {
+	locked: boolean;
+	reason?: string;
+	retryAfter?: number;
+	attempts?: number;
+	unlockAt?: number;
+}
+
+export interface AdminOperator {
+	id: string;
+	email: string;
+	name: string;
+	role?: string;
+	mfaEnabled: boolean;
+	emailVerified: boolean;
+	createdAt: number;
+	updatedAt: number;
+}
+
+export interface AdminOperatorListResult {
+	operators: AdminOperator[];
+	total: number;
+}
+
+export interface APIKey {
+	id: string;
+	operatorID?: string;
+	name: string;
+	keyPrefix: string;
+	scope: string;
+	expiresAt?: string;
+	isActive: boolean;
+	requestCount: number;
+	lastRequestAt?: string;
+	createdAt: number;
+	updatedAt: string;
+	revokedAt?: string;
+}
+
+export interface APIKeyWithSecret {
+	apiKey: string;
+}
+
+export interface APIKeyListResult {
+	keys: APIKey[];
+	pagination: Pagination;
+	monthlyLimit: number;
+	keysCreatedThisMonth: number;
+}
+
+export interface Pagination {
+	page: number;
+	limit: number;
+	total: number;
+	totalPages: number;
+}
+
+export interface CommandDispatchResult {
+	dispatchID: string;
+	commandID?: string;
+	deviceID?: string;
+	status?: string;
+	deviceOnline?: boolean;
+	serverTime?: number;
+}
+
+export interface ServiceAccount {
+	id: string;
+	orgID: string;
+	name: string;
+	enabled: boolean;
+	createdAt: string;
+	updatedAt: number;
+}
+
+export interface ServiceAccountListResult {
+	serviceAccounts: ServiceAccount[];
+}
+
+export interface ServiceAccountToken {
+	id: string;
+	serviceID: string;
+	name: string;
+	keyPrefix: string;
+	scopes: string[];
+	valid: boolean;
+	expiresAt?: string;
+	createdAt: string;
+	revokedAt?: string;
+}
+
+export interface ServiceAccountTokenListResult {
+	tokens: ServiceAccountToken[];
+}
+

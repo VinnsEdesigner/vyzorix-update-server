@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 
@@ -83,7 +84,7 @@ func (h *PasswordResetHandler) ForgotPassword(c *gin.Context) {
 		}
 	}
 
-	h.presenter.OK(c, gin.H{"message": "If that email exists, a password reset link has been sent."})
+	h.presenter.OK(c, schema.MessageResult{Message: "If that email exists, a password reset link has been sent."})
 }
 
 // ResendPasswordReset handles POST /v1/auth/resend-password-reset.
@@ -169,7 +170,7 @@ func (h *PasswordResetHandler) ResendPasswordReset(c *gin.Context) {
 		_ = c.Error(err)
 	}
 
-	h.presenter.OK(c, gin.H{"success": true, "message": "Password reset link sent."})
+	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "Password reset link sent."})
 }
 
 // ResetPassword handles POST /v1/auth/reset-password.
@@ -214,5 +215,5 @@ func (h *PasswordResetHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"success": true, "message": "Password has been reset successfully."})
+	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "Password has been reset successfully."})
 }

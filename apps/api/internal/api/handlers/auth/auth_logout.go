@@ -4,6 +4,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +54,7 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 		// No authenticated session in context — nothing to revoke. Clear the.
 		// cookie anyway so the browser side is clean and return success.
 		h.presenter.ClearSessionCookie(c)
-		h.presenter.OK(c, gin.H{"message": "logged out"})
+		h.presenter.OK(c, schema.MessageResult{Message: "logged out"})
 		return
 	}
 
@@ -78,5 +79,5 @@ func (h *LogoutHandler) Handle(c *gin.Context) {
 		h.presenter.LogoutSuccess(c, operatorID)
 	}
 
-	h.presenter.OK(c, gin.H{"message": "logged out"})
+	h.presenter.OK(c, schema.MessageResult{Message: "logged out"})
 }

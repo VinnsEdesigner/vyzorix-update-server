@@ -4,34 +4,34 @@
 package schema
 
 type CreateAPIKeyRequest struct {
-	Name          string `json:"name"`
-	Scope         string `json:"scope"`
-	ExpiresInDays int    `json:"expires_in_days,omitempty"`
+	Name string `json:"name"`
+	Scope string `json:"scope"`
+	ExpiresInDays int `json:"expires_in_days,omitempty"`
 }
 
 type UpdateAPIKeyRequest struct {
-	Name  string `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 	Scope string `json:"scope,omitempty"`
 }
 
 type AdminClient struct {
-	ID             string   `json:"id"`
-	LastRequestAt  *int64   `json:"last_request_at,omitempty"`
-	Name           string   `json:"name"`
-	OperatorID     string   `json:"operator_id"`
-	Platform       string   `json:"platform"`
+	ID string `json:"id"`
+	LastRequestAt *int64 `json:"last_request_at,omitempty"`
+	Name string `json:"name"`
+	OperatorID string `json:"operator_id"`
+	Platform string `json:"platform"`
 	AllowedOrigins []string `json:"allowed_origins"`
-	AllowedPaths   []string `json:"allowed_paths"`
-	CreatedAt      int64    `json:"created_at"`
-	RateLimit      int      `json:"rate_limit"`
-	RequestCount   int64    `json:"request_count"`
-	UpdatedAt      int64    `json:"updated_at"`
-	IsActive       bool     `json:"is_active"`
+	AllowedPaths []string `json:"allowed_paths"`
+	CreatedAt int64 `json:"created_at"`
+	RateLimit int `json:"rate_limit"`
+	RequestCount int64 `json:"request_count"`
+	UpdatedAt int64 `json:"updated_at"`
+	IsActive bool `json:"is_active"`
 }
 
 type AdminClientListResult struct {
 	Clients []AdminClient `json:"clients"`
-	Total   int           `json:"total"`
+	Total int `json:"total"`
 }
 
 type AdminClientResult struct {
@@ -39,22 +39,22 @@ type AdminClientResult struct {
 }
 
 type UpdateAdminClientRequest struct {
-	Name           string   `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 	AllowedOrigins []string `json:"allowed_origins,omitempty"`
-	AllowedPaths   []string `json:"allowed_paths,omitempty"`
-	RateLimit      int      `json:"rate_limit,omitempty"`
-	IsActive       bool     `json:"is_active,omitempty"`
+	AllowedPaths []string `json:"allowed_paths,omitempty"`
+	RateLimit int `json:"rate_limit,omitempty"`
+	IsActive bool `json:"is_active,omitempty"`
 }
 
 type UpdatePushRequest struct {
-	InstallType string   `json:"installType"`
-	ScheduledAt *int64   `json:"scheduledAt,omitempty"`
-	Version     string   `json:"version"`
-	DeviceIDs   []string `json:"deviceIds"`
+	InstallType string `json:"installType"`
+	ScheduledAt *int64 `json:"scheduledAt,omitempty"`
+	Version string `json:"version"`
+	DeviceIDs []string `json:"deviceIds"`
 }
 
 type OrganizationInfo struct {
-	ID   string `json:"id"`
+	ID string `json:"id"`
 	Name string `json:"name"`
 	Role string `json:"role"`
 }
@@ -64,41 +64,41 @@ type SelectOrganizationRequest struct {
 }
 
 type SelectOrganizationResult struct {
-	OrganizationID   string `json:"organization_id"`
+	OrganizationID string `json:"organization_id"`
 	OrganizationName string `json:"organization_name"`
-	Role             string `json:"role"`
+	Role string `json:"role"`
 }
 
 type DeviceThresholds struct {
-	BufferCrit  int `json:"bufferCrit"`
-	BufferWarn  int `json:"bufferWarn"`
-	RiskCrit    int `json:"riskCrit"`
-	RiskWarn    int `json:"riskWarn"`
+	BufferCrit int `json:"bufferCrit"`
+	BufferWarn int `json:"bufferWarn"`
+	RiskCrit int `json:"riskCrit"`
+	RiskWarn int `json:"riskWarn"`
 	ThermalCrit int `json:"thermalCrit"`
 	ThermalWarn int `json:"thermalWarn"`
 }
 
 type InboxRequest struct {
-	AppVersion        string `json:"appVersion,omitempty"`
-	DeviceClass       string `json:"deviceClass,omitempty"`
-	DeviceName        string `json:"deviceName,omitempty"`
-	FCMToken          string `json:"fcmToken"`
+	AppVersion string `json:"appVersion,omitempty"`
+	DeviceClass string `json:"deviceClass,omitempty"`
+	DeviceName string `json:"deviceName,omitempty"`
+	FCMToken string `json:"fcmToken"`
 	FirebaseInstallID string `json:"firebaseInstallId"`
-	IdempotencyKey    string `json:"idempotencyKey,omitempty"`
-	IMEI              string `json:"imei"`
-	Manufacturer      string `json:"manufacturer,omitempty"`
-	Model             string `json:"model,omitempty"`
-	OSVersion         string `json:"osVersion,omitempty"`
+	IdempotencyKey string `json:"idempotencyKey,omitempty"`
+	IMEI string `json:"imei"`
+	Manufacturer string `json:"manufacturer,omitempty"`
+	Model string `json:"model,omitempty"`
+	OSVersion string `json:"osVersion,omitempty"`
 }
 
 type DeviceConfirmRequest struct {
 	CommandSecret string `json:"commandSecret"`
-	IMEI          string `json:"imei"`
+	IMEI string `json:"imei"`
 }
 
 type InboxAckRequest struct {
 	Action string `json:"action"`
-	Notes  string `json:"notes,omitempty"`
+	Notes string `json:"notes,omitempty"`
 }
 
 type UpdateInboxEntryRequest struct {
@@ -106,55 +106,160 @@ type UpdateInboxEntryRequest struct {
 }
 
 type EmailNotifications struct {
-	CommandFailed       bool `json:"commandFailed"`
-	DeviceOffline       bool `json:"deviceOffline"`
-	DeviceOnline        bool `json:"deviceOnline"`
+	CommandFailed bool `json:"commandFailed"`
+	DeviceOffline bool `json:"deviceOffline"`
+	DeviceOnline bool `json:"deviceOnline"`
 	RegistrationRequest bool `json:"registrationRequest"`
-	ThresholdBreach     bool `json:"thresholdBreach"`
-	UpdateAvailable     bool `json:"updateAvailable"`
+	ThresholdBreach bool `json:"thresholdBreach"`
+	UpdateAvailable bool `json:"updateAvailable"`
 }
 
 type PushNotifications struct {
-	CommandFailed       bool `json:"commandFailed"`
-	DeviceOffline       bool `json:"deviceOffline"`
-	DeviceOnline        bool `json:"deviceOnline"`
+	CommandFailed bool `json:"commandFailed"`
+	DeviceOffline bool `json:"deviceOffline"`
+	DeviceOnline bool `json:"deviceOnline"`
 	RegistrationRequest bool `json:"registrationRequest"`
-	ThresholdBreach     bool `json:"thresholdBreach"`
-	UpdateAvailable     bool `json:"updateAvailable"`
+	ThresholdBreach bool `json:"thresholdBreach"`
+	UpdateAvailable bool `json:"updateAvailable"`
 }
 
 type WebhookNotifications struct {
-	Secret  string   `json:"secret,omitempty"`
-	URL     string   `json:"url"`
-	Types   []string `json:"types"`
-	Enabled bool     `json:"enabled"`
+	Secret string `json:"secret,omitempty"`
+	URL string `json:"url"`
+	Types []string `json:"types"`
+	Enabled bool `json:"enabled"`
 }
 
 type NotificationSettings struct {
-	Email    EmailNotifications   `json:"email"`
-	Push     PushNotifications    `json:"push"`
-	Webhook  WebhookNotifications `json:"webhook"`
-	Channels []string             `json:"channels"`
-	Enabled  bool                 `json:"enabled"`
+	Email EmailNotifications `json:"email"`
+	Push PushNotifications `json:"push"`
+	Webhook WebhookNotifications `json:"webhook"`
+	Channels []string `json:"channels"`
+	Enabled bool `json:"enabled"`
 }
 
 type ClientSettings struct {
-	DeviceID             string `json:"deviceId"`
-	ServerURL            string `json:"serverUrl"`
-	LogBufferLimit       int    `json:"logBufferLimit"`
-	RequestTimeoutMs     int    `json:"requestTimeoutMs"`
-	SignalHistoryLimit   int    `json:"signalHistoryLimit"`
-	AutoReconnect        bool   `json:"autoReconnect"`
-	NotificationsEnabled bool   `json:"notificationsEnabled"`
-	StrictHmac           bool   `json:"strictHmac"`
+	DeviceID string `json:"deviceId"`
+	ServerURL string `json:"serverUrl"`
+	LogBufferLimit int `json:"logBufferLimit"`
+	RequestTimeoutMs int `json:"requestTimeoutMs"`
+	SignalHistoryLimit int `json:"signalHistoryLimit"`
+	AutoReconnect bool `json:"autoReconnect"`
+	NotificationsEnabled bool `json:"notificationsEnabled"`
+	StrictHmac bool `json:"strictHmac"`
 }
 
 type OperatorSettingsResultLegacy struct {
-	Client        *ClientSettings `json:"client,omitempty"`
-	Email         string          `json:"email"`
-	ID            string          `json:"id"`
-	Name          string          `json:"name"`
-	Role          string          `json:"role,omitempty"`
-	EmailVerified bool            `json:"email_verified"`
-	MFAEnabled    bool            `json:"mfa_enabled"`
+	Client *ClientSettings `json:"client,omitempty"`
+	Email string `json:"email"`
+	ID string `json:"id"`
+	Name string `json:"name"`
+	Role string `json:"role,omitempty"`
+	EmailVerified bool `json:"email_verified"`
+	MFAEnabled bool `json:"mfa_enabled"`
 }
+
+type MessageResult struct {
+	Message string `json:"message"`
+}
+
+type SuccessResult struct {
+	Message string `json:"message,omitempty"`
+	Success bool `json:"success"`
+}
+
+type LockoutStatusResult struct {
+	Reason string `json:"reason,omitempty"`
+	Attempts int `json:"attempts,omitempty"`
+	RetryAfter int `json:"retryAfter,omitempty"`
+	UnlockAt int `json:"unlockAt,omitempty"`
+	Locked bool `json:"locked"`
+}
+
+type AdminOperator struct {
+	Email string `json:"email"`
+	ID string `json:"id"`
+	Name string `json:"name"`
+	Role string `json:"role,omitempty"`
+	CreatedAt int64 `json:"createdAt"`
+	UpdatedAt int64 `json:"updatedAt"`
+	EmailVerified bool `json:"emailVerified"`
+	MFAEnabled bool `json:"mfaEnabled"`
+}
+
+type AdminOperatorListResult struct {
+	Operators []AdminOperator `json:"operators"`
+	Total int `json:"total"`
+}
+
+type APIKey struct {
+	ExpiresAt string `json:"expiresAt,omitempty"`
+	ID string `json:"id"`
+	KeyPrefix string `json:"keyPrefix"`
+	LastRequestAt string `json:"lastRequestAt,omitempty"`
+	Name string `json:"name"`
+	OperatorID string `json:"operatorID,omitempty"`
+	RevokedAt string `json:"revokedAt,omitempty"`
+	Scope string `json:"scope"`
+	UpdatedAt string `json:"updatedAt"`
+	CreatedAt int64 `json:"createdAt"`
+	RequestCount int `json:"requestCount"`
+	IsActive bool `json:"isActive"`
+}
+
+type APIKeyWithSecret struct {
+	APIKey string `json:"apiKey"`
+}
+
+type APIKeyListResult struct {
+	Pagination Pagination `json:"pagination"`
+	Keys []APIKey `json:"keys"`
+	KeysCreatedThisMonth int `json:"keysCreatedThisMonth"`
+	MonthlyLimit int `json:"monthlyLimit"`
+}
+
+type Pagination struct {
+	Limit int `json:"limit"`
+	Page int `json:"page"`
+	Total int `json:"total"`
+	TotalPages int `json:"totalPages"`
+}
+
+type CommandDispatchResult struct {
+	CommandID string `json:"commandID,omitempty"`
+	DeviceID string `json:"deviceID,omitempty"`
+	DispatchID string `json:"dispatchID"`
+	Status string `json:"status,omitempty"`
+	ServerTime int `json:"serverTime,omitempty"`
+	DeviceOnline bool `json:"deviceOnline,omitempty"`
+}
+
+type ServiceAccount struct {
+	CreatedAt string `json:"createdAt"`
+	ID string `json:"id"`
+	Name string `json:"name"`
+	OrgID string `json:"orgID"`
+	UpdatedAt int64 `json:"updatedAt"`
+	Enabled bool `json:"enabled"`
+}
+
+type ServiceAccountListResult struct {
+	ServiceAccounts []ServiceAccount `json:"serviceAccounts"`
+}
+
+type ServiceAccountToken struct {
+	CreatedAt string `json:"createdAt"`
+	ExpiresAt string `json:"expiresAt,omitempty"`
+	ID string `json:"id"`
+	KeyPrefix string `json:"keyPrefix"`
+	Name string `json:"name"`
+	RevokedAt string `json:"revokedAt,omitempty"`
+	ServiceID string `json:"serviceID"`
+	Scopes []string `json:"scopes"`
+	Valid bool `json:"valid"`
+}
+
+type ServiceAccountTokenListResult struct {
+	Tokens []ServiceAccountToken `json:"tokens"`
+}
+

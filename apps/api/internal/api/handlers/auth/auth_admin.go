@@ -7,6 +7,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -132,11 +133,11 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 	}
 
 	h.presenter.AdminAction(c, op.ID, "create_operator", "operator", newOp.ID, nil)
-	h.presenter.Created(c, gin.H{
-		"id":         newOp.ID,
-		"email":      newOp.Email,
-		"name":       newOp.Name,
-		"created_at": newOp.CreatedAt.UnixMilli(),
+	h.presenter.Created(c, schema.AdminOperator{
+		ID:           newOp.ID,
+		Email:        newOp.Email,
+		Name:         newOp.Name,
+		CreatedAt:    newOp.CreatedAt.UnixMilli(),
 	})
 }
 
@@ -180,14 +181,14 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":             targetOp.ID,
-		"email":          targetOp.Email,
-		"name":           targetOp.Name,
-		"mfa_enabled":    targetOp.MFASecret != "",
-		"email_verified": targetOp.EmailVerified,
-		"created_at":     targetOp.CreatedAt.UnixMilli(),
-		"updated_at":     targetOp.UpdatedAt.UnixMilli(),
+	c.JSON(http.StatusOK, schema.AdminOperator{
+		ID:              targetOp.ID,
+		Email:            targetOp.Email,
+		Name:             targetOp.Name,
+		MFAEnabled:       targetOp.MFASecret != "",
+		EmailVerified:    targetOp.EmailVerified,
+		CreatedAt:        targetOp.CreatedAt.UnixMilli(),
+		UpdatedAt:        targetOp.UpdatedAt.UnixMilli(),
 	})
 }
 
@@ -252,11 +253,11 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":         updatedOp.ID,
-		"email":      updatedOp.Email,
-		"name":       updatedOp.Name,
-		"updated_at": updatedOp.UpdatedAt.UnixMilli(),
+	c.JSON(http.StatusOK, schema.AdminOperator{
+		ID:           updatedOp.ID,
+		Email:        updatedOp.Email,
+		Name:         updatedOp.Name,
+		UpdatedAt:    updatedOp.UpdatedAt.UnixMilli(),
 	})
 }
 
@@ -315,5 +316,5 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 	}
 
 	h.presenter.AdminAction(c, op.ID, "delete_operator", "operator", operatorID, nil)
-	h.presenter.OK(c, gin.H{"success": true, "message": "operator deleted"})
+	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "operator deleted"})
 }
