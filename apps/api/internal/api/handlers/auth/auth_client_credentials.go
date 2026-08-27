@@ -6,9 +6,11 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,6 +38,25 @@ func NewClientCredentialsHandler(authService *auth.AuthService, clientService *c
 		authService:   authService,
 		clientService: clientService,
 		presenter:     presenter,
+	}
+}
+
+// clientCredToSchema maps a client credential DTO onto the CUE-generated
+// ClientCredential wire struct.
+func clientCredToSchema(r *dto.ClientResponse) schema.ClientCredential {
+	return schema.ClientCredential{
+		ID:             r.ID,
+		OperatorID:     r.OperatorID,
+		Name:           r.Name,
+		Platform:       r.Platform,
+		AllowedOrigins: r.AllowedOrigins,
+		AllowedPaths:   r.AllowedPaths,
+		RateLimit:      r.RateLimit,
+		RequestCount:   r.RequestCount,
+		CreatedAt:      r.CreatedAt,
+		UpdatedAt:      r.UpdatedAt,
+		IsActive:       r.IsActive,
+		LastRequestAt:  r.LastRequestAt,
 	}
 }
 
@@ -147,7 +168,11 @@ func (h *ClientCredentialsHandler) List(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"clients": clients})
+	items := make([]schema.ClientCredential, len(clients))
+	for i := range clients {
+		items[i] = clientCredToSchema(&clients[i])
+	}
+	h.presenter.OK(c, schema.ClientCredentialListResult{Clients: items})
 }
 
 // Get handles GET /v1/auth/client-credentials/:clientId.
