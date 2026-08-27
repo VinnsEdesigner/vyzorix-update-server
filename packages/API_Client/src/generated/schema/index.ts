@@ -300,10 +300,18 @@ export interface ChannelUnsubscribeResult {
 
 export interface ClientCredential {
 	id: string;
+	operator_id: string;
 	name: string;
-	clientId: string;
+	platform: string;
+	allowed_origins: string[];
+	allowed_paths: string[];
+	rate_limit: number;
+	request_count: number;
+	created_at: number;
+	updated_at: number;
+	is_active: boolean;
+	last_request_at?: number;
 	secret?: string;
-	createdAt?: string;
 }
 
 export interface ClientCredentialListResult {
