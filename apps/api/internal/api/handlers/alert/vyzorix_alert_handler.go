@@ -81,33 +81,43 @@ func (r *ruleRequest) toInput(orgID string) *alertapp.RuleInput {
 	}
 }
 
-func ruleJSON(v *alertapp.RuleView) gin.H {
+// stringMapToAny converts map[string]string to map[string]any for the
+// generated CUE struct field (Labels map[string]any).
+func stringMapToAny(m map[string]string) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+func ruleJSON(v *alertapp.RuleView) schema.AlertRule {
 	rule := v.Rule
-	instances := make([]gin.H, 0, len(v.Instances))
+	instances := make([]schema.AlertInstance, 0, len(v.Instances))
 	for _, inst := range v.Instances {
-		instances = append(instances, gin.H{
-			"labels":       inst.Labels,
-			"state":        string(inst.State),
-			"value":        inst.Value,
-			"evaluated_at": inst.EvaluatedAt,
+		instances = append(instances, schema.AlertInstance{
+			Labels:      stringMapToAny(inst.Labels),
+			State:       string(inst.State),
+			Value:       inst.Value,
+			EvaluatedAt: inst.EvaluatedAt.Format(time.RFC3339),
 		})
 	}
-	return gin.H{
-		"id":                      rule.ID,
-		"org_id":                  rule.OrgID,
-		"name":                    rule.Name,
-		"metric":                  string(rule.Metric),
-		"condition":               string(rule.Condition),
-		"threshold":               rule.Threshold,
-		"for_seconds":             rule.ForSeconds,
-		"notify_interval_seconds": rule.NotifyIntervalSeconds,
-		"enabled":                 rule.Enabled,
-		"webhook_url":             rule.WebhookURL,
-		"created_at":              rule.CreatedAt,
-		"updated_at":              rule.UpdatedAt,
-		"on_no_data":              string(rule.OnNoData),
-		"on_error":                string(rule.OnError),
-		"instances":               instances,
+	return schema.AlertRule{
+		ID:                    rule.ID,
+		OrgID:                 rule.OrgID,
+		Name:                  rule.Name,
+		Metric:                string(rule.Metric),
+		Condition:             string(rule.Condition),
+		Threshold:             rule.Threshold,
+		ForSeconds:            rule.ForSeconds,
+		NotifyIntervalSeconds: rule.NotifyIntervalSeconds,
+		Enabled:               rule.Enabled,
+		WebhookURL:            rule.WebhookURL,
+		CreatedAt:             rule.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:             rule.UpdatedAt.Format(time.RFC3339),
+		OnNoData:              string(rule.OnNoData),
+		OnError:               string(rule.OnError),
+		Instances:             instances,
 	}
 }
 
@@ -129,11 +139,11 @@ func (h *Handler) List(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list alert rules"))
 		return
 	}
-	rules := make([]gin.H, 0, len(views))
+	rules := make([]schema.AlertRule, 0, len(views))
 	for _, v := range views {
 		rules = append(rules, ruleJSON(v))
 	}
-	c.JSON(http.StatusOK, gin.H{"rules": rules})
+	c.JSON(http.StatusOK, schema.AlertRuleListResult{Rules: rules})
 }
 
 // Create handles POST /v1/alerts/rules.
