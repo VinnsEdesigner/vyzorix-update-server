@@ -124,7 +124,7 @@ type AlertHistoryResult struct {
 
 type AlertEvaluateResult struct {
 	RuleID       string `json:"rule_id"`
-	Transitioned int    `json:"transitioned"`
+	Transitioned bool   `json:"transitioned"`
 }
 
 type AnnotationRequest struct {

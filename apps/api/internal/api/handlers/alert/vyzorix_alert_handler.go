@@ -319,7 +319,7 @@ func (h *Handler) Evaluate(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "evaluation failed"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"rule_id": view.Rule.ID, "transitioned": transitioned})
+	c.JSON(http.StatusOK, schema.AlertEvaluateResult{RuleID: view.Rule.ID, Transitioned: transitioned})
 }
 
 func (h *Handler) writeServiceError(c *gin.Context, err error) {

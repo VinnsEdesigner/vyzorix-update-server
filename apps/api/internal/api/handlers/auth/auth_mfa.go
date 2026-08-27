@@ -118,10 +118,7 @@ func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"secret": result.Secret,
-		"uri":    result.URI,
-	})
+	h.presenter.OK(c, schema.WebhookSecretResult{Secret: result.Secret})
 }
 
 // VerifySetupMFA handles POST /v1/auth/mfa/verify-setup.
@@ -214,7 +211,7 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"success": true, "backup_codes": backupCodes})
+	h.presenter.OK(c, schema.MFAEnableResult{Success: true, BackupCodes: backupCodes})
 }
 
 // DisableMFA handles POST /v1/auth/mfa/disable.
@@ -308,7 +305,7 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"valid": true})
+	h.presenter.OK(c, schema.MFABackupCodeResult{Valid: true})
 }
 
 // RegenerateBackupCodes handles POST /v1/auth/mfa/regenerate-backup-codes.
@@ -335,7 +332,7 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"backup_codes": backupCodes})
+	h.presenter.OK(c, schema.MFARegenerateResult{BackupCodes: backupCodes})
 }
 
 // VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.

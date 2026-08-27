@@ -122,7 +122,7 @@ export interface AlertHistoryResult {
 
 export interface AlertEvaluateResult {
 	rule_id: string;
-	transitioned: number;
+	transitioned: boolean;
 }
 
 export interface AnnotationRequest {

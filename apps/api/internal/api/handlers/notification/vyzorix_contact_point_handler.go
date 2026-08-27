@@ -231,7 +231,7 @@ func (h *Handler) Test(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "test delivery failed: "+err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"sent": true, "tested_at": time.Now()})
+	c.JSON(http.StatusOK, schema.ContactPointTestResult{Sent: true, TestedAt: time.Now().Format(time.RFC3339)})
 }
 
 // Deliveries handles GET /v1/notifications/contact-points/:id/deliveries.

@@ -64,5 +64,5 @@ package vyzorix
 // AlertEvaluateResult — generated from openapi/schemas.go.
 #AlertEvaluateResult: {
         rule_id: string
-        transitioned: int
+        transitioned: bool
 }

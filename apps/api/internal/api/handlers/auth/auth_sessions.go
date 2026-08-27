@@ -10,6 +10,8 @@ import (
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -200,7 +202,7 @@ func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"success": true, "message": "Session revoked"})
+	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "Session revoked"})
 }
 
 // RevokeAllExceptCurrent handles DELETE /v1/auth/sessions - Revoke all sessions except current.

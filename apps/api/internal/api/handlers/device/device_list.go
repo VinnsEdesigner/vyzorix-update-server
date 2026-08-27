@@ -400,7 +400,7 @@ func (h *ListHandler) SetTags(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set tags"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"tags": body.Tags})
+	c.JSON(http.StatusOK, schema.DeviceTagsResult{Tags: body.Tags})
 }
 
 // AddTag handles POST /v1/devices/:imei/tags/:tag.
@@ -421,7 +421,7 @@ func (h *ListHandler) AddTag(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add tag"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"added": tag})
+	c.JSON(http.StatusOK, schema.DeviceTagAddedResult{Added: tag})
 }
 
 // RemoveTag handles DELETE /v1/devices/:imei/tags/:tag.
@@ -442,5 +442,5 @@ func (h *ListHandler) RemoveTag(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove tag"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"removed": tag})
+	c.JSON(http.StatusOK, schema.DeviceTagRemovedResult{Removed: tag})
 }

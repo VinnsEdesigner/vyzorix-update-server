@@ -95,7 +95,7 @@ func (h *Handler) Subscribe(c *gin.Context) {
 		h.presenter.Forbidden(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"subscribed": addr})
+	c.JSON(http.StatusOK, schema.ChannelSubscribeResult{Subscribed: addr})
 }
 
 // Unsubscribe removes a logical subscription.
@@ -123,7 +123,7 @@ func (h *Handler) Unsubscribe(c *gin.Context) {
 		return
 	}
 	h.bridge.Unsubscribe("stream/"+orgID+"/"+scope, op.ID)
-	c.JSON(http.StatusOK, gin.H{"unsubscribed": orgID + "/" + scope})
+	c.JSON(http.StatusOK, schema.ChannelUnsubscribeResult{Unsubscribed: orgID + "/" + scope})
 }
 
 func validScope(scope string) bool {

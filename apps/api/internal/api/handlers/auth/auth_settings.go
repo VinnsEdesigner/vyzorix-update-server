@@ -761,5 +761,5 @@ func (h *SettingsHandler) UpdatePreferences(c *gin.Context) {
 		h.presenter.InternalError(c, "failed to update preferences")
 		return
 	}
-	h.presenter.OK(c, gin.H{"preferences": prefs})
+	h.presenter.OK(c, schema.PreferencesResult{Preferences: prefs})
 }
