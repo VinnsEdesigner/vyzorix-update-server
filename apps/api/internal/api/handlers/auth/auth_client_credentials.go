@@ -213,7 +213,7 @@ func (h *ClientCredentialsHandler) Get(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"client": clientResp})
+			h.presenter.OK(c, clientCredToSchema(clientResp))
 }
 
 // Delete handles DELETE /v1/auth/client-credentials/:clientId.
