@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUpdates } from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import { postUpdatesSync } from '@/generated-rq/updates/update-management';
+import { queryKeys } from '@/lib/query-keys';
 import { syncUpdatesViaGraphQL } from './_graphql-fallback';
 
 export interface SyncResult {
@@ -17,14 +17,14 @@ export function useSyncUpdates() {
   return useMutation({
     mutationFn: async (): Promise<SyncResult> => {
       try {
-        const result = await getUpdates().postUpdatesSync();
+        const result = await postUpdatesSync();
         return {
           status: result.status ?? 'syncing',
           startedAt: result.startedAt ? new Date(result.startedAt) : new Date(),
           versionsFound: result.versionsFound,
         };
-      } catch {
-        if (!organizationId) throw new Error('No organization selected');
+      } catch (restError) {
+        if (!organizationId) throw restError;
         return syncUpdatesViaGraphQL(organizationId);
       }
     },

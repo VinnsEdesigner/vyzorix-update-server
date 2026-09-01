@@ -1,17 +1,23 @@
 import {
-  useQuery,
   useMutation,
   useQueryClient,
-  type UseQueryOptions,
 } from '@tanstack/react-query';
-import { getCommands } from '@vyzorix/api-client';
+import {
+  useGetDashboardDeviceImeiCommands,
+  getCommandDispatchIdStatus,
+  useGetCommandDispatchIdStatus,
+  getDeviceImeiCommandsPending,
+  useGetDeviceImeiCommandsPending,
+  postDeviceImeiCommand,
+  deleteCommandDispatchId,
+  postCommandDispatchIdRetry,
+} from '@/generated-rq/commands/device-commands';
 import type {
   Command,
   CommandListItem,
+  CommandParams,
   CommandResponse,
   CommandStatus,
-  CommandParams,
-  CommandHistoryResult,
   PresetCommandType,
 } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
@@ -21,8 +27,6 @@ import { fetchPendingCommandsViaGraphQL, fetchCommandViaGraphQL, normalizeWireCo
 
 const TERMINAL_STATUSES: CommandStatus[] = ['completed' as CommandStatus, 'failed' as CommandStatus, 'cancelled' as CommandStatus];
 
-/** Callbacks for command status polling (previously provided by the deleted
- * hand-rolled command status poller). */
 export interface CommandPollingOptions {
   onStateChange?: (prev: CommandStatus, current: CommandStatus, command: CommandResponse) => void;
   onCompleted?: (command: CommandResponse) => void;
@@ -38,76 +42,79 @@ interface CommandHistoryParams {
   endTime?: number;
 }
 
-export function useCommandHistory(
-  imei: string | undefined,
-  params?: CommandHistoryParams,
-  options?: Omit<
-    UseQueryOptions<CommandHistoryResult>,
-    'queryKey' | 'queryFn'
-  >,
-) {
+export function useCommandHistory(imei: string | undefined, params?: CommandHistoryParams) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.commands(imei ?? '', { ...params, organizationId }),
-    queryFn: () =>
-      getCommands().getDashboardDeviceImeiCommands(imei!, {
-        status: params?.status,
-        page: params?.page,
-        limit: params?.limit,
-        startTime: params?.startTime,
-        endTime: params?.endTime,
-      }),
-    enabled: imei !== undefined && imei !== '' && organizationId !== null,
-    ...options,
-  });
+  return useGetDashboardDeviceImeiCommands(
+    imei ?? '',
+    {
+      status: params?.status,
+      page: params?.page,
+      limit: params?.limit,
+      startTime: params?.startTime,
+      endTime: params?.endTime,
+    },
+    {
+      query: {
+        queryKey: queryKeys.commands(imei ?? '', { ...params, organizationId }),
+        enabled: imei !== undefined && imei !== '' && organizationId !== null,
+      },
+    },
+  );
 }
 
-export function useCommand(
-  dispatchId: string | undefined,
-  options?: Omit<UseQueryOptions<Command | null>, 'queryKey' | 'queryFn'>,
-) {
+export function useCommand(dispatchId: string | undefined) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.command(dispatchId ?? ''),
-    queryFn: async (): Promise<Command | null> => {
-      try {
-        return normalizeWireCommand(await getCommands().getCommandDispatchIdStatus(dispatchId!));
-      } catch (restError) {
-        if (!organizationId || !dispatchId) throw restError;
-        return fetchCommandViaGraphQL(organizationId, dispatchId);
-      }
+  return useGetCommandDispatchIdStatus<Command | null>(
+    dispatchId ?? '',
+    {
+      query: {
+        queryKey: queryKeys.command(dispatchId ?? ''),
+        enabled: dispatchId !== undefined && dispatchId !== '' && organizationId !== null,
+        queryFn: async () => {
+          try {
+            return normalizeWireCommand(await getCommandDispatchIdStatus(dispatchId!)) as unknown as Awaited<ReturnType<typeof getCommandDispatchIdStatus>>;
+          } catch (restError) {
+            if (!organizationId || !dispatchId) throw restError;
+            return fetchCommandViaGraphQL(organizationId, dispatchId!) as unknown as Awaited<ReturnType<typeof getCommandDispatchIdStatus>>;
+          }
+        },
+      },
     },
-    enabled: dispatchId !== undefined && dispatchId !== '' && organizationId !== null,
-    ...options,
-  });
+  );
 }
 
 export function usePendingCommands(imei: string | undefined) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.pendingCommands(imei ?? ''),
-    queryFn: async (): Promise<CommandListItem[]> => {
-      try {
-        const result = await getCommands().getDeviceImeiCommandsPending(imei!);
-        return (result.commands ?? []).map((c) => {
-          const normalized = normalizeWireCommand(c);
-          return {
-            id: normalized.id,
-            dispatchId: normalized.dispatchId,
-            deviceId: normalized.deviceId,
-            command: normalized.command,
-            status: normalized.status,
-            createdAt: normalized.createdAt,
-          };
-        });
-      } catch (restError) {
-        if (!organizationId || !imei) throw restError;
-        return fetchPendingCommandsViaGraphQL(organizationId, imei);
-      }
+  return useGetDeviceImeiCommandsPending<CommandListItem[]>(
+    imei ?? '',
+    {
+      query: {
+        queryKey: queryKeys.pendingCommands(imei ?? ''),
+        enabled: imei !== undefined && imei !== '' && organizationId !== null,
+        refetchInterval: 10_000,
+        queryFn: async () => {
+          try {
+            const result = await getDeviceImeiCommandsPending(imei!);
+            const items = (result.commands ?? []).map((c) => {
+              const normalized = normalizeWireCommand(c);
+              return {
+                id: normalized.id,
+                dispatchId: normalized.dispatchId,
+                deviceId: normalized.deviceId,
+                command: normalized.command,
+                status: normalized.status,
+                createdAt: normalized.createdAt,
+              };
+            });
+            return items as unknown as Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>;
+          } catch (restError) {
+            if (!organizationId || !imei) throw restError;
+            return fetchPendingCommandsViaGraphQL(organizationId, imei!) as unknown as Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>;
+          }
+        },
+      },
     },
-    enabled: imei !== undefined && imei !== '' && organizationId !== null,
-    refetchInterval: 10_000,
-  });
+  );
 }
 
 export function useSendCommand() {
@@ -116,7 +123,7 @@ export function useSendCommand() {
 
   return useMutation({
     mutationFn: ({ imei, commandType, params }: { imei: string; commandType: PresetCommandType; params?: CommandParams }) =>
-      getCommands().postDeviceImeiCommand(imei, { command: commandType, args: params }),
+      postDeviceImeiCommand(imei, { command: commandType, args: params }),
     onSuccess: (command, { imei, commandType, params }) => {
       addPending({
         dispatchId: command.dispatchId ?? '',
@@ -127,7 +134,7 @@ export function useSendCommand() {
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.commands(imei) });
       queryClient.invalidateQueries({ queryKey: queryKeys.pendingCommands(imei) });
-      queryClient.setQueryData(queryKeys.command(command.dispatchId ?? ''), command);
+      queryClient.setQueryData(queryKeys.command(command.dispatchId ?? '',), command);
     },
   });
 }
@@ -167,7 +174,7 @@ export function useCancelCommand() {
   const queryClient = useQueryClient();
   const removePending = useCommandDispatchStore((s) => s.removePending);
   return useMutation({
-    mutationFn: (dispatchId: string) => getCommands().deleteCommandDispatchId(dispatchId),
+    mutationFn: (dispatchId: string) => deleteCommandDispatchId(dispatchId),
     onSuccess: (_, dispatchId) => {
       removePending(dispatchId);
       queryClient.invalidateQueries({ queryKey: queryKeys.command(dispatchId) });
@@ -178,10 +185,10 @@ export function useCancelCommand() {
 export function useRetryCommand() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dispatchId: string) => getCommands().postCommandDispatchIdRetry(dispatchId),
+    mutationFn: (dispatchId: string) => postCommandDispatchIdRetry(dispatchId),
     onSuccess: (command, dispatchId) => {
       queryClient.setQueryData(queryKeys.command(dispatchId), command);
-      queryClient.invalidateQueries({ queryKey: queryKeys.commands(command.dispatchId ?? '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.commands(command.dispatchId ?? '',) });
     },
   });
 }

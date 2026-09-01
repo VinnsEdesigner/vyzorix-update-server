@@ -1,26 +1,25 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { getUpdates, type UpdateStatusResponse } from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import type { UpdateStatusResponse } from '@vyzorix/api-client';
+import {
+  getUpdatesStatus,
+  useGetUpdatesStatus,
+} from '@/generated-rq/updates/update-management';
 import { fetchUpdateStatusViaGraphQL, normalizeWireUpdateStatus } from './_graphql-fallback';
 
-export function useUpdateStatus(
-  options?: Omit<UseQueryOptions<UpdateStatusResponse>, 'queryKey' | 'queryFn'>,
-) {
+export function useUpdateStatus() {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.updatesStatus(organizationId ?? ''),
-    queryFn: async (): Promise<UpdateStatusResponse> => {
-      try {
-        return normalizeWireUpdateStatus(await getUpdates().getUpdatesStatus());
-      } catch {
-        if (!organizationId) throw new Error('No organization selected');
-        return fetchUpdateStatusViaGraphQL(organizationId);
-      }
+  return useGetUpdatesStatus<UpdateStatusResponse>({
+    query: {
+      queryKey: ['updates', 'status', organizationId ?? ''] as const,
+      enabled: organizationId !== null,
+      queryFn: async () => {
+        try {
+          return normalizeWireUpdateStatus(await getUpdatesStatus()) as unknown as Awaited<ReturnType<typeof getUpdatesStatus>>;
+        } catch (restError) {
+          if (!organizationId) throw restError;
+          return fetchUpdateStatusViaGraphQL(organizationId) as unknown as Awaited<ReturnType<typeof getUpdatesStatus>>;
+        }
+      },
     },
-    enabled: organizationId !== null,
-    ...options,
   });
 }
-
-export type { UpdateStatusResponse };

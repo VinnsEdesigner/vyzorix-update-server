@@ -1,5 +1,25 @@
 # AGENTS.md — vyzorix-update-server
 
+## Generated hook migration (2026-08-31)
+- **The 14 web hooks in `apps/VyzoriX_web/src/hooks/{commands,diagnostics,events,logs,metrics,registration,updates}/`
+  now consume the orval-generated react-query hooks (in `src/generated-rq/`) instead of hand-rolled
+  `useQuery`/API-client endpoint objects. REST primary; GraphQL fallback preserved via the
+  `_graphql-fallback.ts` helpers. Typecheck + vitest green: `cd apps/VyzoriX_web && tsc --noEmit`
+  (0 errors) + `npx vitest run` (577 tests.
+- **Query hooks that normalize wire→domain must pass the generated hook's `TData` generic**
+  (e.g. `useGetUpdatesVersions<VersionListResult>(...)`) and cast the `queryFn` result
+  `as unknown as Awaited<ReturnType<typeof getX>>` — the generated hook types queryFn as the wire
+  typebut the `TData` generic retypes the returned `UseQueryResult<TData>` for consumers/tests.
+- **Root-barrel type imports**: domain types needed by hooks (`LogListResult`, `RegisteredDevice`,
+  `VersionListResult`, `UpdateStatusResponse`, etc.) come from `@vyzorix/api-client` root barrel;
+  the migrated files import them via `import type { ... } from '@vyzorix/api-client'`.
+- **Stats endpoint moved**: `useDashboardStats` imports `useGetDashboardStats` from
+  `@/generated-rq/dashboard/dashboard-stats` (NOT `devices/device-management`).
+- **Pre-existing env drift (not migration-caused)**: `packages/API_Client/src/generated/schema/index.ts`
+  leaks Go `float64` identifier into TS (breaks API_Client `tsc --noEmit`); and
+  `bun-types` augments `process.off` overloads so the websocket test uses a cast
+  (`(process as unknown as { off(event, listener: (...args: never[]) => void) }).off(...)`).
+
 ## Generated SDK migration (2026-08-23)
 - **The hand-rolled REST endpoints in `packages/API_Client/src/vyzorServer/rest/` are DELETED.**
   All operator-facing REST now goes through the orval-generated SDK at

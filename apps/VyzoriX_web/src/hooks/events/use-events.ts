@@ -1,76 +1,68 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  getDevices,
-  type DeviceEvent,
-  type DeviceEventListResult,
-} from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import {
+  useGetDashboardDeviceImeiEvents,
+  useGetDashboardEventsRecent,
+  useGetDashboardEventsTypesType,
+  useGetDashboardEventsId,
+} from '@/generated-rq/devices/device-management';
+
 
 export interface DeviceEventsParams {
   limit?: number;
   before?: string;
 }
 
-export function useDeviceEvents(
-  imei: string | undefined,
-  params?: DeviceEventsParams,
-  options?: Omit<UseQueryOptions<DeviceEventListResult>, 'queryKey' | 'queryFn'>,
-) {
+export function useDeviceEvents(imei: string | undefined, params?: DeviceEventsParams) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.deviceEvents(imei ?? '', { ...params, organizationId }),
-    queryFn: () =>
-      getDevices().getDashboardDeviceImeiEvents(imei!, {
-        limit: params?.limit,
-        before: params?.before,
-      }),
-    enabled: imei !== undefined && imei !== '',
-    ...options,
-  });
+  return useGetDashboardDeviceImeiEvents(
+    imei ?? '',
+    { limit: params?.limit, before: params?.before },
+    {
+      query: {
+        queryKey: ['device-events', imei, { ...params, organizationId }] as const,
+        enabled: imei !== undefined && imei !== '',
+      },
+    },
+  );
 }
 
-export function useRecentEvents(
-  limit?: number,
-  options?: Omit<UseQueryOptions<DeviceEventListResult>, 'queryKey' | 'queryFn'>,
-) {
+export function useRecentEvents(limit?: number) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.recentEvents(limit),
-    queryFn: () => getDevices().getDashboardEventsRecent(limit ? { limit } : undefined),
-    enabled: organizationId !== null,
-    ...options,
-  });
+  return useGetDashboardEventsRecent(
+    limit ? { limit } : undefined,
+    {
+      query: {
+        queryKey: ['events', 'recent', limit] as const,
+        enabled: organizationId !== null,
+      },
+    },
+  );
 }
 
-export function useEventsByType(
-  type: string | undefined,
-  params?: { limit?: number; offset?: number },
-  options?: Omit<UseQueryOptions<DeviceEventListResult>, 'queryKey' | 'queryFn'>,
-) {
+export function useEventsByType(type: string | undefined, params?: { limit?: number; offset?: number }) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.events({ type, ...params, organizationId }),
-    queryFn: () =>
-      getDevices().getDashboardEventsTypesType(type!, {
-        limit: params?.limit,
-        offset: params?.offset,
-      }),
-    enabled: type !== undefined && type !== '' && organizationId !== null,
-    ...options,
-  });
+  return useGetDashboardEventsTypesType(
+    type ?? '',
+    { limit: params?.limit, offset: params?.offset },
+    {
+      query: {
+        queryKey: ['events', 'type', type, { ...params, organizationId }] as const,
+        enabled: type !== undefined && type !== '' && organizationId !== null,
+      },
+    },
+  );
 }
 
-export function useEvent(
-  id: string | undefined,
-  options?: Omit<UseQueryOptions<DeviceEvent>, 'queryKey' | 'queryFn'>,
-) {
-  return useQuery({
-    queryKey: ['events', 'entry', id ?? ''],
-    queryFn: () => getDevices().getDashboardEventsId(id!),
-    enabled: id !== undefined && id !== '',
-    ...options,
-  });
+export function useEvent(id: string | undefined) {
+  return useGetDashboardEventsId(
+    id ?? '',
+    {
+      query: {
+        queryKey: ['events', 'entry', id ?? ''] as const,
+        enabled: id !== undefined && id !== '',
+      },
+    },
+  );
 }
 
-export type { DeviceEvent, DeviceEventListResult };
+export type { DeviceEvent, DeviceEventListResult } from '@vyzorix/api-client';

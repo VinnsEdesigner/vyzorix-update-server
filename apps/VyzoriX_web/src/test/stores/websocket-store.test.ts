@@ -175,7 +175,7 @@ describe('useWebSocketStore', () => {
     // buildWebSocketUrl throws inside gql-ws's async url resolver, before any
     // WebSocket is constructed. Give the microtask queue a chance to run.
     await new Promise((r) => setTimeout(r, 50));
-    process.off('unhandledRejection', handler);
+    (process as unknown as { off(event: string, listener: (...args: never[]) => void): void }).off('unhandledRejection', handler as (...args: never[]) => void);
     expect(captured.some((e) => String(e).includes('organization'))).toBe(true);
     expect(FakeWebSocket.instances).toHaveLength(0);
     expect(useWebSocketStore.getState().isConnected).toBe(false);

@@ -1,50 +1,42 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import {
-  getDevices,
-  getDashboard,
-  type GetTelemetryResponse,
-  type DashboardStats,
-  type TelemetryFrame,
-} from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import {
+  useGetDashboardDeviceImeiMetrics,
+  getDashboardDeviceImeiMetricsExport,
+} from '@/generated-rq/devices/device-management';
+import { useGetDashboardStats } from '@/generated-rq/dashboard/dashboard-stats';
+import type { TelemetryFrame } from '@vyzorix/api-client';
 import { useDashboardStore, useMetricsRealtimeStore } from '@/stores';
 
 export interface DeviceMetricsParams {
   window?: string;
 }
 
-export function useDeviceMetrics(
-  imei: string | undefined,
-  params?: DeviceMetricsParams,
-  options?: Omit<UseQueryOptions<GetTelemetryResponse>, 'queryKey' | 'queryFn'>,
-) {
+export function useDeviceMetrics(imei: string | undefined, params?: DeviceMetricsParams) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.deviceMetrics(organizationId ?? '', imei ?? '', params?.window),
-    queryFn: () =>
-      getDevices().getDashboardDeviceImeiMetrics(imei!, {
-        window: params?.window,
-      }),
-    enabled: imei !== undefined && imei !== '' && organizationId !== null,
-    ...options,
-  });
+  return useGetDashboardDeviceImeiMetrics(
+    imei ?? '',
+    { window: params?.window },
+    {
+      query: {
+        queryKey: ['metrics', organizationId ?? '', imei ?? '', params?.window] as const,
+        enabled: imei !== undefined && imei !== '' && organizationId !== null,
+      },
+    },
+  );
 }
 
-export function useDashboardStats(
-  options?: Omit<UseQueryOptions<DashboardStats>, 'queryKey' | 'queryFn'>,
-) {
+export function useDashboardStats() {
   const organizationId = useCurrentOrganizationId();
   const setStats = useDashboardStore((s) => s.setStats);
   const setRefreshing = useDashboardStore((s) => s.setRefreshing);
   const setActiveOrganization = useDashboardStore((s) => s.setActiveOrganization);
 
-  const query = useQuery({
-    queryKey: queryKeys.dashboardStats(organizationId ?? ''),
-    queryFn: () => getDashboard().getDashboardStats(),
-    enabled: organizationId !== null,
-    refetchInterval: 30_000,
-    ...options,
+  const query = useGetDashboardStats({
+    query: {
+      queryKey: ['dashboard', 'stats', organizationId ?? ''] as const,
+      enabled: organizationId !== null,
+      refetchInterval: 30_000,
+    },
   });
 
   setActiveOrganization(organizationId);
@@ -67,7 +59,7 @@ export function useLiveMetrics(deviceId: string | undefined) {
   return {
     series,
     push: (frame: TelemetryFrame) => {
-      if (deviceId) push(deviceId, frame);
+      if (deviceId) push(deviceId,frame);
     },
   };
 }
@@ -76,11 +68,11 @@ export function useExportMetrics() {
   const organizationId = useCurrentOrganizationId();
   return {
     export: (imei: string, params?: { format?: 'json' | 'csv' }) =>
-      getDevices().getDashboardDeviceImeiMetricsExport(imei, {
+      getDashboardDeviceImeiMetricsExport(imei, {
         format: params?.format,
       }),
     organizationId,
   };
 }
 
-export type { GetTelemetryResponse, DashboardStats, DeviceMetricsParams as MetricsParams };
+export type { GetTelemetryResponse, DashboardStats } from '@vyzorix/api-client';

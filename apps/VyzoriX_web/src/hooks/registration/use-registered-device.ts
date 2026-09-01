@@ -1,28 +1,27 @@
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import { getDevices, type RegisteredDevice } from '@vyzorix/api-client';
-import { fetchRegisteredDeviceViaGraphQL, normalizeRegisteredDevice } from './_graphql-fallback';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
+import type { RegisteredDevice } from '@vyzorix/api-client';
+import { getDevicesImei, useGetDevicesImei } from '@/generated-rq/devices/device-management';
+import { fetchRegisteredDeviceViaGraphQL, normalizeRegisteredDevice } from './_graphql-fallback';
 
-export function useRegisteredDevice(
-  imei: string | undefined,
-  options?: Omit<UseQueryOptions<RegisteredDevice | null>, 'queryKey' | 'queryFn'>,
-) {
+export function useRegisteredDevice(imei: string | undefined) {
   const organizationId = useCurrentOrganizationId();
-  return useQuery({
-    queryKey: queryKeys.registrationDevice(imei ?? ''),
-    queryFn: async (): Promise<RegisteredDevice | null> => {
-      if (!imei) return null;
-      try {
-        return normalizeRegisteredDevice(await getDevices().getDevicesImei(imei));
-      } catch (restError) {
-        if (!organizationId) throw restError;
-        return fetchRegisteredDeviceViaGraphQL(organizationId, imei);
-      }
+  return useGetDevicesImei<RegisteredDevice>(
+    imei ?? '',
+    {
+      query: {
+        queryKey: ['registration', 'device', imei] as const,
+        enabled: imei !== undefined && imei !== '' && organizationId !== null,
+        queryFn: async () => {
+          try {
+            return normalizeRegisteredDevice(await getDevicesImei(imei!)) as unknown as Awaited<ReturnType<typeof getDevicesImei>>;
+          } catch (restError) {
+            if (!organizationId) throw restError;
+            return fetchRegisteredDeviceViaGraphQL(organizationId, imei!) as unknown as Awaited<ReturnType<typeof getDevicesImei>>;
+          }
+        },
+      },
     },
-    enabled: imei !== undefined && imei !== '' && organizationId !== null,
-    ...options,
-  });
+  );
 }
 
-export type { RegisteredDevice };
+export type { RegisteredDevice } from '@vyzorix/api-client';
