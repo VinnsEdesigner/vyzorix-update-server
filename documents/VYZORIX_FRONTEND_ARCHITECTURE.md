@@ -496,9 +496,24 @@ Already completed:
 - ‚úÖ openapi/schemas.go (207 typed wire types, all 24 unknowns fixed)
 
 Not yet started:
-- ❌ Vyzorix Query SDK (RTK Query — would delete ~30 pure API wrapper hooks)
 - ❌ CUE schema definitions
-- ❌ Request deduplicator
-- ❌ Centrifuge realtime channel
-- ❌ RxJS data pipeline
-- ❌ Version-aware test selectors
+- ❌ Vyzorix Request Deduplicator (#3)
+- ❌ Vyzorix Realtime Channel (#4)
+- ❌ Vyzorix Test Selectors (#6)
+- ❌ Vyzorix Data Pipeline (#5)
+
+In progress — Vyzorix Query SDK (#1, Phase 2):
+- ✅ Data-layer hooks migrated to orval-generated react-query hooks (`src/generated-rq/`):
+  commands, diagnostics, events, logs, metrics, registration, updates — including
+  the GraphQL-fallback orchestration hooks, with domain types preserved via the `TData`
+  generic + internal wire-type casts (committed 2026-08-31; tsc 0 errors, vitest 577 green).
+- ✅ Also migrated: alerts, apikey (operator/admin», devices, notifications, organizations,
+  sessions, settings, telemetry, inbox (create/register/resend/ack/dismiss), updates
+  (push/sync/cancel/detail).
+- ⏳ Remaining old-style `getX()` wrapper hooks to port onto generated hooks:
+
+  `auth/use-login.ts`, `auth/use-mfa.ts`, `auth/use-logout.ts`, `auth/use-me.ts`,
+  `auth/use-password-reset.ts`, `auth/use-register.ts` (auth-orchestration — candidate to
+  call generated mutation hooks directly),
+  `registration/use-confirm.ts`, `registration/use-deregister.ts` (pure REST wrappers —
+  migrate to `postDeviceConfirm` / `deleteDevicesImei` generated hooks + GraphQL fallback cast).
