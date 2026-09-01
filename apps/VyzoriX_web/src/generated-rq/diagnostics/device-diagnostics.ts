@@ -20,7 +20,7 @@ import type {
   ErrorResponse,
   GetDeviceImeiTimelineParams,
   TimelineResult
-} from '../../../../../@vyzorix/api-client/generated/schemas';
+} from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
 

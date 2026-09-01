@@ -72,7 +72,7 @@ export interface AlertRuleRequest {
 	webhook_url: string;
 	on_no_data: string;
 	on_error: string;
-	threshold: float64;
+	threshold: number;
 	for_seconds: number;
 	notify_interval_seconds: number;
 	enabled: boolean;
@@ -82,7 +82,7 @@ export interface AlertInstance {
 	evaluated_at: string;
 	labels: Record<string, unknown>;
 	state: string;
-	value: float64;
+	value: number;
 }
 
 export interface AlertRule {
@@ -97,7 +97,7 @@ export interface AlertRule {
 	on_no_data: string;
 	on_error: string;
 	instances: AlertInstance[];
-	threshold: float64;
+	threshold: number;
 	for_seconds: number;
 	notify_interval_seconds: number;
 	enabled: boolean;
@@ -113,7 +113,7 @@ export interface AlertHistoryEvent {
 	rule_id: string;
 	from_state: string;
 	to_state: string;
-	value: float64;
+	value: number;
 }
 
 export interface AlertHistoryResult {
@@ -679,7 +679,7 @@ export interface DeviceUpdateStatusResponse {
 }
 
 export interface DeviceInspection {
-	battery?: float64;
+	battery?: number;
 	device_id: string;
 	app_version: string;
 	last_seen: number;
@@ -854,10 +854,10 @@ export interface InvitationByTokenResult {
 }
 
 export interface MetricStatsDTO {
-	current: float64;
-	avg: float64;
-	min: float64;
-	max: float64;
+	current: number;
+	avg: number;
+	min: number;
+	max: number;
 }
 
 export interface MessageResult {
@@ -891,9 +891,9 @@ export interface TimelineResult {
 }
 
 export interface MetricAggregateResult {
-	avg: float64;
-	min: float64;
-	max: float64;
+	avg: number;
+	min: number;
+	max: number;
 }
 
 export interface OrganizationMember {
@@ -1294,9 +1294,9 @@ export interface ConcurrentSessionsResult {
 export interface TelemetryFrameDTO {
 	timestamp: number;
 	uptime: number;
-	riskScore: float64;
-	thermalTemp: float64;
-	bufferLevel: float64;
+	riskScore: number;
+	thermalTemp: number;
+	bufferLevel: number;
 }
 
 export interface TelemetryStatsDTO {
@@ -1345,7 +1345,7 @@ export interface TelemetryHistoryEntry {
 	payload?: string;
 	riskScore?: number;
 	bufferLevel?: number;
-	thermalTemp?: float64;
+	thermalTemp?: number;
 }
 
 export interface TelemetryHistoryQueryResult {

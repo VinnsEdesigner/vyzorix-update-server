@@ -37,6 +37,7 @@ export default [
         clear: "readonly",
         FormData: "readonly",
         Headers: "readonly",
+        HeadersInit: "readonly",
         Request: "readonly",
         RequestInit: "readonly",
         Response: "readonly",
@@ -54,6 +55,9 @@ export default [
     plugins: {
       "@typescript-eslint": tseslint,
     },
+    // Generated code (orval DTOs/endpoints + CUE schema output) uses `type`
+    // aliases heavily and isn't hand-maintained — the definition-style rule
+    // only adds noise there. Keep it enforced everywhere else.
     rules: {
       // TypeScript recommended rules (errors)
       ...tseslint.configs.recommended.rules,
@@ -111,6 +115,19 @@ export default [
       "no-unused-vars": "off", // Handled by @typescript-eslint/no-unused-vars
       "no-redeclare": "off",   // Handled by TypeScript
       "no-empty": "off",        // Handled by @typescript-eslint/no-empty-function
+    },
+  },
+  // Generated code (orval DTOs/endpoints, CUE schema output): `type` aliases
+  // and implicit function returns are expected — don't flag them.
+  {
+    files: [
+      "**/generated/**/*.ts",
+      "**/generated/**/*.tsx",
+      "**/generated/schemas/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/consistent-type-definitions": "off",
+      "@typescript-eslint/explicit-function-return-type": "off",
     },
   },
   // Rules specific to test files

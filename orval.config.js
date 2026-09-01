@@ -26,9 +26,9 @@ module.exports = {
 		input: spec,
 		output: {
 			target: "apps/VyzoriX_web/src/generated-rq",
-					// Wire DTO types come from the api-client spec schema module,
-					// not the domain barrel (the root barrel is domain types).
-					schemas: "@vyzorix/api-client/generated/schemas",
+			// Wire DTO types come from the api-client spec schema module, not a
+			// the domain barrel (the root barrel is domain types).
+			schemas: "../../../../../packages/API_Client/src/generated/schemas",
 			mode: "tags-split",
 			client: "react-query",
 			override: {

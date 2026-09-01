@@ -43,6 +43,7 @@ CUE_TO_TS = {
     "string": "string",
     "bool": "boolean",
     "float": "number",
+    "float64": "number",
     "any": "unknown",
 }
 
