@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  getCommands,
   validateTelemetry,
   telemetryFromRaw,
   type WSTelemetry,
@@ -9,6 +8,7 @@ import {
   type WSEventType,
   type WSCommandType,
 } from '@vyzorix/api-client';
+import { postDeviceImeiCommand } from '@/generated-rq/commands/device-commands';
 import {
   OnTelemetryReceivedDocument as TELEMETRY_RECEIVED_SUBSCRIPTION,
   OnOrganizationEventDocument as ORGANIZATION_EVENT_SUBSCRIPTION,
@@ -327,7 +327,7 @@ export function useCommandDispatch(
       if (!imei) throw new Error('Cannot dispatch command: no device IMEI');
 
       // Dispatch via the authoritative REST path; status arrives over WS.
-      const sent = await getCommands().postDeviceImeiCommand(imei, {
+      const sent = await postDeviceImeiCommand(imei, {
         command,
         args: parameters,
       });

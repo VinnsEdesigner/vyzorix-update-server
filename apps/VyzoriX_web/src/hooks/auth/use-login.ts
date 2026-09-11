@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { getAuth, type LoginWithTokensResult } from '@vyzorix/api-client';
+import { postAuthLoginTokens } from '@/generated-rq/auth/auth-session';
+import type { LoginWithTokensResult } from '@vyzorix/api-client';
 import { useAuthStore, type MfaChallenge } from '@/stores/auth-store';
 
 export interface LoginInput {
@@ -18,7 +19,7 @@ export function useLogin() {
 
   return useMutation<LoginMutationResult, Error, LoginInput>({
     mutationFn: async (input) => {
-      const result = await getAuth().postAuthLoginTokens(input);
+      const result = await postAuthLoginTokens(input);
       let mfaChallenge: MfaChallenge | null = null;
       if (result.requires_mfa) {
         mfaChallenge = {

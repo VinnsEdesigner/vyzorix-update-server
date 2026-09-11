@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { getMfa } from '@vyzorix/api-client';
+import { postAuthMfaVerify } from '@/generated-rq/mfa/mfa-management';
 import type { MFAVerifyResult } from '@vyzorix/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -11,7 +11,7 @@ export interface MfaVerifyInput {
 export function useMfaVerify() {
   const setFromMfaVerify = useAuthStore((s) => s.setFromMfaVerify);
   return useMutation<MFAVerifyResult, Error, MfaVerifyInput>({
-    mutationFn: (input) => getMfa().postAuthMfaVerify({ operator_id: input.operatorId, code: input.code }),
+    mutationFn: (input) => postAuthMfaVerify({ operator_id: input.operatorId, code: input.code }),
     onSuccess: async (response) => {
       if (response.success) {
         await setFromMfaVerify(response);

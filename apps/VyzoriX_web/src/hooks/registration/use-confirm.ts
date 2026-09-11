@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDevices, type DeviceConfirmResult } from '@vyzorix/api-client';
+import { postDeviceConfirm } from '@/generated-rq/devices/device-management';
+import type { DeviceConfirmResult } from '@vyzorix/api-client';
 import { queryKeys } from '@/lib/query-keys';
 
 export interface ConfirmDeviceVariables {
@@ -12,7 +13,7 @@ export function useConfirmDevice() {
 
   return useMutation({
     mutationFn: ({ imei, commandSecret }: ConfirmDeviceVariables) =>
-      getDevices().postDeviceConfirm({ imei, commandSecret }),
+      postDeviceConfirm({ imei, commandSecret }),
     onSuccess: (_, { imei }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.registrationInbox() });
       queryClient.invalidateQueries({ queryKey: queryKeys.registrationInboxEntry(imei) });

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { getAuth } from '@vyzorix/api-client';
+import { getAuthMe, postAuthOrganizationsSelect } from '@/generated-rq/auth/auth-session';
 import type { MeResult, OrganizationInfo, SelectOrganizationResult } from '@vyzorix/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -12,7 +12,7 @@ export function useMe() {
     // requires custom handling that generated hooks don't support.
     refetch: useCallback(async () => {
       try {
-        const me = await getAuth().getAuthMe();
+        const me = await getAuthMe();
         setFromMeResponse(me);
         return me;
       } catch {
@@ -31,7 +31,7 @@ export function useSelectOrganization() {
   const setOrganization = useAuthStore((s) => s.setOrganization);
   return useMutation({
     mutationFn: (organizationId: string) =>
-      getAuth().postAuthOrganizationsSelect({ organization_id: organizationId }),
+      postAuthOrganizationsSelect({ organization_id: organizationId }),
     onSuccess: (org: SelectOrganizationResult) => {
       setOrganization(org.organization_id ?? null);
       queryClient.invalidateQueries({ queryKey: ['me'] });

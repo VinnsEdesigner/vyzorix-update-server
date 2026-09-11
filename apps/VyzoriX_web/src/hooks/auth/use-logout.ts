@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { getAuth } from '@vyzorix/api-client';
+import { postAuthLogout } from '@/generated-rq/auth/auth-session';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function useLogout() {
@@ -7,7 +7,7 @@ export function useLogout() {
   return useMutation<void, Error, void>({
     mutationFn: async () => {
       try {
-        await getAuth().postAuthLogout();
+        await postAuthLogout();
       } catch {
         // Ignore — clear local state anyway.
       }

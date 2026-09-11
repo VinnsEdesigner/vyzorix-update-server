@@ -7,7 +7,7 @@ import {
   type MeResult,
   type MFAVerifyResult,
 } from '@vyzorix/api-client';
-import { getAuth } from '@vyzorix/api-client';
+import { getAuthMe } from '@/generated-rq/auth/auth-session';
 
 export interface MfaChallenge {
   operatorId: string;
@@ -93,7 +93,7 @@ export const useAuthStore = createVyzorStore<AuthStoreState>('AuthStore', (set) 
       // derived status (needs_organization vs authenticated) is correct.
       if (response.success && response.access_token) {
         try {
-          const me = await getAuth().getAuthMe();
+          const me = await getAuthMe();
           if (me) {
             authContext.setFromMeResponse(me);
             set(buildSnapshot({ mfaChallenge: null }));

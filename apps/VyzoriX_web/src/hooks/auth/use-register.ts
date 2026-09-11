@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { getAuth } from '@vyzorix/api-client';
+import { postAuthRegister } from '@/generated-rq/auth/auth-session';
 import type { RegisterResult } from '@vyzorix/api-client';
 
 export interface RegisterInput {
@@ -10,6 +10,6 @@ export interface RegisterInput {
 
 export function useRegister() {
   return useMutation<RegisterResult, Error, RegisterInput>({
-    mutationFn: (input) => getAuth().postAuthRegister(input),
+    mutationFn: (input) => postAuthRegister(input),
   });
 }
