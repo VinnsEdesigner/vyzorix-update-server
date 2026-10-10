@@ -1,0 +1,77 @@
+/* theme.css — Grafana dark-theme design tokens (extracted from
+ * grafana/grafana packages/grafana-data/src/themes/*).
+ *
+ * Fonts:      Inter (sans), Roboto Mono (mono) — createTypography.ts
+ * Base size:  14px, html 14px — createTypography.ts
+ * Spacing:    8px grid — createSpacing.ts
+ * Radius:     sm 4 / md 6 / lg 10 — createShape.ts
+ * Shadows:    z1 0 1px 2px rgba(1,4,9,.75), z2 0 4px 8px rgba(1,4,9,.75),
+ *             z3 0 8px 24px rgb(1,4,9) — createShadows.ts
+ * Colors:     palette.ts + createColors.ts (dark)
+ */
+
+:root {
+  /* --- Neutral grays (pure R=G=B, no blue tint) --- */
+  --gray-05: #0f0f0f; /* canvas */
+  --gray-10: #171717; /* primary */
+  --gray-15: #1f1f1f; /* secondary */
+  --gray-20: #282828;
+  --gray-25: #343434;
+  --gray-30: #414141;
+
+  /* --- Text (neutral) --- */
+  --text-primary: #e6e6e6;
+  --text-secondary: rgba(230, 230, 230, 0.65);
+  --text-disabled: rgba(230, 230, 230, 0.52);
+
+  /* --- Borders (neutral) --- */
+  --border-weak: rgba(230, 230, 230, 0.1);
+  --border-medium: rgba(230, 230, 230, 0.18);
+  --border-strong: rgba(230, 230, 230, 0.28);
+
+  /* --- Accent (rose 400-700) --- */
+  --primary-main: #e11d48;   /* rose-600 — buttons, active fills */
+  --primary-text: #fb7185;   /* rose-400 — links, active icons, trace */
+  --primary-border: #fb7185; /* rose-400 — focus borders */
+  --error-main: #d10e5c;
+  --error-text: #ff5286;
+  --success-main: #1a7f4b;
+  --success-text: #6ccf8e;
+  --warning-main: #ff9900;
+  --warning-text: #fbad37;
+  --info-text: #fb7185;      /* rose-400 (blue removed) */
+  --purple-text: #d4a0ff;
+
+  /* --- Interactions (neutral) --- */
+  --hover: rgba(230, 230, 230, 0.13);
+  --selected: rgba(230, 230, 230, 0.1);
+  --secondary-transparent: rgba(230, 230, 230, 0.07);
+
+  /* --- Shape --- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 9999px;
+
+  /* --- Shadow --- */
+  --shadow-z1: 0px 1px 2px rgba(1, 4, 9, 0.75);
+  --shadow-z2: 0px 4px 8px rgba(1, 4, 9, 0.75);
+  --shadow-z3: 0px 8px 24px rgb(1, 4, 9);
+
+  /* --- Type --- */
+  --font-sans: "Inter", "Helvetica", "Arial", sans-serif;
+  --font-mono: "Roboto Mono", monospace;
+  --fs-base: 14px;
+  --fs-sm: 12px;
+  --fs-md: 18px;
+  --fs-lg: 22px;
+  --fs-xl: 24px;
+  --fs-xxl: 28px;
+
+  /* --- Layout --- */
+  --nav-width: 280px;
+  --topbar-height: 48px;
+  --appbar-height: 44px;
+  --tabbar-height: 40px;
+  --grid: 8px;
+}
