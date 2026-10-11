@@ -15,9 +15,8 @@
   the migrated files import them via `import type { ... } from '@vyzorix/api-client'`.
 - **Stats endpoint moved**: `useDashboardStats` imports `useGetDashboardStats` from
   `@/generated-rq/dashboard/dashboard-stats` (NOT `devices/device-management`).
-- **Pre-existing env drift (not migration-caused)**: `packages/API_Client/src/generated/schema/index.ts`
-  leaks Go `float64` identifier into TS (breaks API_Client `tsc --noEmit`); and
-  `bun-types` augments `process.off` overloads so the websocket test uses a cast
+- **Pre-existing env drift (not migration-caused)**: `bun-types` augments `process.off` overloads
+  so the websocket test uses a cast
   (`(process as unknown as { off(event, listener: (...args: never[]) => void) }).off(...)`).
 
 ## Generated SDK migration (2026-08-23)
@@ -59,12 +58,16 @@
   diagnostics are `/v1/device/{imei}/{inspect,timeline}`; `DELETE /organizations/{id}` and member
   `suspend`/`reinstate`/`transfer` are now annotated. The `/v1/me/thresholds` +
   `/v1/me/notifications*` routes are newly MOUNTED (handlers existed but were never wired).
-- **Codegen pipeline** (run from repo root): `swag init -g cmd/api/api_main.go --parseDependency
-  --output apps/api/swag` (cwd: apps/api; swag at /workspace/.toolchain/gopath/bin) →
-  `python3 tooling/codegen/build_openapi3.py` → `python3 tooling/codegen/build_zod.py` →
-  `npx orval --config orval.config.js`. New DTOs go in `internal/api/openapi/schemas.go`;
-  handlers reference them as `openapi.X` in `@Success`/`@Param body` annotations and need a
-  `var _ openapi.X` compile-time reference when the package doesn't otherwise import openapi.
+- **Codegen pipeline** (run from repo root): `python3 tooling/codegen/build_schemas.py`
+  (CUE `tooling/schema/*.cue` → the generated `internal/api/openapi` package; TypeScript
+  comes from the spec via orval, NOT from CUE) →
+  `swag init -g cmd/api/api_main.go --parseDependency --output apps/api/swag` (cwd: apps/api)
+  → `python3 tooling/codegen/build_openapi3.py` → `python3 tooling/codegen/build_zod.py` →
+  `npx orval --config orval.config.js`. **The DTOs are generated — do NOT hand-edit
+  `internal/api/openapi/schemas.go`.** Add/change a DTO in `tooling/schema/*.cue` and re-run
+  build_schemas.py; handlers reference them as `openapi.X` in `@Success`/`@Param body`
+  annotations and need a `var _ openapi.X` compile-time reference when the package doesn't
+  otherwise import openapi. Timestamps are int64 Unix millis.
 - **Tests**: 584/584 green. MSW handlers mirror the real server wire shapes (snake_case wire
   DTOs where the server DTOs are snake_case, camelCase where they are camelCase — follow the
   Go struct json tags, not intuition). The pre-existing connectivity test mocked
@@ -196,7 +199,7 @@
   - **API client types** (`packages/API_Client/src/vyzorServer/rest/admin/admin-endpoints.ts`): `AdminKeyInfo` (operator_id/operator_name optional, timestamps as `string`), `AdminKeyListResult` (`{keys, pagination:{page,limit,total,total_pages}}`), `AdminGlobalKeyStats`, `AdminOperatorKeyStats`. All exported via `rest/admin/index.ts` → root `@vyzorix/api-client` barrel.
   - **MSW handlers** (`apps/VyzoriX_web/src/test/msw/vyzor-msw-handlers-apikeys.ts`): operator CRUD + rotate, RFC3339 timestamps, 204 on revoke (matches Go contract). Wired into `vyzor-msw-handlers-index.ts`. `resetApiKeyFixtures()` resets module-level state per test.
   - **Tests**: `src/test/hooks/use-api-keys.test.ts` — 12 integration tests (list disabled w/o org, list+map+stats, single get+404, create returns secret, update, revoke 204 + cache removal, rotate new secret, cache-invalidation for create/revoke).
-  - **Go tooling**: Go 1.26 not preinstalled in the container — installed to `/tmp/go-install/go` (`export PATH="/tmp/go-install/go/bin:$PATH"`). golangci-lint v2.12.2 (pinned in `apps/api/.golangci-version`) installed via `go install` to `/tmp/gopath/bin`. Run with `CGO_ENABLED=1` (sqlite3 is CGO). `GOPATH=/tmp/gopath GOCACHE=/tmp/gocache GOTOOLCHAIN=local`.
+  - **Go tooling**: Go 1.27 not preinstalled in the container — installed to `/tmp/go-install/go` (`export PATH="/tmp/go-install/go/bin:$PATH"`). golangci-lint v2.14.0 (pinned in `apps/api/.golangci-version`) installed via `go install` to `/tmp/gopath/bin`. Run with `CGO_ENABLED=1` (sqlite3 is CGO). `GOPATH=/tmp/gopath GOCACHE=/tmp/gocache GOTOOLCHAIN=local`.
 - **Realtime hooks** (`realtime/use-realtime.ts`): `useWebSocketConnection` (lifecycle: connect on org select, disconnect on unmount/org change), `useDeviceUpdates`, `useTelemetryStream`, `useCommandStatusStream`, `useOrganizationEvents`, `useMemberEvents`. All subscribe via `useWebSocketStore.subscribe` with a `graphql-ws` `SubscribePayload` whose `query` field is a **string** (the API client subscription exports are `@apollo/client` `gql` DocumentNodes; their raw body is read via `doc.loc.source.body`). Each `next` handler invalidates the matching TanStack query cache. `$deviceId`/`$dispatchId` are nullable `ID`; `$orgId` is `ID!`.
 - **Spec realtime data hooks** (`realtime/use-realtime-data.ts`, spec §8.2–§8.4): three presentation hooks that wrap `useWebSocketStore.subscribe` for transient UI state (NOT React Query cache):
   - `useDeviceTelemetry({ imei })` → `{ telemetry, telemetryHistory, isLoading, error }`. Maintains a 100-frame ring buffer (`telemetryHistory`); each incoming frame is validated via `validateTelemetry` (range checks on `riskScore`/`bufferLevel` 0–100) before it surfaces — invalid frames are silently dropped.

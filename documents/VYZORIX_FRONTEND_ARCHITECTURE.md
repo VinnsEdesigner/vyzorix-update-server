@@ -7,26 +7,26 @@ TypeScript frontend (Vite + React + TanStack Query). The current data layer pipe
 
 ```
 Go handler annotations (swaggo)
-  ‚Üí swag init ‚Üí swagger.json (Swagger 2.0)
-  ‚Üí build_openapi3.py ‚Üí openapi3.json (OpenAPI 3.0)
-  ‚Üí orval ‚Üí packages/API_Client/src/generated/ (typed axios functions)
-  ‚Üí build_zod.py ‚Üí vyzorixUpdateServerAPI.zod.ts (zod schemas)
-  ‚Üí domain/ modules (re-exports + hand-rolled business rules)
-  ‚Üí apps/VyzoriX_web/src/hooks/ (manual TanStack Query wrappers)
+  → swag init → swagger.json (Swagger 2.0)
+  → build_openapi3.py → openapi3.json (OpenAPI 3.0)
+  → orval → packages/API_Client/src/generated/ (typed axios functions)
+  → build_zod.py → vyzorixUpdateServerAPI.zod.ts (zod schemas)
+  → domain/ modules (re-exports + hand-rolled business rules)
+  → apps/VyzoriX_web/src/hooks/ (manual TanStack Query wrappers)
 ```
 
 This document outlines six architectural improvements, inspired by patterns
-observed in production observability platforms, that Vyzorix can adopt ‚Äî with
+observed in production observability platforms, that Vyzorix can adopt — with
 naming conventions unique to Vyzorix's device-management domain.
 
 ---
 
-## 1. Vyzorix Query SDK ‚Äî Auto-Generated Typed Hooks
+## 1. Vyzorix Query SDK — Auto-Generated Typed Hooks
 
 ### Problem
 
 The current pipeline generates typed axios functions via orval, but every hook
-in `apps/VyzoriX_web/src/hooks/` is hand-written boilerplate:
+in `apps/VyzoriX_web/src/hooks/` was hand-written boilerplate:
 
 ```typescript
 // 40+ files like this, each ~20 lines of wrapper:
@@ -38,7 +38,7 @@ export function useDevices(params?: DeviceParams) {
 }
 ```
 
-Cache invalidation is manual:
+Cache invalidation was manual:
 ```typescript
 onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }),
 ```
@@ -48,9 +48,9 @@ should refetch related queries, the developer must remember to wire it.
 
 ### Proposal
 
-Replace orval with `@rtk-query/codegen-openapi` (or a similar OpenAPI-to-hook
-codegen) that reads `openapi3.json` and generates typed query/mutation hooks
-directly ‚Äî no manual hook files.
+Generate typed query/mutation hooks directly from `openapi3.json` and drive
+cache invalidation from the spec, so mutations refetch related queries with no
+hand-written `invalidateQueries()` calls.
 
 The swaggo `@Tags` annotations already partition the API into tags:
 `@Tags devices`, `@Tags updates`, `@Tags auth`, etc. These map directly to
@@ -62,52 +62,78 @@ cache tag types for automatic invalidation:
 // @Success 201 {object} openapi.DeviceListItem
 ```
 
-Generates:
-```typescript
-// packages/API_Client/src/generated/vyzorix-sdk.ts
-export const vyzorixApi = createApi({
-  baseQuery: vyzorixBaseQuery({ baseURL: '/api' }),
-  tagTypes: ['devices', 'updates', 'auth', 'inbox', 'organizations', ...],
-  endpoints: (builder) => ({
-    getDevices: builder.query<DeviceListResult, void>({
-      query: () => '/v1/devices',
-      providesTags: ['devices'],
-    }),
-    deregisterDevice: builder.mutation<SuccessResult, string>({
-      query: (imei) => ({ url: `/v1/devices/${imei}`, method: 'DELETE' }),
-      invalidatesTags: ['devices'],
-    }),
-  }),
-});
+Implemented via orval's React Query client with `override.query`:
 
-export const {
-  useGetDevicesQuery,
-  useDeregisterDeviceMutation,
-} = vyzorixApi;
+```javascript
+// orval.config.js — vyzorixRQ output
+query: {
+  version: 5,
+  useInvalidate: true,          // emit invalidateGet* helpers
+  shouldExportQueryKey: true,   // emit getGet*QueryKey (shared key scheme)
+  queryKey: {                   // org-scope every generated key
+    path: 'apps/VyzoriX_web/src/generated-rq/query-key-mutator.ts',
+    name: 'organizationScopedQueryKey',
+    default: true,
+  },
+  mutationInvalidates: [
+    { onMutations: ['postDeviceConfirm', 'deleteDevicesImei', /* … */],
+      invalidates: [{ query: 'getDevices' }, { query: 'getDeviceCount' }, /* … */] },
+    // … one entry per domain tag
+  ],
+},
 ```
+
+Generates hooks whose mutations invalidate the org-scoped keys of their
+related queries:
+
+```typescript
+// apps/VyzoriX_web/src/generated-rq/devices/device-management.ts
+export const getGetDevicesQueryKey = (params?: GetDevicesParams) =>
+  organizationScopedQueryKey({ params }, { url: `/devices` });
+
+export const useDeleteDevicesImei = (…) => {
+  const onSuccess = (…) => {
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    // …
+  };
+};
+```
+
+The domain wrapper hooks (`src/hooks/*`) become thin re-exports — they keep
+only business logic (org gating, wire→domain normalization, GraphQL fallback,
+polling state machines) and no longer call `invalidateQueries` for the
+mutation-driven cases. WebSocket-driven invalidation (external events that no
+mutation produces) stays, but now invalidates the same generated org-scoped
+keys.
 
 ### What gets deleted (~30 pure API wrapper hooks)
 
 Vyzorix has 58 hook files total. They fall into three categories:
 
-**~30 pure API wrappers (deleted)** — files like `use-devices.ts`,
-`use-alerts.ts`, `use-versions.ts`, `use-sessions.ts`, `use-settings.ts`,
-`use-contact-points.ts`, `use-organizations.ts`. These are thin wrappers
-that call a generated function inside `useQuery`/`useMutation`. No business
-logic. RTK Query generates these automatically.
+**Pure API wrappers (become thin re-exports)** — files like
+`use-devices.ts`, `use-alerts.ts`, `use-versions.ts`, `use-sessions.ts`,
+`use-settings.ts`, `use-contact-points.ts`, `use-organizations.ts`. These keep
+their names and signatures (so route/page consumers don't change) but drop
+their hand-written `queryKey` overrides and `invalidateQueries` calls; the
+generated hooks own the keys and the invalidation.
 
-- Manual `queryClient.invalidateQueries` calls
-- Manual `queryKey` definitions in `lib/query-keys.ts`
+- Manual `queryClient.invalidateQueries` calls (mutation-driven cases)
+- Manual `queryKey` definitions in `lib/query-keys.ts` for generated-backed
+  queries — the org-scoped `getGet*QueryKey` helpers are now canonical, and
+  `lib/query-keys.ts` is deleted (no app code referenced it after the migration)
 
 ### What stays (~28 hooks)
 
-**~15 orchestration hooks (kept but simplified)** — files like
+**~15 orchestration hooks (simplified)** — files like
 `use-commands.ts` (command polling with state machine callbacks),
 `use-realtime.ts` (WebSocket subscriptions), `_graphql-fallback.ts`
 files (REST fails → try GraphQL), `use-login.ts` (MFA challenge flow),
 `use-auth-session.ts` (auth context). These have real logic beyond
-"call API X" — they stay, but get simpler because cache invalidation
-is automatic and they call generated hooks directly.
+"call API X" — they stay, but are simpler because cache invalidation
+is automatic (or uses the generated `invalidateGet*` helpers where a GraphQL
+fallback bypasses the generated mutation) and they call generated hooks
+directly.
 
 **~13 non-API hooks (kept, unchanged)** — files like
 `use-vyzor-analytics.ts`, `use-connectivity.ts`, `use-debounce.ts`,
@@ -118,137 +144,154 @@ UI utilities that are unaffected by the codegen change.
 ### What else stays
 
 - `domain/` layer (zod schemas + business validators)
-- `restClient` transport (wrapped as `vyzorixBaseQuery`)
+- `restClient` transport (wired into orval via the `rest-bridge` mutator)
 - `openapi/schemas.go` (Go wire types)
 - `build_openapi3.py` (spec normalization)
 - `build_zod.py` (zod generation)
 
+### Limitation: parameterized queries
+
+orval's `query.mutationInvalidates` can only reference queries whose generated
+`getGet*QueryKey()` takes **no runtime path params**. For a parameterized query
+(e.g. `getOrganizationsIdMembers(id)`, `getConfigVersionsResource(resource)`,
+`getCommandDispatchIdStatus(dispatchId)`), orval emits the key helper with zero
+arguments, so the generated invalidation call fails to compile
+(`TS2554: Expected N arguments, but got 0`). Those operations are therefore
+intentionally left out of `mutationInvalidates`:
+
+- **commands** (`postDeviceImeiCommand`, `deleteCommandDispatchId`,
+  `postCommandDispatchIdRetry`, `postDevicesImeiCommandConfirm`) — invalidated by
+  hand in `hooks/commands/use-commands.ts` using the generated
+  `getGet*QueryKey` / `invalidateGet*` helpers;
+- **organization members** (`deleteOrganizationsIdMembersMemberId` and the member
+  `role` / `suspend` / `reinstate` / `transfer` mutations) — invalidated by the
+  realtime WebSocket member-event handler;
+- **config-version restore** (`postConfigVersionsResourceVersionRestore`) — no UI
+  consumer yet.
+
+When adding UI for one of these, invalidate by hand with the generated key
+helper; do not add it to `mutationInvalidates`.
+
 ### Naming
 
 - Package: `@vyzorix/api-client` (existing)
-- Generated file: `packages/API_Client/src/generated/vyzorix-sdk.ts`
-- Hook exports: `useGetDevicesQuery`, `usePushUpdateMutation`, etc.
-- Cache tags: derived from swaggo `@Tags` values (`devices`, `updates`, etc.)
-- Base query: `vyzorixBaseQuery` (wraps the existing `restClient`)
+- Generated hooks: `apps/VyzoriX_web/src/generated-rq/` (tags-split)
+- Hook exports: `useGetDevices`, `usePushUpdate`, etc.
+- Query keys: `getGetDevicesQueryKey`, … (org-scoped via
+  `organizationScopedQueryKey`)
+- Invalidation helpers: `invalidateGetDevices`, …
+- Domain wrappers: `apps/VyzoriX_web/src/hooks/*` (unchanged names)
 
 ---
 
-## 2. Vyzorix Schema Definitions ‚Äî CUE-Based Config Types
+## 2. Vyzorix Schema Definitions — CUE-Based Config Types
 
 ### Problem
 
-Device settings, thresholds, notification settings, and update push configs are
-defined as Go structs in `openapi/schemas.go`. These must manually mirror the
-`gin.H` keys that handlers emit. If a handler changes a JSON key, the schema
-silently drifts ‚Äî the generated TypeScript type says one thing, the server
-sends another.
+Device settings, thresholds, notification settings, and update push configs
+were defined as Go structs in `openapi/schemas.go`, hand-mirroring the `gin.H`
+keys that handlers emit. If a handler changed a JSON key, the schema silently
+drifted — the generated TypeScript type said one thing, the server sent another.
+The pre-commit swagger gate checked annotations against `swagger.json`, but not
+that `openapi.X` matched what handlers actually returned.
 
-Current drift detection: the pre-commit swagger drift gate checks that
-annotations match `swagger.json`, but it does NOT check that `openapi.X` schemas
-match what the handler actually returns in `gin.H`.
+### Implemented (complete)
 
-### Proposal
-
-Define configuration schemas in CUE files (`.cue`), then generate both Go
-structs AND TypeScript types from the same source. CUE is a configuration
-language with type constraints, defaults, and validation built in.
+The CUE schemas in `tooling/schema/*.cue` (30 files, 226 types) are now the
+**single source of truth**. `tooling/codegen/build_schemas.py` emits the
+`internal/api/openapi` package directly, so `swag init` reads generated structs
+and there is no second hand-maintained copy. Pipeline:
 
 ```
-tooling/schema/
-‚îú‚îÄ‚îÄ device_settings.cue      ‚Üí device thresholds, custom name, location, metadata
-‚îú‚îÄ‚îÄ notification_settings.cue ‚Üí email/push/webhook notification config
-‚îú‚îÄ‚îÄ update_push.cue           ‚Üí push update request shape
-‚îú‚îÄ‚îÄ inbox_request.cue         ‚Üí device registration request
-‚îî‚îÄ‚îÄ gen.go                    ‚Üí reads .cue, outputs Go + TS
+tooling/schema/*.cue
+  -> build_schemas.py -> internal/api/openapi/schemas.go
+  -> swag init        -> swagger.json -> openapi3.json
+  -> orval            -> generated-rq hooks + generated/schemas wire types
 ```
 
-Example `.cue` file:
-```cue
-// device_settings.cue
-package vyzorix
+What was done to get here:
 
-#DeviceThresholds: {
-	riskWarn:    int | *0
-	riskCrit:    int | *0
-	thermalWarn: int | *0
-	thermalCrit: int | *0
-	bufferWarn:  int | *0
-	bufferCrit:  int | *0
-}
-```
+- **Timestamps unified to `int64` Unix millis.** The live server DTOs
+  (`internal/application/dto`, e.g. `CreatedAt = now.UnixMilli()`) were already
+  int64; CUE said `string` and `openapi` said `time.Time`. CUE now declares
+  `int64` (optional → `*int64`), matching the real wire format. Handlers that
+  built RFC3339 strings were converted to `.UnixMilli()`.
+- **Typed maps preserved.** CUE expresses the value type
+  (`config: {[string]: string}`, `metrics: {[string]: float64}`,
+  `requests_by_scope: {[string]: int64}`, `toggles: {[string]: bool}`), so the
+  generator emits `map[string]string` / `float64` / `int64` / `bool` rather than
+  collapsing to `any`.
+- **One package.** The separate `internal/api/schema` package is deleted; the 22
+  handlers that returned `schema.X` now return `openapi.X`.
+- **Enforcement.** `tooling/hooks/pre-commit` runs a CUE drift gate: it
+  regenerates the Go + TS to a temp dir and fails if either committed artifact
+  is stale. The swagger drift gate then covers `openapi` → `swagger.json`.
+- **Lint.** `.golangci.yml` exempts the generated `internal/api/openapi/schemas.go`
+  from `govet/fieldalignment` (the generator controls field order).
 
-Generated Go:
-```go
-// zz_generated_device_settings.go
-type DeviceThresholds struct {
-	RiskWarn    int `json:"riskWarn"`
-	RiskCrit    int `json:"riskCrit"`
-	// ...
-}
-```
+Result: editing a `.cue` file is the only way to change a wire DTO, and CI fails
+if the generated artifacts are not committed.
 
-Generated TypeScript:
-```typescript
-// device_settings.gen.ts
-export interface DeviceThresholds {
-  riskWarn: number;
-  riskCrit: number;
-  // ...
-}
-```
+### Handler `gin.H` migration (complete)
 
-### Pipeline change
+Because `swag init` reads the generated `openapi` structs, a handler emitting a
+`gin.H` key absent from the schema would be invisible to the spec. Every handler
+response now returns a generated `openapi.X` struct — **no `gin.H` literals
+remain in non-test handler code**.
 
-```
-.cue files ‚Üí [cuetsy] ‚Üí Go structs + TS types
-Go structs ‚Üí [swaggo] ‚Üí swagger.json ‚Üí openapi3.json
-TS types ‚Üí imported by domain/ modules
-```
+Reconciling the last sites surfaced genuine under-declarations that were fixed in
+`tooling/schema/*.cue` (then regenerated), notably:
 
-The handler returns the generated Go struct directly (not `gin.H`), so the
-wire format is always consistent with the schema. The OpenAPI spec is generated
-from the Go struct, which is generated from CUE ‚Äî one source of truth.
+- `DeviceEvent` gained `severity`/`source`/`timestamp`; `DeviceEventListResult`
+  gained `has_more`/`count`.
+- `ConnectionMetricsResult`, `DeviceTransferResult`, `TelemetryEntry`,
+  `TelemetryHistoryQueryResult`, `ClientCredential`, `LoginResult` /
+  `LoginWithTokensResult`, `MFAOperator`, `LockoutStatusResult`,
+  `CommandConfirmResult`, `ContactPointTestResult`, `AdminAPIKeyListResult`,
+  `UpdateCheckerResult` gained the fields the handlers actually emit.
+- New types: `TelemetryCleanupResult`, `MFAVerifiedResult`,
+  `AdminClientActionResult`, `WebhookInfoResult`, `ClientCredentialUpdateResult`,
+  `ClientSecretRotateResult`.
 
-### What gets deleted
-
-- Manual `openapi/schemas.go` struct definitions for config types
-- The "does `gin.H` match `openapi.X`?" class of drift bugs
+The pre-commit CUE-drift and swagger-drift gates keep the schema and the emitted
+wire format in lockstep.
 
 ### Naming
 
 - Schema dir: `tooling/schema/`
-- CUE files: `device_settings.cue`, `notification_settings.cue`, etc.
-- Go output: `zz_generated_*.go` in `internal/api/openapi/`
-- TS output: `*.gen.ts` in `packages/API_Client/src/generated/schema/`
-- Generator: `tooling/codegen/build_schema.py` (or `gen.go` using cuetsy)
+- CUE files: one per domain (`devices.cue`, `inbox.cue`, `updates.cue`, ...)
+- Go output: `apps/api/internal/api/openapi/schemas.go` (generated)
+- TS output: none from CUE — TypeScript comes from the spec via orval (`generated/schemas/`)
+- Generator: `tooling/codegen/build_schemas.py`
+- Drift gate: `tooling/hooks/pre-commit` (CUE schema drift check)
 
 ---
 
-## 3. Vyzorix Request Deduplicator ‚Äî Transport-Level Request Sharing
+## 3. Vyzorix Request Deduplicator — Transport-Level Request Sharing
 
 ### Problem
 
 The current `_batching/request-batcher.ts` collapses duplicate GETs within a
 50ms window. POST/PUT/PATCH/DELETE have basic in-flight dedup (exact body
 hash match). But with the multi-conversation WebSocket manager, each background
-conversation fires `useUserConversation()` independently ‚Äî if two conversations
+conversation fires `useUserConversation()` independently — if two conversations
 share the same backend, they can fire duplicate API calls that aren't deduped.
 
 ### Proposal
 
-Port a transport-level request queue that deduplicates ALL HTTP methods ‚Äî
+Port a transport-level request queue that deduplicates ALL HTTP methods —
 not just GETs. The queue accepts requests, the worker processes them with
 dedup, and the response is shared across all callers that requested the same
 operation.
 
 ```
-Component A ‚Üí restClient.get('/v1/devices')
-Component B ‚Üí restClient.get('/v1/devices')  (fired 5ms later)
-                    ‚Üì
+Component A → restClient.get('/v1/devices')
+Component B → restClient.get('/v1/devices')  (fired 5ms later)
+                    ↓
             VyzorixRequestQueue
-                    ‚Üì
+                    ↓
             One HTTP request to server
-                    ‚Üì
+                    ↓
             Response shared to both A and B
 ```
 
@@ -270,7 +313,7 @@ Replace the current `request-batcher.ts` with a `VyzorixRequestQueue` that:
 
 ---
 
-## 4. Vyzorix Realtime Channel ‚Äî Centrifuge-Based WebSocket Manager
+## 4. Vyzorix Realtime Channel — Centrifuge-Based WebSocket Manager
 
 ### Problem
 
@@ -292,16 +335,16 @@ JavaScript client). The Go backend runs a Centrifugo server; the frontend
 uses `centrifuge-js` to connect and subscribe to channels.
 
 ```
-Go backend ‚Üí Centrifugo server (embedded or sidecar)
-    ‚Üì
+Go backend → Centrifugo server (embedded or sidecar)
+    ↓
 Centrifugo handles:
   - WebSocket connection lifecycle (connect, reconnect, backoff)
   - Authentication (JWT or token-based)
   - Channel subscriptions (per-conversation, per-device, per-org)
   - Message delivery guarantees (at-least-once)
   - Connection state notifications
-    ‚Üì
-Frontend (centrifuge-js) ‚Üí subscribes to channels
+    ↓
+Frontend (centrifuge-js) → subscribes to channels
   - vyzorix:device:{imei}:telemetry
   - vyzorix:device:{imei}:events
   - vyzorix:updates:push:{pushId}
@@ -310,7 +353,7 @@ Frontend (centrifuge-js) ‚Üí subscribes to channels
 
 ### What gets deleted
 
-- `use-websocket.ts` (entire file ‚Äî replaced by centrifuge-js)
+- `use-websocket.ts` (entire file — replaced by centrifuge-js)
 - `PersistentWebSocketProvider` (centrifuge manages multiple subscriptions
   over a single connection, not multiple WS connections)
 - Manual keepalive/reconnect logic
@@ -321,7 +364,7 @@ Frontend (centrifuge-js) ‚Üí subscribes to channels
 ### What stays
 
 - The event processing logic in `ConversationWebSocketProvider` (what to do
-  with received events ‚Äî addEvent, setExecutionStatus, etc.)
+  with received events — addEvent, setExecutionStatus, etc.)
 - The event store (`use-event-store`)
 - The REST history preloading (`useConversationHistory`)
 
@@ -339,7 +382,7 @@ Frontend (centrifuge-js) ‚Üí subscribes to channels
 
 ---
 
-## 5. Vyzorix Data Pipeline ‚Äî RxJS Unified Data Layer
+## 5. Vyzorix Data Pipeline — RxJS Unified Data Layer
 
 ### Problem
 
@@ -376,7 +419,7 @@ const events = useObservable(deviceEvents$, []);
 ### What gets deleted
 
 - The `useLayoutEffect` that clears events on conversation switch (RxJS
-  `switchMap` handles this naturally ‚Äî unsubscribe from old, subscribe to new)
+  `switchMap` handles this naturally — unsubscribe from old, subscribe to new)
 - The timestamp-based dedup logic (RxJS `distinctUntilChanged` by event ID)
 - The manual "is REST done before WS connects?" gate (RxJS `combineLatest`
   waits for both)
@@ -384,7 +427,7 @@ const events = useObservable(deviceEvents$, []);
 
 ### What stays
 
-- TanStack Query for non-realtime data (settings, org list, etc.) ‚Äî wrapped
+- TanStack Query for non-realtime data (settings, org list, etc.) — wrapped
   via `lastValueFrom()` where RxJS is needed
 - The domain layer (zod schemas, validators)
 - The event store (fed by the RxJS subscription)
@@ -392,21 +435,21 @@ const events = useObservable(deviceEvents$, []);
 ### Naming
 
 - Package: `packages/API_Client/src/vyzorServer/data/`
-- REST wrapper: `VyzorixDataPipeline.fromRest(url)` ‚Üí `Observable<T>`
-- WS wrapper: `VyzorixDataPipeline.fromRealtime(channel)` ‚Üí `Observable<T>`
-- Merged: `VyzorixDataPipeline.combine(history$, live$)` ‚Üí `Observable<T[]>`
+- REST wrapper: `VyzorixDataPipeline.fromRest(url)` → `Observable<T>`
+- WS wrapper: `VyzorixDataPipeline.fromRealtime(channel)` → `Observable<T>`
+- Merged: `VyzorixDataPipeline.combine(history$, live$)` → `Observable<T[]>`
 - Event type: `VyzorixEvent` (replaces the current `OpenHandsEvent`-inspired type)
 
 ### Effort
 
-This is the highest-risk change ‚Äî it's a paradigm shift from Promises to
+This is the highest-risk change — it's a paradigm shift from Promises to
 Observables across the data layer. Recommend doing this LAST, after the other
 five improvements are in place, and only if the WS event handler complexity
 justifies it.
 
 ---
 
-## 6. Vyzorix Test Selectors ‚Äî Version-Aware E2E Selectors
+## 6. Vyzorix Test Selectors — Version-Aware E2E Selectors
 
 ### Problem
 
@@ -416,7 +459,7 @@ await page.goto('/v1/devices/123');
 await expect(page.locator('[data-testid="device-list"]')).toBeVisible();
 ```
 
-When a route changes, tests break silently ‚Äî no compiler, no type check.
+When a route changes, tests break silently — no compiler, no type check.
 
 ### Proposal
 
@@ -454,7 +497,7 @@ await expect(page.locator(`[data-testid="${vyzorixSelectors.pages.devices.list.t
 ### Generation
 
 A script reads `openapi3.json` paths + route definitions and generates the
-selectors file. When an API path changes, only the selector file updates ‚Äî
+selectors file. When an API path changes, only the selector file updates —
 tests reference the selector, not the raw URL.
 
 ### Naming
@@ -487,33 +530,63 @@ attempted after all others are complete, as it's a paradigm shift.
 ## Current State (as of this writing)
 
 Already completed:
-- ‚úÖ swaggo annotations for all 191 operations (146 paths)
-- ‚úÖ build_openapi3.py (Swagger 2 ‚Üí OpenAPI 3 normalization)
-- ‚úÖ orval generated SDK (207 schemas, 0 untyped responses)
-- ‚úÖ build_zod.py (207 zod schemas generated)
-- ‚úÖ domain layer migrated (generated types + zod + hand-rolled .refine())
-- ‚úÖ restClient mutator (circuit breaker, HMAC signing, retry, offline queue)
-- ‚úÖ openapi/schemas.go (207 typed wire types, all 24 unknowns fixed)
+- ✅ swaggo annotations for all 191 operations (146 paths)
+- ✅ build_openapi3.py (Swagger 2 → OpenAPI 3 normalization)
+- ✅ orval generated SDK (207 schemas, 0 untyped responses)
+- ✅ build_zod.py (207 zod schemas generated)
+- ✅ domain layer migrated (generated types + zod + hand-rolled .refine())
+- ✅ restClient mutator (circuit breaker, HMAC signing, retry, offline queue)
+- ✅ openapi/schemas.go (207 typed wire types, all 24 unknowns fixed)
+- ✅ CUE schema layer + build_schemas.py + CUE drift gate (§2; single source of truth)
 
 Not yet started:
-- ❌ CUE schema definitions
 - ❌ Vyzorix Request Deduplicator (#3)
 - ❌ Vyzorix Realtime Channel (#4)
 - ❌ Vyzorix Test Selectors (#6)
 - ❌ Vyzorix Data Pipeline (#5)
+
+Completed — Vyzorix Schema Definitions (#2):
+- ✅ `tooling/schema/*.cue` (30 files, 226 types) is the single source of truth;
+  `tooling/codegen/build_schemas.py` emits `internal/api/openapi/schemas.go` (the
+  package `swag init` reads). TypeScript is NOT generated from CUE — it comes from the spec
+  via swag -> openapi3.json -> orval (`generated/schemas/`).
+- ✅ Timestamps unified to int64 Unix millis; typed maps preserved; the separate
+  `internal/api/schema` package deleted (22 handlers repointed to `openapi.X`).
+- ✅ CUE schema drift gate in `tooling/hooks/pre-commit`.
+- ⏳ Follow-up: ~35 handler files still emit `gin.H` directly, so a key absent from
+  the schema is not yet a compile error (see §2 "Remaining").
 
 In progress — Vyzorix Query SDK (#1, Phase 2):
 - ✅ Data-layer hooks migrated to orval-generated react-query hooks (`src/generated-rq/`):
   commands, diagnostics, events, logs, metrics, registration, updates — including
   the GraphQL-fallback orchestration hooks, with domain types preserved via the `TData`
   generic + internal wire-type casts (committed 2026-08-31; tsc 0 errors, vitest 577 green).
-- ✅ Also migrated: alerts, apikey (operator/admin», devices, notifications, organizations,
+- ✅ Also migrated: alerts, apikey (operator/admin), devices, notifications, organizations,
   sessions, settings, telemetry, inbox (create/register/resend/ack/dismiss), updates
   (push/sync/cancel/detail).
-- ⏳ Remaining old-style `getX()` wrapper hooks to port onto generated hooks:
+- ✅ **Auto cache invalidation (the §1 goal) is now complete.** `orval.config.js`
+  enables `query.useInvalidate` + `shouldExportQueryKey`, org-scopes every generated
+  key via `query-key-mutator.ts::organizationScopedQueryKey`, and declares
+  `query.mutationInvalidates` per domain tag. The hand-written hooks no longer pass
+  a `queryKey` override or call `invalidateQueries` for mutation-driven cases — the
+  generated mutations invalidate the related org-scoped queries themselves. GraphQL
+  fallbacks (which bypass the generated mutation) call the generated `invalidateGet*`
+  helpers, and realtime WebSocket handlers invalidate the same canonical keys.
+  Regression coverage: `src/test/hooks/use-devices.test.ts` asserts the device list
+  refetches after a deregister mutation with no manual wiring (tsc 0 errors,
+  vitest green).
+- ✅ Auth orchestration hooks ported onto the generated mutation hooks:
+  `auth/use-login.ts` (`usePostAuthLoginTokens` + store ingest via `onSuccess`),
+  `auth/use-mfa.ts` (`usePostAuthMfaVerify` + async `/me` reconcile in `onSuccess`),
+  `auth/use-logout.ts` (`usePostAuthLogout` + `onSettled` clear),
+  `auth/use-password-reset.ts` / `auth/use-register.ts` (thin generated-hook
+  re-exports), `auth/use-me.ts` (`useSelectOrganization` uses the generated
+  mutation). The generated mutations carry the org-scoped auto-invalidation; the
+  wrappers keep only the auth-store side effects. Tests updated to the generated
+  `{ data }` variables + response envelope.
+- ✅ Auto-invalidation gaps closed for GraphQL-fallback and realtime paths
+  (documented in §1 "Limitation: parameterized queries"): commands invalidate via
+  the generated key helpers, organization-member changes via the realtime
+  member-event handler.
+- No remaining old-style hook wrappers outside the intentional non-data utilities.
 
-  `auth/use-login.ts`, `auth/use-mfa.ts`, `auth/use-logout.ts`, `auth/use-me.ts`,
-  `auth/use-password-reset.ts`, `auth/use-register.ts` (auth-orchestration — candidate to
-  call generated mutation hooks directly),
-  `registration/use-confirm.ts`, `registration/use-deregister.ts` (pure REST wrappers —
-  migrate to `postDeviceConfirm` / `deleteDevicesImei` generated hooks + GraphQL fallback cast).

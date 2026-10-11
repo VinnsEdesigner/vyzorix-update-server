@@ -2,7 +2,10 @@
 #
 # What this does:
 #   1. Triggers when you push to main and the push touched apps/api/ files.
-#   2. Runs: go build, go vet, golangci-lint v2.12.2, go test ./...
+#   2. Runs: go build, go vet, golangci-lint v2.14.0, go test ./..., plus
+#      drift gates for the GraphQL schema, the CUE-generated wire DTOs
+#      (tooling/schema/*.cue -> openapi/schemas.go + generated TS), and
+#      swagger.json (swaggo annotations -> spec).
 #   3. If ALL pass → the commit stays on main. Done.
 #   4. If ANY fail → it pushes the bad commit to a ci/fix/<sha> branch and
 #      reverts main to the previous good commit. You get a comment on the
@@ -19,14 +22,17 @@ on:
       - 'apps/api/**'
       - 'go.mod'
       - 'go.sum'
+      - 'tooling/schema/**'
+      - 'tooling/codegen/**'
+      - 'packages/API_Client/src/generated/schema/**'
 
 permissions:
   contents: write
   pull-requests: write
 
 env:
-  GO_VERSION: '1.26.6'
-  GOLANGCI_LINT_VERSION: 'v2.12.2'
+  GO_VERSION: '1.27.2'
+  GOLANGCI_LINT_VERSION: 'v2.14.0'
 
 jobs:
   verify:
@@ -89,6 +95,33 @@ jobs:
           go run ./cmd/graphql-schema -out "$TMP"
           if ! cmp -s "$TMP/schema.graphql" swag/graphql/schema.graphql; then
             echo "schema.graphql drift — run: go run ./cmd/graphql-schema -out swag/graphql"
+            exit 1
+          fi
+
+      # --- Step 6: CUE schema drift (tooling/schema/*.cue -> generated Go) ---
+      - name: CUE schema drift
+        id: cue-drift
+        if: always()
+        working-directory: .
+        run: |
+          TMP=$(mktemp -d)
+          GO_OUT="$TMP/schemas.go" python3 tooling/codegen/build_schemas.py
+          if ! cmp -s "$TMP/schemas.go" apps/api/internal/api/openapi/schemas.go; then
+            echo "openapi/schemas.go drift — run: python3 tooling/codegen/build_schemas.py"
+            exit 1
+          fi
+
+      # --- Step 7: Swagger drift (annotations -> swagger.json) ---
+      - name: Swagger drift
+        id: swagger-drift
+        if: always()
+        working-directory: apps/api
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          TMP=$(mktemp -d)
+          "$(go env GOPATH)/bin/swag" init -g cmd/api/api_main.go --parseDependency --quiet --output "$TMP"
+          if ! cmp -s "$TMP/swagger.json" swag/swagger.json; then
+            echo "swagger.json drift — run: swag init -g cmd/api/api_main.go --parseDependency --output apps/api/swag"
             exit 1
           fi
 
