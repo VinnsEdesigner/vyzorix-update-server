@@ -59,8 +59,8 @@ function stableStringify(value: unknown): string {
   return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(obj[k])).join(',') + '}';
 }
 
-function dedupKey(method: string, url: string, payload: unknown): string {
-  return `${method.toUpperCase()}:${url}:${stableStringify(payload)}`;
+function dedupKey(method: string, url: string, payload: unknown, scope?: string): string {
+  return `${scope ? scope + '|' : ''}${method.toUpperCase()}:${url}:${stableStringify(payload)}`;
 }
 
 export class VyzorixRequestQueue {
@@ -81,15 +81,29 @@ export class VyzorixRequestQueue {
    * @param url     request path (must already include org scope)
    * @param payload params (GET/DELETE) or body (POST/PUT/PATCH) used for the key
    * @param executor performs the real transport call
+   * @param scope   optional extra key component (e.g. the active org id) so
+   *                requests scoped by a header can't collide across scopes
+   * @param signal  when present the call is NOT deduped: the caller can abort
+   *                it at any time, and aborting a shared promise would cancel
+   *                the request out from under the other sharers.
    */
   execute<T>(
     method: string,
     url: string,
     payload: unknown,
     executor: () => Promise<T>,
+    scope?: string,
+    signal?: { aborted: boolean },
   ): Promise<T> {
     const upper = method.toUpperCase();
-    const key = dedupKey(upper, url, payload);
+
+    // Per-caller cancellation must never be shared.
+    if (signal) {
+      this.stats.executed += 1;
+      return executor();
+    }
+
+    const key = dedupKey(upper, url, payload, scope);
     const now = Date.now();
 
     // 1. Fresh cache (GET only).
@@ -144,8 +158,8 @@ export class VyzorixRequestQueue {
   }
 
   /** Drop a cached GET (e.g. after a mutation to the same resource). */
-  invalidate(method: string, url: string, payload?: unknown): void {
-    this.cache.delete(dedupKey(method, url, payload));
+  invalidate(method: string, url: string, payload?: unknown, scope?: string): void {
+    this.cache.delete(dedupKey(method, url, payload, scope));
   }
 
   clear(): void {

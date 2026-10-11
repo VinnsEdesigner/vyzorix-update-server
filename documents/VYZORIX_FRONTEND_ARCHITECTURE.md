@@ -306,6 +306,13 @@ HTTP method through:
 - shares the in-flight promise across all callers with the same key — so the
   duplicate-POST case (two conversations firing the same mutation) fires one
   request, not two;
+- **keys the entry by the active org as well as method+url+body**: REST org
+  scoping rides in the `X-Organization-ID` header, not the URL, so an org switch
+  would otherwise let one org share another's response. `setOrganizationContext`
+  also resets the queue.
+- **is bypassed when the caller supplies an `AbortSignal`**: generated queryFns
+  pass TanStack Query's cancellation signal; sharing one promise would let a
+  single unmount abort the request for every other sharer.
 - registers the in-flight entry synchronously before the executor runs, so a
   caller arriving on the same tick joins it. JS is single-threaded, so no lock
   is needed; the design's "single worker" is intentionally omitted because

@@ -82,6 +82,9 @@ const clientState: ClientState = {
 };
 
 export function setOrganizationContext(orgId: string | null): void {
+  // Any in-flight/cached GET was scoped to the previous org; drop them so a
+  // response can't cross orgs.
+  resetRequestQueue();
   clientState.organizationId = orgId;
 }
 
@@ -553,11 +556,20 @@ export const restClient = {
       console.warn(`[REST] Offline GET: ${url}`);
     }
 
-    // GETs are stale-cached + de-duplicated by the shared request queue.
-    return getRequestQueue().execute('GET', url, config?.params, async () => {
-      const response = await getAxios().get<T>(url, config);
-      return response.data;
-    });
+    // GETs are stale-cached + de-duplicated by the shared request queue, keyed
+    // by the active org (org scoping rides in a header, not the URL) and
+    // bypassed when the caller supplies an AbortSignal.
+    return getRequestQueue().execute(
+      'GET',
+      url,
+      config?.params,
+      async () => {
+        const response = await getAxios().get<T>(url, config);
+        return response.data;
+      },
+      clientState.organizationId ?? undefined,
+      config?.signal ?? undefined,
+    );
   },
 
   async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
@@ -578,10 +590,17 @@ export const restClient = {
     }
 
     // In-flight dedup (all methods) via the shared request queue.
-    return getRequestQueue().execute('POST', url, data, async () => {
-      const result = await getAxios().post<T>(url, data, config);
-      return result.data as T;
-    });
+    return getRequestQueue().execute(
+      'POST',
+      url,
+      data,
+      async () => {
+        const result = await getAxios().post<T>(url, data, config);
+        return result.data as T;
+      },
+      clientState.organizationId ?? undefined,
+      config?.signal ?? undefined,
+    );
   },
 
   async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
@@ -601,10 +620,17 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    return getRequestQueue().execute('PUT', url, data, async () => {
-      const result = await getAxios().put<T>(url, data, config);
-      return result.data as T;
-    });
+    return getRequestQueue().execute(
+      'PUT',
+      url,
+      data,
+      async () => {
+        const result = await getAxios().put<T>(url, data, config);
+        return result.data as T;
+      },
+      clientState.organizationId ?? undefined,
+      config?.signal ?? undefined,
+    );
   },
 
   async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
@@ -624,10 +650,17 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    return getRequestQueue().execute('PATCH', url, data, async () => {
-      const result = await getAxios().patch<T>(url, data, config);
-      return result.data as T;
-    });
+    return getRequestQueue().execute(
+      'PATCH',
+      url,
+      data,
+      async () => {
+        const result = await getAxios().patch<T>(url, data, config);
+        return result.data as T;
+      },
+      clientState.organizationId ?? undefined,
+      config?.signal ?? undefined,
+    );
   },
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
@@ -646,10 +679,17 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    return getRequestQueue().execute('DELETE', url, config?.data, async () => {
-      const result = await getAxios().delete<T>(url, config);
-      return result.data as T;
-    });
+    return getRequestQueue().execute(
+      'DELETE',
+      url,
+      config?.data,
+      async () => {
+        const result = await getAxios().delete<T>(url, config);
+        return result.data as T;
+      },
+      clientState.organizationId ?? undefined,
+      config?.signal ?? undefined,
+    );
   },
 };
 

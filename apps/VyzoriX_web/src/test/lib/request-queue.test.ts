@@ -119,4 +119,35 @@ describe('VyzorixRequestQueue', () => {
     await expect(p2).rejects.toBe(boom);
     expect(q.getInFlightCount()).toBe(0);
   });
+
+  it('does NOT dedupe across org scopes (header-scoped requests)', async () => {
+    const q = new VyzorixRequestQueue();
+    let calls = 0;
+    const executor = () => {
+      calls += 1;
+      return new Promise<number>((resolve) => setTimeout(() => resolve(calls), 10));
+    };
+    await Promise.all([
+      q.execute('GET', '/v1/devices', undefined, executor, 'org-a'),
+      q.execute('GET', '/v1/devices', undefined, executor, 'org-b'),
+    ]);
+    // Same URL + params but different org -> must not share a response.
+    expect(calls).toBe(2);
+  });
+
+  it('bypasses dedupe when a per-caller AbortSignal is supplied', async () => {
+    const q = new VyzorixRequestQueue();
+    let calls = 0;
+    const executor = () => {
+      calls += 1;
+      return Promise.resolve(1);
+    };
+    const ctrl = new AbortController();
+    await Promise.all([
+      q.execute('GET', '/v1/x', undefined, executor, undefined, ctrl.signal),
+      q.execute('GET', '/v1/x', undefined, executor, undefined, ctrl.signal),
+    ]);
+    // Each abortable caller runs its own request.
+    expect(calls).toBe(2);
+  });
 });

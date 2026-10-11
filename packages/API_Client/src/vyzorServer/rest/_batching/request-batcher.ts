@@ -1,14 +1,9 @@
 /**
- * Request Collapsing & Batching Logic
- * 
- * Reduces network round trips by combining multiple queries into one.
- * 
- * How it works:
- * - Query Consolidation (REST): Track all API requests fired within a short time window (50ms)
- *   If multiple requests to the same endpoint/pattern are detected, collapse them into a single
- *   batched request and return same data to all original callers.
- * - GraphQL Batching: Combine multiple GraphQL operations into one HTTP request
- * - Cache Integration: Combine with response caching for maximum efficiency
+ * GraphQL request batching.
+ *
+ * Combines multiple GraphQL operations into one HTTP request against the
+ * `/graphql/batch` endpoint. REST request de-duplication now lives in
+ * `../_shared/request-queue.ts` (VyzorixRequestQueue).
  */
 
 import { getSigningKey } from '../_shared/rest-client';
