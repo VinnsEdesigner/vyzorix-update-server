@@ -208,7 +208,7 @@ func (e *EnhancedNotifier) SendSilentWake(ctx context.Context, wake SilentWake) 
 
 		// Build FCM message.
 		msg := &messaging.Message{
-			Token: wake.Token,
+			Fid: wake.Token,
 			Android: &messaging.AndroidConfig{
 				Priority: priority,
 				TTL:      ptr24Hours(),
@@ -471,7 +471,7 @@ func (c *Client) SendSilentWake(ctx context.Context, wake SilentWake) error {
 	defer cancel()
 
 	msg := &messaging.Message{
-		Token: wake.Token,
+		Fid: wake.Token,
 		Android: &messaging.AndroidConfig{
 			Priority: "high",
 			TTL:      ptr24Hours(),

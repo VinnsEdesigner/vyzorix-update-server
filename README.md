@@ -16,7 +16,7 @@
 
 <!-- Badges Row -->
 <p align="center">
-  <img src="https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/Go-1.27-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React">
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite">
@@ -188,7 +188,7 @@
 
 | Layer | Technology |
 |:------|:------------|
-| **Backend** | Go 1.26, Gin web framework, Wire DI |
+| **Backend** | Go 1.27, Gin web framework, Wire DI |
 | **Database** | SQLite (WAL mode) with auto-migrations |
 | **WebSocket** | gorilla/websocket |
 | **GraphQL** | graphql-go library |
@@ -208,7 +208,7 @@
 
 ### Prerequisites
 
-- Go 1.26+
+- Go 1.27+
 - Node.js 20+
 - pnpm (for frontend)
 - Docker (optional)

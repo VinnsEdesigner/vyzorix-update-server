@@ -253,7 +253,7 @@ docker port vyzorix
 
 The image includes:
 - Ubuntu 24.04 base
-- Go 1.26 runtime
+- Go 1.27 runtime
 - Node.js 18 runtime
 - SQLite with WAL mode
 - Full node_modules (for SSR)

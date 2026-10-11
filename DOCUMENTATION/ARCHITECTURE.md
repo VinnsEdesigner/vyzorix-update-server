@@ -2,7 +2,7 @@
 
 ## Stack
 
-- **Language**: Go 1.26.6
+- **Language**: Go 1.27.2
 - **Web framework**: Gin (v1.9.1)
 - **Database**: SQLite (local) or Turso/libSQL (production)
 - **GraphQL**: graphql-go

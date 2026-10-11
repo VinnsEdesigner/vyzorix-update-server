@@ -1,7 +1,7 @@
 version: "2"
 
 run:
-  go: "1.26"
+  go: "1.27"
   modules-download-mode: readonly
   tests: false
   timeout: 15m
@@ -84,7 +84,7 @@ linters:
       # Machine-generated schema structs (build_schemas.py) — field order is
       # generator-controlled and re-emitted on every regen; hand-tuning
       # fieldalignment here is futile.
-      - path: "internal/api/schema/zz_generated"
+      - path: "internal/api/openapi/schemas\\.go"
         linters:
           - govet
   settings:

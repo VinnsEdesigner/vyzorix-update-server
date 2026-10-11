@@ -8,7 +8,7 @@ Ran `govulncheck` against the codebase. Found 28 vulnerabilities across the Go s
 
 | Package | Was | Now | Vulnerability |
 |---------|-----|-----|---------------|
-| Go toolchain | 1.26 | 1.26.6 | 25 stdlib vulns (crypto/tls, crypto/x509, net/http, net/url, html/template, encoding/xml, encoding/asn1, net/textproto) |
+| Go toolchain | 1.26 | 1.27.2 | 25 stdlib vulns (crypto/tls, crypto/x509, net/http, net/url, html/template, encoding/xml, encoding/asn1, net/textproto) |
 | golang-jwt/jwt/v5 | v5.2.1 | v5.2.2 | GO-2025-3553: excessive memory allocation via crafted JWT headers (DoS) |
 | golang.org/x/text | v0.37.0 | v0.39.0 | GO-2026-5970 |
 | google.golang.org/grpc | v1.81.1 | v1.82.1 | GO-2026-6061 |
