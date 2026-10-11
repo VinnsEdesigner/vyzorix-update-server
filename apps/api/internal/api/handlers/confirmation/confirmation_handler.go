@@ -17,6 +17,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func int64Ptr(v int64) *int64 { return &v }
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.CommandConfirmRequest
@@ -106,10 +108,10 @@ func (h *Handler) RequestConfirmation(c *gin.Context) {
 	// Only issue tokens for commands that actually require confirmation.
 	profile := command.LookupRiskProfile(req.Command)
 	if !profile.RequiresConfirmation && profile.Tier != command.RiskTierCritical {
-		c.JSON(http.StatusOK, gin.H{
-			"confirmation_required": false,
-			"risk_tier":             string(profile.Tier),
-			"trace_id":              middleware.GetTraceID(c),
+		c.JSON(http.StatusOK, openapi.CommandConfirmResult{
+			ConfirmationRequired: false,
+			RiskTier:             string(profile.Tier),
+			TraceID:              middleware.GetTraceID(c),
 		})
 		return
 	}
@@ -122,13 +124,13 @@ func (h *Handler) RequestConfirmation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"confirmation_token":    pending.Token,
-		"confirmation_required": true,
-		"risk_tier":             pending.RiskTier,
-		"expires_at":            pending.ExpiresAt.Unix(),
-		"ttl_seconds":           int(time.Until(pending.ExpiresAt).Seconds()),
-		"trace_id":              middleware.GetTraceID(c),
+	c.JSON(http.StatusCreated, openapi.CommandConfirmResult{
+		ConfirmationToken:    pending.Token,
+		ConfirmationRequired: true,
+		RiskTier:             pending.RiskTier,
+		ExpiresAt:            int64Ptr(pending.ExpiresAt.UnixMilli()),
+		TtlSeconds:           int(time.Until(pending.ExpiresAt).Seconds()),
+		TraceID:              middleware.GetTraceID(c),
 	})
 }
 

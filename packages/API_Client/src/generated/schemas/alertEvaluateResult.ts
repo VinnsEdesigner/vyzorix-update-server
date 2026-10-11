@@ -8,5 +8,5 @@
 
 export interface AlertEvaluateResult {
   rule_id?: string;
-  transitioned?: number;
+  transitioned?: boolean;
 }

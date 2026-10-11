@@ -9,12 +9,12 @@
 export interface OrganizationMember {
   id?: string;
   invited_by?: string;
-  joined_at?: string;
+  joined_at?: number;
   operator_email?: string;
   operator_id?: string;
   operator_name?: string;
   organization_id?: string;
-  removed_at?: string;
+  removed_at?: number;
   role?: string;
   status?: string;
 }

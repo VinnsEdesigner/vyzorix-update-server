@@ -1,9 +1,9 @@
 package vyzorix
 
-// ConfigVersion — generated from openapi/schemas.go.
+// ConfigVersion.
 #ConfigVersion: {
-        created_at: string
-        snapshot: {[string]: _}
+        created_at: int64
+        snapshot: string
         id: string
         org_id: string
         resource_type: string
@@ -11,12 +11,12 @@ package vyzorix
         version: int
 }
 
-// ConfigVersionListResult — generated from openapi/schemas.go.
+// ConfigVersionListResult.
 #ConfigVersionListResult: {
         versions: [...#ConfigVersion]
 }
 
-// ConfigVersionRestoreResult — generated from openapi/schemas.go.
+// ConfigVersionRestoreResult.
 #ConfigVersionRestoreResult: {
         settings: {[string]: _}
         restored_to_version: int

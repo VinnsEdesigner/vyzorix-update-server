@@ -1,17 +1,17 @@
 package vyzorix
 
-// EmailVerifyRequest — generated from openapi/schemas.go.
+// EmailVerifyRequest.
 #EmailVerifyRequest: {
         token: string
 }
 
-// EmailVerifyResult — generated from openapi/schemas.go.
+// EmailVerifyResult.
 #EmailVerifyResult: {
         email?: string
         verified: bool
 }
 
-// EmailNotifications — generated from openapi/schemas.go.
+// EmailNotifications.
 #EmailNotifications: {
         thresholdBreach: bool
         deviceOffline: bool

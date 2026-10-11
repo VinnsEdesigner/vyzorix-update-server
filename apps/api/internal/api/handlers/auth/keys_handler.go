@@ -14,6 +14,62 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func keyWithSecret(k *apikeydomain.APIKeyWithFullKey) openapi.APIKeyWithSecret {
+	out := openapi.APIKeyWithSecret{
+		APIKey:       k.FullKey,
+		ID:           k.ID,
+		OperatorID:   k.OperatorID,
+		Name:         k.Name,
+		KeyPrefix:    k.KeyPrefix,
+		Scope:        string(k.Scope),
+		RequestCount: k.RequestCount,
+		IsActive:     k.IsActive,
+		CreatedAt:    k.CreatedAt.UnixMilli(),
+		UpdatedAt:    k.UpdatedAt.UnixMilli(),
+	}
+	if k.ExpiresAt != nil {
+		out.ExpiresAt = int64Ptr(k.ExpiresAt.UnixMilli())
+	}
+	if k.LastRequest != nil {
+		out.LastRequestAt = int64Ptr(k.LastRequest.UnixMilli())
+	}
+	if k.RevokedAt != nil {
+		out.RevokedAt = int64Ptr(k.RevokedAt.UnixMilli())
+	}
+	return out
+}
+
+func wireAPIKeys(in []apikeydomain.APIKeyResponse) []openapi.APIKey {
+	out := make([]openapi.APIKey, len(in))
+	for i, k := range in {
+		item := openapi.APIKey{
+			ID:           k.ID,
+			Name:         k.Name,
+			KeyPrefix:    k.KeyPrefix,
+			Scope:        string(k.Scope),
+			RequestCount: k.RequestCount,
+			IsActive:     k.IsActive,
+			CreatedAt:    k.CreatedAt.UnixMilli(),
+			UpdatedAt:    k.UpdatedAt.UnixMilli(),
+		}
+		if k.ExpiresAt != nil {
+			item.ExpiresAt = int64Ptr(k.ExpiresAt.UnixMilli())
+		}
+		if k.LastRequest != nil {
+			item.LastRequestAt = int64Ptr(k.LastRequest.UnixMilli())
+		}
+		if k.RevokedAt != nil {
+			item.RevokedAt = int64Ptr(k.RevokedAt.UnixMilli())
+		}
+		out[i] = item
+	}
+	return out
+}
+
+func wirePagination(p apikeydomain.Pagination) openapi.Pagination {
+	return openapi.Pagination{Page: p.Page, Limit: p.Limit, Total: int64(p.Total), TotalPages: p.TotalPages}
+}
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.APIKey
@@ -88,9 +144,9 @@ func (h *Handler) CreateKey(c *gin.Context) {
 	result, err := h.service.GenerateKey(c.Request.Context(), operatorID, middleware.GetOrganizationID(c), &req)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -108,21 +164,7 @@ func (h *Handler) CreateKey(c *gin.Context) {
 	)
 
 	// Return the full key only on creation.
-	c.JSON(http.StatusCreated, gin.H{
-		"id":              result.ID,
-		"operator_id":     result.OperatorID,
-		"name":            result.Name,
-		"api_key":         result.FullKey, // Full key - only time it's shown!.
-		"key_prefix":      result.KeyPrefix,
-		"scope":           result.Scope,
-		"expires_at":      result.ExpiresAt,
-		"is_active":       result.IsActive,
-		"request_count":   result.RequestCount,
-		"created_at":      result.CreatedAt,
-		"updated_at":      result.UpdatedAt,
-		"last_request_at": result.LastRequest,
-		"revoked_at":      result.RevokedAt,
-	})
+	c.JSON(http.StatusCreated, keyWithSecret(result))
 }
 
 // ListKeys lists all API keys for the authenticated operator.
@@ -158,18 +200,18 @@ func (h *Handler) ListKeys(c *gin.Context) {
 	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"keys":                    result.Keys,
-		"pagination":              result.Pagination,
-		"monthly_limit":           result.MonthlyLimit,
-		"keys_created_this_month": result.KeysCreatedThisMonth,
+	c.JSON(http.StatusOK, openapi.APIKeyListResult{
+		Keys:                 wireAPIKeys(result.Keys),
+		Pagination:           wirePagination(result.Pagination),
+		MonthlyLimit:         result.MonthlyLimit,
+		KeysCreatedThisMonth: result.KeysCreatedThisMonth,
 	})
 }
 
@@ -205,9 +247,9 @@ func (h *Handler) GetKey(c *gin.Context) {
 	key, err := h.service.GetKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -256,9 +298,9 @@ func (h *Handler) UpdateKey(c *gin.Context) {
 	key, err := h.service.UpdateKey(c.Request.Context(), operatorID, keyID, &req)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -321,9 +363,9 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 	key, err := h.service.GetKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -331,9 +373,9 @@ func (h *Handler) RevokeKey(c *gin.Context) {
 	err = h.service.RevokeKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -383,9 +425,9 @@ func (h *Handler) RotateKey(c *gin.Context) {
 	result, err := h.service.RotateKey(c.Request.Context(), operatorID, keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -401,19 +443,5 @@ func (h *Handler) RotateKey(c *gin.Context) {
 	)
 
 	// Return the new full key.
-	c.JSON(http.StatusOK, gin.H{
-		"id":              result.ID,
-		"operator_id":     result.OperatorID,
-		"name":            result.Name,
-		"api_key":         result.FullKey, // New full key - only time it's shown!.
-		"key_prefix":      result.KeyPrefix,
-		"scope":           result.Scope,
-		"expires_at":      result.ExpiresAt,
-		"is_active":       result.IsActive,
-		"request_count":   result.RequestCount,
-		"created_at":      result.CreatedAt,
-		"updated_at":      result.UpdatedAt,
-		"last_request_at": result.LastRequest,
-		"revoked_at":      result.RevokedAt,
-	})
+	c.JSON(http.StatusOK, keyWithSecret(result))
 }

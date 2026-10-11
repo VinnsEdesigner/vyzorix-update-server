@@ -5,8 +5,14 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
+import type { ConnectionMetricsResultAggregateMetrics } from './connectionMetricsResultAggregateMetrics';
 
 export interface ConnectionMetricsResult {
+  aggregate_metrics?: ConnectionMetricsResultAggregateMetrics;
   online_connections?: number;
+  queue_metrics?: unknown;
+  timestamp?: number;
+  total_connected?: number;
   total_connections?: number;
+  total_queued?: number;
 }

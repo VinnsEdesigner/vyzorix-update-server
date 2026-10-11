@@ -7,10 +7,10 @@
  */
 
 export interface ServiceAccount {
-  created_at?: string;
+  created_at?: number;
   enabled?: boolean;
   id?: string;
   name?: string;
   org_id?: string;
-  updated_at?: string;
+  updated_at?: number;
 }

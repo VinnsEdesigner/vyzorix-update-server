@@ -8,5 +8,7 @@
 import type { DeviceEvent } from './deviceEvent';
 
 export interface DeviceEventListResult {
+  count?: number;
   events?: DeviceEvent[];
+  has_more?: boolean;
 }

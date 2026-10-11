@@ -7,18 +7,18 @@
 import { z } from 'zod';
 
 export const APIKeySchema = z.object({
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
+  created_at: z.number().int().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
   is_active: z.boolean().optional(),
   key_prefix: z.string().optional(),
-  last_request_at: z.string().optional(),
+  last_request_at: z.number().int().optional(),
   name: z.string().optional(),
   operator_id: z.string().optional(),
   request_count: z.number().int().optional(),
-  revoked_at: z.string().optional(),
+  revoked_at: z.number().int().optional(),
   scope: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const APIKeyListResultSchema = z.object({
   keys: z.array(z.lazy(() => APIKeySchema)).optional(),
@@ -28,36 +28,38 @@ export const APIKeyListResultSchema = z.object({
 });
 export const APIKeyWithSecretSchema = z.object({
   api_key: z.string().optional(),
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
+  created_at: z.number().int().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
   is_active: z.boolean().optional(),
   key_prefix: z.string().optional(),
-  last_request_at: z.string().optional(),
+  last_request_at: z.number().int().optional(),
   name: z.string().optional(),
   operator_id: z.string().optional(),
   request_count: z.number().int().optional(),
-  revoked_at: z.string().optional(),
+  revoked_at: z.number().int().optional(),
   scope: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const AdminAPIKeySchema = z.object({
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
+  created_at: z.number().int().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
   is_active: z.boolean().optional(),
   key_prefix: z.string().optional(),
-  last_request_at: z.string().optional(),
+  last_request_at: z.number().int().optional(),
   name: z.string().optional(),
   operator_id: z.string().optional(),
   operator_name: z.string().optional(),
   request_count: z.number().int().optional(),
-  revoked_at: z.string().optional(),
+  revoked_at: z.number().int().optional(),
   scope: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const AdminAPIKeyListResultSchema = z.object({
   keys: z.array(z.lazy(() => AdminAPIKeySchema)).optional(),
+  keys_created_this_month: z.number().int().optional(),
+  monthly_limit: z.number().int().optional(),
   pagination: z.lazy(() => PaginationSchema).optional(),
 });
 export const AdminClientSchema = z.object({
@@ -82,14 +84,14 @@ export const AdminClientResultSchema = z.object({
   client: z.lazy(() => AdminClientSchema).optional(),
 });
 export const AdminOperatorSchema = z.object({
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   email: z.string().optional(),
   email_verified: z.boolean().optional(),
   id: z.string().optional(),
   mfa_enabled: z.boolean().optional(),
   name: z.string().optional(),
   role: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const AdminOperatorListResultSchema = z.object({
   operators: z.array(z.lazy(() => AdminOperatorSchema)).optional(),
@@ -97,10 +99,10 @@ export const AdminOperatorListResultSchema = z.object({
 });
 export const AlertEvaluateResultSchema = z.object({
   rule_id: z.string().optional(),
-  transitioned: z.number().int().optional(),
+  transitioned: z.boolean().optional(),
 });
 export const AlertHistoryEventSchema = z.object({
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   from_state: z.string().optional(),
   id: z.string().optional(),
   rule_id: z.string().optional(),
@@ -111,14 +113,14 @@ export const AlertHistoryResultSchema = z.object({
   events: z.array(z.lazy(() => AlertHistoryEventSchema)).optional(),
 });
 export const AlertInstanceSchema = z.object({
-  evaluated_at: z.string().optional(),
+  evaluated_at: z.number().int().optional(),
   labels: z.record(z.string(), z.string()).optional(),
   state: z.string().optional(),
   value: z.number().optional(),
 });
 export const AlertRuleSchema = z.object({
   condition: z.string().optional(),
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   enabled: z.boolean().optional(),
   for_seconds: z.number().int().optional(),
   id: z.string().optional(),
@@ -130,7 +132,7 @@ export const AlertRuleSchema = z.object({
   on_no_data: z.string().optional(),
   org_id: z.string().optional(),
   threshold: z.number().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
   webhook_url: z.string().optional(),
 });
 export const AlertRuleListResultSchema = z.object({
@@ -149,16 +151,16 @@ export const AlertRuleRequestSchema = z.object({
   webhook_url: z.string().optional(),
 });
 export const AnnotationSchema = z.object({
-  created_at: z.string().optional(),
-  end_time: z.string().optional(),
+  created_at: z.number().int().optional(),
+  end_time: z.number().int().optional(),
   id: z.string().optional(),
   org_id: z.string().optional(),
   source: z.string().optional(),
-  start_time: z.string().optional(),
+  start_time: z.number().int().optional(),
   tags: z.array(z.string()).optional(),
   text: z.string().optional(),
   title: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const AnnotationListResultSchema = z.object({
   annotations: z.array(z.lazy(() => AnnotationSchema)).optional(),
@@ -188,11 +190,21 @@ export const ChannelUnsubscribeResultSchema = z.object({
   unsubscribed: z.string().optional(),
 });
 export const ClientCredentialSchema = z.object({
-  clientId: z.string().optional(),
-  createdAt: z.string().optional(),
+  allowed_origins: z.array(z.string()).optional(),
+  allowed_paths: z.array(z.string()).optional(),
+  client_id: z.string().optional(),
+  client_secret: z.string().optional(),
+  created_at: z.number().int().optional(),
   id: z.string().optional(),
+  is_active: z.boolean().optional(),
+  last_request_at: z.number().int().optional(),
   name: z.string().optional(),
+  operator_id: z.string().optional(),
+  platform: z.string().optional(),
+  rate_limit: z.number().int().optional(),
+  request_count: z.number().int().optional(),
   secret: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const ClientCredentialListResultSchema = z.object({
   clients: z.array(z.lazy(() => ClientCredentialSchema)).optional(),
@@ -221,6 +233,7 @@ export const CommandConfirmResultSchema = z.object({
   expires_at: z.number().int().optional(),
   risk_tier: z.string().optional(),
   trace_id: z.string().optional(),
+  ttl_seconds: z.number().int().optional(),
 });
 export const CommandDispatchResultSchema = z.object({
   command_id: z.string().optional(),
@@ -259,7 +272,7 @@ export const CommandRequestSchema = z.object({
   timestamp: z.number().int().optional(),
 });
 export const CommandResponseSchema = z.object({
-  args: z.array(z.number().int()).optional(),
+  args: z.array(z.string()).optional(),
   command: z.string().optional(),
   delivery: z.string().optional(),
   deviceId: z.string().optional(),
@@ -289,11 +302,11 @@ export const ConcurrentSessionsResultSchema = z.object({
 });
 export const ConfigVersionSchema = z.object({
   changed_by: z.string().optional(),
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   id: z.string().optional(),
   org_id: z.string().optional(),
   resource_type: z.string().optional(),
-  snapshot: z.record(z.string(), z.unknown()).optional(),
+  snapshot: z.string().optional(),
   version: z.number().int().optional(),
 });
 export const ConfigVersionListResultSchema = z.object({
@@ -307,8 +320,13 @@ export const ConnectionListResultSchema = z.object({
   connections: z.array(z.lazy(() => ConnectionStatusResultSchema)).optional(),
 });
 export const ConnectionMetricsResultSchema = z.object({
+  aggregate_metrics: z.record(z.string(), z.number().int()).optional(),
   online_connections: z.number().int().optional(),
+  queue_metrics: z.unknown().optional(),
+  timestamp: z.number().int().optional(),
+  total_connected: z.number().int().optional(),
   total_connections: z.number().int().optional(),
+  total_queued: z.number().int().optional(),
 });
 export const ConnectionStatusResultSchema = z.object({
   device_id: z.string().optional(),
@@ -318,14 +336,14 @@ export const ConnectionStatusResultSchema = z.object({
 export const ContactPointSchema = z.object({
   channel: z.string().optional(),
   config: z.record(z.string(), z.string()).optional(),
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   enabled: z.boolean().optional(),
   id: z.string().optional(),
   name: z.string().optional(),
   org_id: z.string().optional(),
   secret: z.boolean().optional(),
   template_id: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const ContactPointListResultSchema = z.object({
   contact_points: z.array(z.lazy(() => ContactPointSchema)).optional(),
@@ -339,8 +357,9 @@ export const ContactPointRequestSchema = z.object({
   template_id: z.string().optional(),
 });
 export const ContactPointTestResultSchema = z.object({
+  deliveries: z.unknown().optional(),
   sent: z.boolean().optional(),
-  tested_at: z.string().optional(),
+  tested_at: z.number().int().optional(),
 });
 export const CreateAPIKeyRequestSchema = z.object({
   expires_in_days: z.number().int().optional(),
@@ -423,14 +442,19 @@ export const DeviceDisconnectResultSchema = z.object({
   operatorId: z.string().optional(),
 });
 export const DeviceEventSchema = z.object({
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   data: z.record(z.string(), z.unknown()).optional(),
   device_id: z.string().optional(),
   id: z.string().optional(),
+  severity: z.string().optional(),
+  source: z.string().optional(),
+  timestamp: z.number().int().optional(),
   type: z.string().optional(),
 });
 export const DeviceEventListResultSchema = z.object({
+  count: z.number().int().optional(),
   events: z.array(z.lazy(() => DeviceEventSchema)).optional(),
+  has_more: z.boolean().optional(),
 });
 export const DeviceFCMTokenRequestSchema = z.object({
   fcmToken: z.string().optional(),
@@ -500,9 +524,12 @@ export const DeviceTransferRequestSchema = z.object({
 });
 export const DeviceTransferResultSchema = z.object({
   device_id: z.string().optional(),
+  device_imei: z.string().optional(),
   from_org_id: z.string().optional(),
   message: z.string().optional(),
+  source_org: z.string().optional(),
   success: z.boolean().optional(),
+  target_org: z.string().optional(),
   to_org_id: z.string().optional(),
 });
 export const DeviceUpdateStatusRequestSchema = z.object({
@@ -656,20 +683,24 @@ export const InboxResendResultSchema = z.object({
 });
 export const InvitationSchema = z.object({
   email: z.string().optional(),
-  expires_at: z.string().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
-  invited_at: z.string().optional(),
+  invited_at: z.number().int().optional(),
   invited_by: z.string().optional(),
+  inviter_name: z.string().optional(),
   organization_id: z.string().optional(),
+  organization_name: z.string().optional(),
+  responded_at: z.number().int().optional(),
+  responder_id: z.string().optional(),
   role: z.string().optional(),
   status: z.string().optional(),
   token: z.string().optional(),
 });
 export const InvitationByTokenResultSchema = z.object({
   email: z.string().optional(),
-  expires_at: z.string().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
-  invited_at: z.string().optional(),
+  invited_at: z.number().int().optional(),
   inviter_name: z.string().optional(),
   organization_id: z.string().optional(),
   organization_name: z.string().optional(),
@@ -684,6 +715,7 @@ export const LockoutStatusResultSchema = z.object({
   locked: z.boolean().optional(),
   max_attempts: z.number().int().optional(),
   reason: z.string().optional(),
+  retry_after: z.number().int().optional(),
   unlock_at: z.number().int().optional(),
 });
 export const LoginRequestSchema = z.object({
@@ -695,7 +727,10 @@ export const LoginRequestSchema = z.object({
 export const LoginResultSchema = z.object({
   device_fingerprint: z.string().optional(),
   email: z.string().optional(),
+  error: z.string().optional(),
   last_organization_id: z.string().optional(),
+  locked_until: z.number().int().optional(),
+  message: z.string().optional(),
   mfa_enabled: z.boolean().optional(),
   mfa_session: z.string().optional(),
   name: z.string().optional(),
@@ -703,6 +738,7 @@ export const LoginResultSchema = z.object({
   operator_id: z.string().optional(),
   organizations: z.array(z.lazy(() => OrganizationInfoSchema)).optional(),
   requires_mfa: z.boolean().optional(),
+  retry_after: z.number().int().optional(),
   selected_organization: z.lazy(() => OrganizationInfoSchema).optional(),
   signing_key: z.string().optional(),
 });
@@ -710,8 +746,11 @@ export const LoginWithTokensResultSchema = z.object({
   access_token: z.string().optional(),
   device_fingerprint: z.string().optional(),
   email: z.string().optional(),
+  error: z.string().optional(),
   expires_at: z.number().int().optional(),
   last_organization_id: z.string().optional(),
+  locked_until: z.number().int().optional(),
+  message: z.string().optional(),
   mfa_enabled: z.boolean().optional(),
   mfa_session: z.string().optional(),
   name: z.string().optional(),
@@ -720,6 +759,7 @@ export const LoginWithTokensResultSchema = z.object({
   organizations: z.array(z.lazy(() => OrganizationInfoSchema)).optional(),
   refresh_token: z.string().optional(),
   requires_mfa: z.boolean().optional(),
+  retry_after: z.number().int().optional(),
   selected_organization: z.lazy(() => OrganizationInfoSchema).optional(),
   session_id: z.string().optional(),
   signing_key: z.string().optional(),
@@ -848,7 +888,7 @@ export const OperatorThresholdsSchema = z.object({
   thermalWarn: z.number().int().optional(),
 });
 export const OrganizationSchema = z.object({
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   created_by: z.string().optional(),
   description: z.string().optional(),
   id: z.string().optional(),
@@ -856,7 +896,7 @@ export const OrganizationSchema = z.object({
   max_members: z.number().int().optional(),
   member_count: z.number().int().optional(),
   name: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const OrganizationInfoSchema = z.object({
   id: z.string().optional(),
@@ -869,12 +909,12 @@ export const OrganizationListResultSchema = z.object({
 export const OrganizationMemberSchema = z.object({
   id: z.string().optional(),
   invited_by: z.string().optional(),
-  joined_at: z.string().optional(),
+  joined_at: z.number().int().optional(),
   operator_email: z.string().optional(),
   operator_id: z.string().optional(),
   operator_name: z.string().optional(),
   organization_id: z.string().optional(),
-  removed_at: z.string().optional(),
+  removed_at: z.number().int().optional(),
   role: z.string().optional(),
   status: z.string().optional(),
 });
@@ -962,57 +1002,39 @@ export const SelectOrganizationResultSchema = z.object({
   role: z.string().optional(),
 });
 export const ServiceAccountSchema = z.object({
-  created_at: z.string().optional(),
+  created_at: z.number().int().optional(),
   enabled: z.boolean().optional(),
   id: z.string().optional(),
   name: z.string().optional(),
   org_id: z.string().optional(),
-  updated_at: z.string().optional(),
+  updated_at: z.number().int().optional(),
 });
 export const ServiceAccountListResultSchema = z.object({
   service_accounts: z.array(z.lazy(() => ServiceAccountSchema)).optional(),
 });
 export const ServiceAccountTokenSchema = z.object({
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
+  created_at: z.number().int().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
   key_prefix: z.string().optional(),
   name: z.string().optional(),
-  revoked_at: z.string().optional(),
+  revoked_at: z.number().int().optional(),
   scopes: z.array(z.string()).optional(),
   service_id: z.string().optional(),
   valid: z.boolean().optional(),
 });
 export const ServiceAccountTokenCreatedSchema = z.object({
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
-  id: z.string().optional(),
-  key_prefix: z.string().optional(),
-  name: z.string().optional(),
-  revoked_at: z.string().optional(),
-  scopes: z.array(z.string()).optional(),
   secret: z.string().optional(),
-  service_id: z.string().optional(),
-  valid: z.boolean().optional(),
 });
 export const ServiceAccountTokenListResultSchema = z.object({
   tokens: z.array(z.lazy(() => ServiceAccountTokenSchema)).optional(),
 });
 export const ServiceAccountTokenRotatedSchema = z.object({
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
-  id: z.string().optional(),
-  key_prefix: z.string().optional(),
-  name: z.string().optional(),
-  revoked_at: z.string().optional(),
-  scopes: z.array(z.string()).optional(),
   secret: z.string().optional(),
-  service_id: z.string().optional(),
-  valid: z.boolean().optional(),
 });
 export const SessionInfoSchema = z.object({
-  created_at: z.string().optional(),
-  expires_at: z.string().optional(),
+  created_at: z.number().int().optional(),
+  expires_at: z.number().int().optional(),
   id: z.string().optional(),
   ip_address: z.string().optional(),
   is_current: z.boolean().optional(),
@@ -1048,8 +1070,14 @@ export const SupportBundleResultSchema = z.object({
   schema_version: z.number().int().optional(),
 });
 export const TelemetryEntrySchema = z.object({
+  buffer_level: z.number().int().optional(),
+  device_id: z.string().optional(),
+  id: z.string().optional(),
   metrics: z.record(z.string(), z.number()).optional(),
-  timestamp: z.string().optional(),
+  received_at: z.number().int().optional(),
+  risk_score: z.number().int().optional(),
+  thermal_temp: z.number().int().optional(),
+  timestamp: z.number().int().optional(),
 });
 export const TelemetryFrameDTOSchema = z.object({
   bufferLevel: z.number().optional(),
@@ -1063,14 +1091,16 @@ export const TelemetryHistoryEntrySchema = z.object({
   deviceId: z.string().optional(),
   id: z.string().optional(),
   payload: z.string().optional(),
-  receivedAt: z.string().optional(),
+  receivedAt: z.number().int().optional(),
   riskScore: z.number().int().optional(),
   thermalTemp: z.number().optional(),
 });
 export const TelemetryHistoryQueryResultSchema = z.object({
+  count: z.number().int().optional(),
   deviceId: z.string().optional(),
   endTime: z.number().int().optional(),
   entries: z.array(z.lazy(() => TelemetryHistoryEntrySchema)).optional(),
+  exported_at: z.number().int().optional(),
   queryTime: z.number().int().optional(),
   startTime: z.number().int().optional(),
   totalCount: z.number().int().optional(),
@@ -1083,8 +1113,8 @@ export const TelemetryStatsDTOSchema = z.object({
 export const TelemetryStatsResultSchema = z.object({
   bufferLevel: z.lazy(() => MetricAggregateResultSchema).optional(),
   deviceId: z.string().optional(),
-  latestEntry: z.string().optional(),
-  oldestEntry: z.string().optional(),
+  latestEntry: z.number().int().optional(),
+  oldestEntry: z.number().int().optional(),
   riskScore: z.lazy(() => MetricAggregateResultSchema).optional(),
   sampleCount: z.number().int().optional(),
   thermalTemp: z.lazy(() => MetricAggregateResultSchema).optional(),
@@ -1102,15 +1132,13 @@ export const ThresholdsResultSchema = z.object({
 });
 export const TimelineEventResultSchema = z.object({
   data: z.record(z.string(), z.unknown()).optional(),
-  deviceId: z.string().optional(),
   id: z.string().optional(),
-  timestamp: z.string().optional(),
+  timestamp: z.number().int().optional(),
   type: z.string().optional(),
 });
 export const TimelineResultSchema = z.object({
   events: z.array(z.lazy(() => TimelineEventResultSchema)).optional(),
-  hasMore: z.boolean().optional(),
-  nextCursor: z.string().optional(),
+  pagination: z.lazy(() => CursorPaginationResultSchema).optional(),
 });
 export const TopOperatorStatSchema = z.object({
   active_key_count: z.number().int().optional(),
@@ -1146,6 +1174,7 @@ export const UpdateChangelogResultSchema = z.object({
 });
 export const UpdateCheckerResultSchema = z.object({
   current_version: z.string().optional(),
+  error: z.string().optional(),
   latest_version: z.string().optional(),
   release_name: z.string().optional(),
   release_url: z.string().optional(),
@@ -1176,6 +1205,7 @@ export const UpdateFailedDeviceSchema = z.object({
   reason: z.string().optional(),
 });
 export const UpdateInboxEntryRequestSchema = z.object({
+  notes: z.string().optional(),
   status: z.string().optional(),
 });
 export const UpdateLatestVersionInfoSchema = z.object({
@@ -1351,7 +1381,7 @@ export const UsageStatsCountsSchema = z.object({
   service_accounts: z.number().int().optional(),
 });
 export const UsageStatsSnapshotSchema = z.object({
-  collected_at: z.string().optional(),
+  collected_at: z.number().int().optional(),
   counts: z.lazy(() => UsageStatsCountsSchema).optional(),
   toggles: z.record(z.string(), z.boolean()).optional(),
 });

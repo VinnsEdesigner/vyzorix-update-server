@@ -121,10 +121,11 @@ func (h *TransferHandler) Transfer(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message":     "device transferred successfully",
-		"device_imei": imei,
-		"source_org":  sourceOrgID,
-		"target_org":  req.TargetOrgID,
+	h.presenter.OK(c, openapi.DeviceTransferResult{
+		Success:    true,
+		Message:    "device transferred successfully",
+		DeviceIMEI: imei,
+		SourceOrg:  sourceOrgID,
+		TargetOrg:  req.TargetOrgID,
 	})
 }

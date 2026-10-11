@@ -8,9 +8,9 @@
 
 export interface InvitationByTokenResult {
   email?: string;
-  expires_at?: string;
+  expires_at?: number;
   id?: string;
-  invited_at?: string;
+  invited_at?: number;
   inviter_name?: string;
   organization_id?: string;
   organization_name?: string;

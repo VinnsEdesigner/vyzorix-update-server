@@ -10,7 +10,10 @@ import type { OrganizationInfo } from './organizationInfo';
 export interface LoginResult {
   device_fingerprint?: string;
   email?: string;
+  error?: string;
   last_organization_id?: string;
+  locked_until?: number;
+  message?: string;
   mfa_enabled?: boolean;
   mfa_session?: string;
   name?: string;
@@ -18,6 +21,7 @@ export interface LoginResult {
   operator_id?: string;
   organizations?: OrganizationInfo[];
   requires_mfa?: boolean;
+  retry_after?: number;
   selected_organization?: OrganizationInfo;
   signing_key?: string;
 }

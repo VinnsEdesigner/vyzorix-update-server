@@ -7,7 +7,7 @@
  */
 
 export interface Organization {
-  created_at?: string;
+  created_at?: number;
   created_by?: string;
   description?: string;
   id?: string;
@@ -15,5 +15,5 @@ export interface Organization {
   max_members?: number;
   member_count?: number;
   name?: string;
-  updated_at?: string;
+  updated_at?: number;
 }

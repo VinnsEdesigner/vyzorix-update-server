@@ -9,6 +9,7 @@ import type { UsageStatsSnapshot } from './usageStatsSnapshot';
 
 export interface UpdateCheckerResult {
   current_version?: string;
+  error?: string;
   latest_version?: string;
   release_name?: string;
   release_url?: string;

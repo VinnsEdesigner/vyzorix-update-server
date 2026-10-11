@@ -1,6 +1,6 @@
 package vyzorix
 
-// TopOperatorStat — generated from openapi/schemas.go.
+// TopOperatorStat.
 #TopOperatorStat: {
         operator_id: string
         operator_name: string
@@ -8,7 +8,7 @@ package vyzorix
         active_key_count: int
 }
 
-// OperatorAPIKeyStatsResult — generated from openapi/schemas.go.
+// OperatorAPIKeyStatsResult.
 #OperatorAPIKeyStatsResult: {
         operator_id: string
         total_keys: int64
@@ -18,7 +18,7 @@ package vyzorix
         monthly_limit: int
 }
 
-// AdminOperator — generated from openapi/schemas.go.
+// AdminOperator.
 #AdminOperator: {
         id: string
         email: string
@@ -30,13 +30,13 @@ package vyzorix
         email_verified: bool
 }
 
-// AdminOperatorListResult — generated from openapi/schemas.go.
+// AdminOperatorListResult.
 #AdminOperatorListResult: {
         operators: [...#AdminOperator]
         total: int
 }
 
-// CreateOperatorRequest — generated from openapi/schemas.go.
+// CreateOperatorRequest.
 #CreateOperatorRequest: {
         email: string
         password: string
@@ -44,7 +44,7 @@ package vyzorix
         role?: string
 }
 
-// OperatorThresholds — generated from openapi/schemas.go.
+// OperatorThresholds.
 #OperatorThresholds: {
         riskWarn?: int
         riskCrit?: int
@@ -54,14 +54,14 @@ package vyzorix
         bufferCrit?: int
 }
 
-// OperatorSettingsResult — generated from openapi/schemas.go.
+// OperatorSettingsResult.
 #OperatorSettingsResult: {
         notifications?: #NotificationSettings
         client?: #ClientSettings
         thresholds?: #OperatorThresholds
 }
 
-// OperatorSettingsResultLegacy — generated from openapi/schemas.go.
+// OperatorSettingsResultLegacy.
 #OperatorSettingsResultLegacy: {
         client?: #ClientSettings
         id: string
@@ -70,4 +70,10 @@ package vyzorix
         role?: string
         mfa_enabled: bool
         email_verified: bool
+}
+
+// AdminClientActionResult.
+#AdminClientActionResult: {
+        success: bool
+        client_id?: string
 }

@@ -11,11 +11,12 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/annotation"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 )
+
+func int64Ptr(v int64) *int64 { return &v }
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -67,19 +68,23 @@ func (r *annotationRequest) toInput(orgID string) *appannotation.AnnotationInput
 	return in
 }
 
-func annotationJSON(a *annotation.Annotation) gin.H {
-	return gin.H{
-		"id":         a.ID,
-		"org_id":     a.OrgID,
-		"title":      a.Title,
-		"text":       a.Text,
-		"tags":       a.Tags,
-		"source":     a.Source,
-		"start_time": a.StartTime,
-		"end_time":   a.EndTime,
-		"created_at": a.CreatedAt,
-		"updated_at": a.UpdatedAt,
+func annotationJSON(a *annotation.Annotation) openapi.Annotation {
+	out := openapi.Annotation{
+		ID:        a.ID,
+		OrgID:     a.OrgID,
+		Title:     a.Title,
+		Text:      a.Text,
+		Tags:      a.Tags,
+		Source:    a.Source,
+		CreatedAt: a.CreatedAt.UnixMilli(),
 	}
+	if !a.StartTime.IsZero() {
+		out.StartTime = a.StartTime.UnixMilli()
+	}
+	if a.EndTime != nil {
+		out.EndTime = int64Ptr(a.EndTime.UnixMilli())
+	}
+	return out
 }
 
 // List handles GET /v1/annotations.
@@ -123,11 +128,13 @@ func (h *Handler) List(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list annotations"))
 		return
 	}
-	result := make([]gin.H, 0, len(items))
+	result := make([]openapi.Annotation, 0, len(items))
 	for _, a := range items {
 		result = append(result, annotationJSON(a))
 	}
-	c.JSON(http.StatusOK, gin.H{"annotations": result})
+	c.JSON(http.StatusOK, openapi.AnnotationListResult{
+		Annotations: result,
+	})
 }
 
 // Create handles POST /v1/annotations.
@@ -225,7 +232,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeletedResult{Deleted: true})
+	c.JSON(http.StatusOK, openapi.DeletedResult{Deleted: true})
 }
 
 func (h *Handler) writeServiceError(c *gin.Context, err error) {

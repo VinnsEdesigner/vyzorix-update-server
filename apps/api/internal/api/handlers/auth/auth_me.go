@@ -10,6 +10,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func orgInfosToOpenAPI(in []auth.OrganizationInfo) []openapi.OrganizationInfo {
+	out := make([]openapi.OrganizationInfo, len(in))
+	for i, o := range in {
+		out[i] = openapi.OrganizationInfo{ID: o.ID, Name: o.Name, Role: o.Role}
+	}
+	return out
+}
+
+func orgInfoToOpenAPIPtr(in *dto.OrganizationInfo) *openapi.OrganizationInfo {
+	if in == nil {
+		return nil
+	}
+	return &openapi.OrganizationInfo{ID: in.ID, Name: in.Name, Role: in.Role}
+}
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var _ openapi.MeResult
 
@@ -79,15 +94,15 @@ func (h *MeHandler) Handle(c *gin.Context) {
 		needsOrg = true
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":                    op.ID,
-		"email":                 op.Email,
-		"name":                  op.Name,
-		"mfa_enabled":           op.MFAEnabled,
-		"email_verified":        op.EmailVerified,
-		"needs_organization":    needsOrg,
-		"organizations":         orgs,
-		"last_organization_id":  op.LastOrganizationID,
-		"selected_organization": selectedOrg,
+	h.presenter.OK(c, openapi.MeResult{
+		ID:                   op.ID,
+		Email:                op.Email,
+		Name:                 op.Name,
+		MFAEnabled:           op.MFAEnabled,
+		EmailVerified:        op.EmailVerified,
+		NeedsOrganization:    needsOrg,
+		Organizations:        orgInfosToOpenAPI(orgs),
+		LastOrganizationID:   op.LastOrganizationID,
+		SelectedOrganization: orgInfoToOpenAPIPtr(selectedOrg),
 	})
 }

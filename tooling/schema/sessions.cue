@@ -1,23 +1,23 @@
 package vyzorix
 
-// SessionInfo — generated from openapi/schemas.go.
+// SessionInfo.
 #SessionInfo: {
         id: string
         ip_address: string
         user_agent: string
-        created_at: string
-        expires_at: string
+        created_at: int64
+        expires_at: int64
         selected_organization_id?: string
         is_current: bool
 }
 
-// SessionListResult — generated from openapi/schemas.go.
+// SessionListResult.
 #SessionListResult: {
         sessions: [...#SessionInfo]
         total: int
 }
 
-// ConcurrentSessionsResult — generated from openapi/schemas.go.
+// ConcurrentSessionsResult.
 #ConcurrentSessionsResult: {
         sessions: [...#SessionInfo]
         count: int

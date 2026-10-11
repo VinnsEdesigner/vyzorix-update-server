@@ -10,5 +10,7 @@ import type { Pagination } from './pagination';
 
 export interface AdminAPIKeyListResult {
   keys?: AdminAPIKey[];
+  keys_created_this_month?: number;
+  monthly_limit?: number;
   pagination?: Pagination;
 }

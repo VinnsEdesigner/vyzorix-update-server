@@ -11,6 +11,68 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func apiKeysToAdminOpenAPI(in []apikeydomain.APIKeyResponse) []openapi.AdminAPIKey {
+	out := make([]openapi.AdminAPIKey, len(in))
+	for i, k := range in {
+		item := openapi.AdminAPIKey{
+			ID:           k.ID,
+			Name:         k.Name,
+			KeyPrefix:    k.KeyPrefix,
+			Scope:        string(k.Scope),
+			RequestCount: k.RequestCount,
+			IsActive:     k.IsActive,
+			CreatedAt:    k.CreatedAt.UnixMilli(),
+			UpdatedAt:    k.UpdatedAt.UnixMilli(),
+		}
+		if k.ExpiresAt != nil {
+			item.ExpiresAt = int64Ptr(k.ExpiresAt.UnixMilli())
+		}
+		if k.LastRequest != nil {
+			item.LastRequestAt = int64Ptr(k.LastRequest.UnixMilli())
+		}
+		if k.RevokedAt != nil {
+			item.RevokedAt = int64Ptr(k.RevokedAt.UnixMilli())
+		}
+		out[i] = item
+	}
+	return out
+}
+
+func adminKeysByOperatorToOpenAPI(in []apikeydomain.AdminAPIKeyResponse) []openapi.AdminAPIKey {
+	out := make([]openapi.AdminAPIKey, len(in))
+	for i, k := range in {
+		item := openapi.AdminAPIKey{
+			OperatorID:   k.OperatorID,
+			OperatorName: k.OperatorName,
+			ID:           k.ID,
+			Name:         k.Name,
+			KeyPrefix:    k.KeyPrefix,
+			Scope:        string(k.Scope),
+			RequestCount: k.RequestCount,
+			IsActive:     k.IsActive,
+			CreatedAt:    k.CreatedAt.UnixMilli(),
+			UpdatedAt:    k.UpdatedAt.UnixMilli(),
+		}
+		if k.ExpiresAt != nil {
+			item.ExpiresAt = int64Ptr(k.ExpiresAt.UnixMilli())
+		}
+		if k.LastRequest != nil {
+			item.LastRequestAt = int64Ptr(k.LastRequest.UnixMilli())
+		}
+		if k.RevokedAt != nil {
+			item.RevokedAt = int64Ptr(k.RevokedAt.UnixMilli())
+		}
+		out[i] = item
+	}
+	return out
+}
+
+func apikeydomainPagination(p apikeydomain.Pagination) openapi.Pagination {
+	return openapi.Pagination{Page: p.Page, Limit: p.Limit, Total: int64(p.Total), TotalPages: p.TotalPages}
+}
+
+func int64Ptr(v int64) *int64 { return &v }
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.APIKeyListResult
@@ -74,16 +136,16 @@ func (h *SuperAdminHandler) ListAllKeys(c *gin.Context) {
 	result, err := h.service.ListAllKeys(c.Request.Context(), page, limit, operatorID, search)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"keys":       result.Keys,
-		"pagination": result.Pagination,
+	c.JSON(http.StatusOK, openapi.AdminAPIKeyListResult{
+		Keys:       adminKeysByOperatorToOpenAPI(result.Keys),
+		Pagination: apikeydomainPagination(result.Pagination),
 	})
 }
 
@@ -114,18 +176,18 @@ func (h *SuperAdminHandler) GetOperatorKeys(c *gin.Context) {
 	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"keys":                    result.Keys,
-		"pagination":              result.Pagination,
-		"monthly_limit":           result.MonthlyLimit,
-		"keys_created_this_month": result.KeysCreatedThisMonth,
+	c.JSON(http.StatusOK, openapi.AdminAPIKeyListResult{
+		Keys:                 apiKeysToAdminOpenAPI(result.Keys),
+		Pagination:           apikeydomainPagination(result.Pagination),
+		MonthlyLimit:         result.MonthlyLimit,
+		KeysCreatedThisMonth: result.KeysCreatedThisMonth,
 	})
 }
 
@@ -149,9 +211,9 @@ func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 	key, err := h.service.GetKey(c.Request.Context(), "", keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -159,9 +221,9 @@ func (h *SuperAdminHandler) ForceRevokeKey(c *gin.Context) {
 	err = h.service.ForceRevokeKey(c.Request.Context(), keyID)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -196,9 +258,9 @@ func (h *SuperAdminHandler) GetGlobalStats(c *gin.Context) {
 	stats, err := h.service.GetGlobalStats(c.Request.Context())
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -227,9 +289,9 @@ func (h *SuperAdminHandler) GetOperatorStats(c *gin.Context) {
 	result, err := h.service.ListKeys(c.Request.Context(), operatorID, page, limit)
 	if err != nil {
 		status := apikeydomain.HTTPStatusCode(err)
-		c.JSON(status, gin.H{
-			"error":   apikeydomain.ErrorCode(err),
-			"message": err.Error(),
+		c.JSON(status, openapi.ErrorResponse{
+			Error:   apikeydomain.ErrorCode(err),
+			Message: err.Error(),
 		})
 		return
 	}
@@ -242,12 +304,12 @@ func (h *SuperAdminHandler) GetOperatorStats(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"operator_id":             operatorID,
-		"total_keys":              totalKeys,
-		"active_keys":             activeKeys,
-		"revoked_keys":            totalKeys - activeKeys,
-		"keys_created_this_month": result.KeysCreatedThisMonth,
-		"monthly_limit":           result.MonthlyLimit,
+	c.JSON(http.StatusOK, openapi.OperatorAPIKeyStatsResult{
+		OperatorID:           operatorID,
+		TotalKeys:            totalKeys,
+		ActiveKeys:           activeKeys,
+		RevokedKeys:          totalKeys - activeKeys,
+		KeysCreatedThisMonth: result.KeysCreatedThisMonth,
+		MonthlyLimit:         result.MonthlyLimit,
 	})
 }

@@ -10,7 +10,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	appnotification "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
@@ -64,18 +63,17 @@ func (r *contactPointRequest) toInput(orgID string) *appnotification.ContactPoin
 	}
 }
 
-func contactPointJSON(cp *notificationdomain.ContactPoint) gin.H {
-	return gin.H{
-		"id":          cp.ID,
-		"org_id":      cp.OrgID,
-		"name":        cp.Name,
-		"channel":     string(cp.Channel),
-		"secret":      cp.Secret != "",
-		"config":      cp.Config,
-		"template_id": cp.TemplateID,
-		"enabled":     cp.Enabled,
-		"created_at":  cp.CreatedAt,
-		"updated_at":  cp.UpdatedAt,
+func contactPointJSON(cp *notificationdomain.ContactPoint) openapi.ContactPoint {
+	return openapi.ContactPoint{
+		ID:         cp.ID,
+		OrgID:      cp.OrgID,
+		Name:       cp.Name,
+		Channel:    string(cp.Channel),
+		Config:     cp.Config,
+		TemplateID: cp.TemplateID,
+		Enabled:    cp.Enabled,
+		CreatedAt:  cp.CreatedAt.UnixMilli(),
+		UpdatedAt:  cp.UpdatedAt.UnixMilli(),
 	}
 }
 
@@ -96,11 +94,13 @@ func (h *Handler) List(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list contact points"))
 		return
 	}
-	items := make([]gin.H, 0, len(points))
+	items := make([]openapi.ContactPoint, 0, len(points))
 	for _, cp := range points {
 		items = append(items, contactPointJSON(cp))
 	}
-	c.JSON(http.StatusOK, gin.H{"contact_points": items})
+	c.JSON(http.StatusOK, openapi.ContactPointListResult{
+		ContactPoints: items,
+	})
 }
 
 // Create handles POST /v1/notifications/contact-points.
@@ -198,7 +198,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeletedResult{Deleted: true})
+	c.JSON(http.StatusOK, openapi.DeletedResult{Deleted: true})
 }
 
 // Test handles POST /v1/notifications/contact-points/:id/test.
@@ -231,7 +231,7 @@ func (h *Handler) Test(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "test delivery failed: "+err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, schema.ContactPointTestResult{Sent: true, TestedAt: time.Now().Format(time.RFC3339)})
+	c.JSON(http.StatusOK, openapi.ContactPointTestResult{Sent: true, TestedAt: time.Now().UnixMilli()})
 }
 
 // Deliveries handles GET /v1/notifications/contact-points/:id/deliveries.
@@ -244,7 +244,7 @@ func (h *Handler) Deliveries(c *gin.Context) {
 	// DeliveriesRepository is not exposed through Service yet; return empty list
 	// for now until the service gains a ListDeliveries method. The endpoint is
 	// reserved for the delivery log UI.
-	c.JSON(http.StatusOK, gin.H{"deliveries": []any{}})
+	c.JSON(http.StatusOK, openapi.ContactPointTestResult{Deliveries: []any{}})
 }
 
 func (h *Handler) writeServiceError(c *gin.Context, err error) {

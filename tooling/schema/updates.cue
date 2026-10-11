@@ -1,12 +1,12 @@
 package vyzorix
 
-// UpdateAPIKeyRequest — generated from openapi/schemas.go.
+// UpdateAPIKeyRequest.
 #UpdateAPIKeyRequest: {
         name?: string
         scope?: string
 }
 
-// UpdateAdminClientRequest — generated from openapi/schemas.go.
+// UpdateAdminClientRequest.
 #UpdateAdminClientRequest: {
         name?: string
         rate_limit?: int
@@ -15,7 +15,7 @@ package vyzorix
         allowed_paths?: [...string]
 }
 
-// UpdateOperatorRequest — generated from openapi/schemas.go.
+// UpdateOperatorRequest.
 #UpdateOperatorRequest: {
         email?: string
         name?: string
@@ -24,14 +24,14 @@ package vyzorix
         email_verified?: bool
 }
 
-// UpdateSettingsRequest — generated from openapi/schemas.go.
+// UpdateSettingsRequest.
 #UpdateSettingsRequest: {
         client?: #ClientSettings
         name?: string
         reset?: bool
 }
 
-// ThresholdUpdateRequest — generated from openapi/schemas.go.
+// ThresholdUpdateRequest.
 #ThresholdUpdateRequest: {
         riskWarn?: int
         riskCrit?: int
@@ -41,26 +41,27 @@ package vyzorix
         bufferCrit?: int
 }
 
-// NotificationUpdateRequest — generated from openapi/schemas.go.
+// NotificationUpdateRequest.
 #NotificationUpdateRequest: {
         enabled?: bool
-        channels?: ('[...string]', True)
+        channels?: [...string]
         email?: #EmailNotifications
         push?: #PushNotifications
         webhook?: #WebhookNotifications
 }
 
-// UpdateNameRequest — generated from openapi/schemas.go.
+// UpdateNameRequest.
 #UpdateNameRequest: {
         name: string
 }
 
-// UpdateInboxEntryRequest — generated from openapi/schemas.go.
+// UpdateInboxEntryRequest.
 #UpdateInboxEntryRequest: {
         notes?: string
+        status?: string
 }
 
-// UpdateVersionManifest — generated from openapi/schemas.go.
+// UpdateVersionManifest.
 #UpdateVersionManifest: {
         version: string
         apk_filename: string
@@ -72,20 +73,20 @@ package vyzorix
         is_latest: bool
 }
 
-// UpdateChangelogEntry — generated from openapi/schemas.go.
+// UpdateChangelogEntry.
 #UpdateChangelogEntry: {
         version: string
-        date: string
+        date: int64
         type: string
         notes: string
 }
 
-// UpdateCheckRequest — generated from openapi/schemas.go.
+// UpdateCheckRequest.
 #UpdateCheckRequest: {
         current_version: string
 }
 
-// UpdateCheckResult — generated from openapi/schemas.go.
+// UpdateCheckResult.
 #UpdateCheckResult: {
         latest_version?: string
         current_version: string
@@ -96,7 +97,7 @@ package vyzorix
         update_available: bool
 }
 
-// UpdaterVersionManifestResult — generated from openapi/schemas.go.
+// UpdaterVersionManifestResult.
 #UpdaterVersionManifestResult: {
         version: string
         apk_filename: string
@@ -106,7 +107,7 @@ package vyzorix
         apk_size_bytes: int64
 }
 
-// UpdaterCheckResult — generated from openapi/schemas.go.
+// UpdaterCheckResult.
 #UpdaterCheckResult: {
         version: string
         apk_filename: string
@@ -117,7 +118,7 @@ package vyzorix
         update_available: bool
 }
 
-// UpdateVersionResponse — generated from openapi/schemas.go.
+// UpdateVersionResponse.
 #UpdateVersionResponse: {
         version: string
         releaseType: string
@@ -130,13 +131,13 @@ package vyzorix
         isLatest: bool
 }
 
-// UpdateVersionListResult — generated from openapi/schemas.go.
+// UpdateVersionListResult.
 #UpdateVersionListResult: {
         versions: [...#UpdateVersionResponse]
         pagination: #Pagination
 }
 
-// UpdateChangelogEntryResult — generated from openapi/schemas.go.
+// UpdateChangelogEntryResult.
 #UpdateChangelogEntryResult: {
         version: string
         date: string
@@ -144,12 +145,12 @@ package vyzorix
         notes: string
 }
 
-// UpdateChangelogResult — generated from openapi/schemas.go.
+// UpdateChangelogResult.
 #UpdateChangelogResult: {
         changelog: [...#UpdateChangelogEntryResult]
 }
 
-// UpdateSyncStatusInfo — generated from openapi/schemas.go.
+// UpdateSyncStatusInfo.
 #UpdateSyncStatusInfo: {
         status: string
         error?: string
@@ -158,7 +159,7 @@ package vyzorix
         versionsFound?: int
 }
 
-// UpdateLatestVersionInfo — generated from openapi/schemas.go.
+// UpdateLatestVersionInfo.
 #UpdateLatestVersionInfo: {
         version: string
         releaseType: string
@@ -168,14 +169,14 @@ package vyzorix
         apkSize: int64
 }
 
-// UpdateStatusResult — generated from openapi/schemas.go.
+// UpdateStatusResult.
 #UpdateStatusResult: {
         latest?: #UpdateLatestVersionInfo
         device?: #UpdateDeviceStatusInfo
         sync: #UpdateSyncStatusInfo
 }
 
-// UpdateSyncResponse — generated from openapi/schemas.go.
+// UpdateSyncResponse.
 #UpdateSyncResponse: {
         status: string
         message?: string
@@ -183,7 +184,7 @@ package vyzorix
         versionsFound?: int
 }
 
-// UpdateExportResult — generated from openapi/schemas.go.
+// UpdateExportResult.
 #UpdateExportResult: {
         format: string
         versions: [...#UpdateVersionResponse]
@@ -191,7 +192,7 @@ package vyzorix
         exportedAt: int64
 }
 
-// UpdatePushResult — generated from openapi/schemas.go.
+// UpdatePushResult.
 #UpdatePushResult: {
         pushId: string
         version: string
@@ -205,7 +206,7 @@ package vyzorix
         initiatedAt: int64
 }
 
-// UpdatePushHistoryEntry — generated from openapi/schemas.go.
+// UpdatePushHistoryEntry.
 #UpdatePushHistoryEntry: {
         completedAt?: int64
         cancelledAt?: int64
@@ -220,13 +221,13 @@ package vyzorix
         initiatedAt: int64
 }
 
-// UpdatePushHistoryListResult — generated from openapi/schemas.go.
+// UpdatePushHistoryListResult.
 #UpdatePushHistoryListResult: {
         pushes: [...#UpdatePushHistoryEntry]
         pagination: #Pagination
 }
 
-// UpdatePushDetailResult — generated from openapi/schemas.go.
+// UpdatePushDetailResult.
 #UpdatePushDetailResult: {
         scheduledAt?: int64
         completedAt?: int64
@@ -240,7 +241,7 @@ package vyzorix
         initiatedAt: int64
 }
 
-// UpdateCancelPushResult — generated from openapi/schemas.go.
+// UpdateCancelPushResult.
 #UpdateCancelPushResult: {
         id: string
         status: string
@@ -248,7 +249,7 @@ package vyzorix
         cancelledAt: int64
 }
 
-// UpdatePushRequest — generated from openapi/schemas.go.
+// UpdatePushRequest.
 #UpdatePushRequest: {
         scheduledAt?: int64
         version: string
@@ -256,7 +257,7 @@ package vyzorix
         deviceIds: [...string]
 }
 
-// UpdateSyncStatusResult — generated from openapi/schemas.go.
+// UpdateSyncStatusResult.
 #UpdateSyncStatusResult: {
         status: string
         error?: string
@@ -265,7 +266,7 @@ package vyzorix
         versionsFound?: int
 }
 
-// UpdateCheckerResult — generated from openapi/schemas.go.
+// UpdateCheckerResult.
 #UpdateCheckerResult: {
         usage_stats?: #UsageStatsSnapshot
         latest_version?: string
@@ -273,4 +274,11 @@ package vyzorix
         release_name?: string
         release_url?: string
         update_available: bool
+        error?: string
+}
+
+// WebhookInfoResult.
+#WebhookInfoResult: {
+        webhook_enabled: bool
+        supported_events: [...string]
 }

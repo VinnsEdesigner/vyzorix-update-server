@@ -1,6 +1,6 @@
 package vyzorix
 
-// CreateOrganizationRequest — generated from openapi/schemas.go.
+// CreateOrganizationRequest.
 #CreateOrganizationRequest: {
         name: string
         description: string
@@ -8,44 +8,44 @@ package vyzorix
         maxMembers: int
 }
 
-// SelectOrganizationRequest — generated from openapi/schemas.go.
+// SelectOrganizationRequest.
 #SelectOrganizationRequest: {
         organization_id: string
 }
 
-// Organization — generated from openapi/schemas.go.
+// Organization.
 #Organization: {
         id: string
         name: string
         description?: string
         created_by: string
-        created_at: string
-        updated_at?: string
+        created_at: int64
+        updated_at?: int64
         max_members: int
         is_active: bool
         member_count?: int
 }
 
-// OrganizationListResult — generated from openapi/schemas.go.
+// OrganizationListResult.
 #OrganizationListResult: {
         organizations: [...#Organization]
 }
 
-// SelectOrganizationResult — generated from openapi/schemas.go.
+// SelectOrganizationResult.
 #SelectOrganizationResult: {
         organization_id: string
         organization_name: string
         role: string
 }
 
-// OrganizationInfo — generated from openapi/schemas.go.
+// OrganizationInfo.
 #OrganizationInfo: {
         id: string
         name: string
         role: string
 }
 
-// OrganizationSettingsResult — generated from openapi/schemas.go.
+// OrganizationSettingsResult.
 #OrganizationSettingsResult: {
         defaultThresholds?: #OperatorThresholds
         id: string
@@ -57,7 +57,7 @@ package vyzorix
         alertCooldownMinutes: int
 }
 
-// UpdateOrganizationSettingsRequest — generated from openapi/schemas.go.
+// UpdateOrganizationSettingsRequest.
 #UpdateOrganizationSettingsRequest: {
         timezone?: string
         dateFormat?: string
@@ -65,7 +65,7 @@ package vyzorix
         defaultThresholds?: #OperatorThresholds
 }
 
-// UpdateOrganizationRequest — generated from openapi/schemas.go.
+// UpdateOrganizationRequest.
 #UpdateOrganizationRequest: {
         name?: string
         maxMembers?: int

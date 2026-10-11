@@ -1,6 +1,6 @@
 package vyzorix
 
-// AlertRuleRequest — generated from openapi/schemas.go.
+// AlertRuleRequest.
 #AlertRuleRequest: {
         name: string
         metric: string
@@ -14,18 +14,18 @@ package vyzorix
         enabled: bool
 }
 
-// AlertInstance — generated from openapi/schemas.go.
+// AlertInstance.
 #AlertInstance: {
-        evaluated_at: string
-        labels: {[string]: _}
+        evaluated_at: int64
+        labels: {[string]: string}
         state: string
         value: float64
 }
 
-// AlertRule — generated from openapi/schemas.go.
+// AlertRule.
 #AlertRule: {
-        created_at: string
-        updated_at: string
+        created_at: int64
+        updated_at: int64
         webhook_url: string
         metric: string
         condition: string
@@ -41,14 +41,14 @@ package vyzorix
         enabled: bool
 }
 
-// AlertRuleListResult — generated from openapi/schemas.go.
+// AlertRuleListResult.
 #AlertRuleListResult: {
         rules: [...#AlertRule]
 }
 
-// AlertHistoryEvent — generated from openapi/schemas.go.
+// AlertHistoryEvent.
 #AlertHistoryEvent: {
-        created_at: string
+        created_at: int64
         id: string
         rule_id: string
         from_state: string
@@ -56,12 +56,12 @@ package vyzorix
         value: float64
 }
 
-// AlertHistoryResult — generated from openapi/schemas.go.
+// AlertHistoryResult.
 #AlertHistoryResult: {
         events: [...#AlertHistoryEvent]
 }
 
-// AlertEvaluateResult — generated from openapi/schemas.go.
+// AlertEvaluateResult.
 #AlertEvaluateResult: {
         rule_id: string
         transitioned: bool

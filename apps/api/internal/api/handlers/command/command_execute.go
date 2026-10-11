@@ -26,6 +26,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func dtoCommandArgs(raw []byte) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var args []string
+	if err := json.Unmarshal(raw, &args); err == nil {
+		return args
+	}
+	return []string{string(raw)}
+}
+
+func dtoCommandsToOpenAPI(in []dto.CommandResponse) []openapi.CommandResponse {
+	out := make([]openapi.CommandResponse, len(in))
+	for i, c := range in {
+		out[i] = openapi.CommandResponse{
+			ID:         c.ID,
+			DeviceID:   c.DeviceID,
+			Command:    c.Command,
+			DispatchID: c.DispatchID,
+			Status:     c.Status,
+			Delivery:   c.Delivery,
+			Args:       dtoCommandArgs(c.Args),
+			ServerTime: int64Ptr(c.ServerTime),
+		}
+	}
+	return out
+}
+
+func int64Ptr(v int64) *int64 { return &v }
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.CommandRequest
@@ -183,12 +213,12 @@ func (h *ExecuteHandler) Handle(c *gin.Context) {
 		NewValue:   delivery,
 	})
 
-	c.JSON(http.StatusAccepted, gin.H{
-		"status":        delivery,
-		"device_online": delivery == "sent",
-		"dispatchId":    cmdResp.DispatchID,
-		"command_id":    cmdResp.CommandID,
-		"serverTime":    time.Now().Unix(),
+	c.JSON(http.StatusAccepted, openapi.CommandDispatchResult{
+		Status:       delivery,
+		DeviceOnline: delivery == "sent",
+		DispatchID:   cmdResp.DispatchID,
+		CommandID:    cmdResp.CommandID,
+		ServerTime:   time.Now().Unix(),
 	})
 }
 
@@ -425,13 +455,13 @@ func (h *ExecuteHandler) GetStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"dispatchId": dispatchID,
-		"command_id": cmdStatus.CommandID,
-		"device_id":  cmdStatus.DeviceID,
-		"command":    cmdStatus.Command,
-		"status":     cmdStatus.Status,
-		"serverTime": time.Now().Unix(),
+	c.JSON(http.StatusOK, openapi.CommandStatus{
+		DispatchID: dispatchID,
+		CommandID:  cmdStatus.CommandID,
+		DeviceID:   cmdStatus.DeviceID,
+		Command:    cmdStatus.Command,
+		Status:     cmdStatus.Status,
+		ServerTime: time.Now().Unix(),
 	})
 }
 
@@ -490,11 +520,11 @@ func (h *ExecuteHandler) Retry(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"dispatchId": newCmd.DispatchID,
-		"command_id": newCmd.CommandID,
-		"retried":    true,
-		"serverTime": time.Now().Unix(),
+	c.JSON(http.StatusOK, openapi.CommandRetryResult{
+		DispatchID: newCmd.DispatchID,
+		CommandID:  newCmd.CommandID,
+		Retried:    true,
+		ServerTime: time.Now().Unix(),
 	})
 }
 
@@ -547,8 +577,8 @@ func (h *ExecuteHandler) GetPending(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"commands": pendingCmds,
+	c.JSON(http.StatusOK, openapi.CommandPendingResult{
+		Commands: dtoCommandsToOpenAPI(pendingCmds),
 	})
 }
 
@@ -608,9 +638,9 @@ func (h *ExecuteHandler) Cancel(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"dispatchId": dispatchID,
-		"cancelled":  true,
-		"serverTime": time.Now().Unix(),
+	c.JSON(http.StatusOK, openapi.CommandCancelResult{
+		DispatchID: dispatchID,
+		Cancelled:  true,
+		ServerTime: time.Now().Unix(),
 	})
 }

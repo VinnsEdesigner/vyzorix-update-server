@@ -1,11 +1,11 @@
 package vyzorix
 
-// CreateServiceAccountRequest — generated from openapi/schemas.go.
+// CreateServiceAccountRequest.
 #CreateServiceAccountRequest: {
         name: string
 }
 
-// CreateServiceAccountTokenRequest — generated from openapi/schemas.go.
+// CreateServiceAccountTokenRequest.
 #CreateServiceAccountTokenRequest: {
         expires_at?: string
         service_id: string
@@ -13,28 +13,28 @@ package vyzorix
         scopes: [...string]
 }
 
-// RotateServiceAccountTokenRequest — generated from openapi/schemas.go.
+// RotateServiceAccountTokenRequest.
 #RotateServiceAccountTokenRequest: {
         expires_at?: string
         name: string
         scopes: [...string]
 }
 
-// ServiceAccount — generated from openapi/schemas.go.
+// ServiceAccount.
 #ServiceAccount: {
-        created_at: string
-        updated_at: string
+        created_at: int64
+        updated_at: int64
         id: string
         org_id: string
         name: string
         enabled: bool
 }
 
-// ServiceAccountToken — generated from openapi/schemas.go.
+// ServiceAccountToken.
 #ServiceAccountToken: {
-        created_at: string
-        expires_at?: string
-        revoked_at?: string
+        created_at: int64
+        expires_at?: int64
+        revoked_at?: int64
         id: string
         service_id: string
         name: string
@@ -43,22 +43,22 @@ package vyzorix
         valid: bool
 }
 
-// ServiceAccountListResult — generated from openapi/schemas.go.
+// ServiceAccountListResult.
 #ServiceAccountListResult: {
         service_accounts: [...#ServiceAccount]
 }
 
-// ServiceAccountTokenListResult — generated from openapi/schemas.go.
+// ServiceAccountTokenListResult.
 #ServiceAccountTokenListResult: {
         tokens: [...#ServiceAccountToken]
 }
 
-// ServiceAccountTokenCreated — generated from openapi/schemas.go.
+// ServiceAccountTokenCreated.
 #ServiceAccountTokenCreated: {
         secret: string
 }
 
-// ServiceAccountTokenRotated — generated from openapi/schemas.go.
+// ServiceAccountTokenRotated.
 #ServiceAccountTokenRotated: {
         secret: string
 }

@@ -1,15 +1,15 @@
 package vyzorix
 
-// ErrorResponse — generated from openapi/schemas.go.
+// ErrorResponse.
 #ErrorResponse: {
-        fields?: {[string]: _}
+        fields?: {[string]: string}
         error: string
         message: string
         trace_id?: string
         docs?: string
 }
 
-// Pagination — generated from openapi/schemas.go.
+// Pagination.
 #Pagination: {
         page: int
         limit: int
@@ -17,17 +17,17 @@ package vyzorix
         total_pages: int
 }
 
-// DeletedResult — generated from openapi/schemas.go.
+// DeletedResult.
 #DeletedResult: {
         deleted: bool
 }
 
-// RevokedResult — generated from openapi/schemas.go.
+// RevokedResult.
 #RevokedResult: {
         revoked: bool
 }
 
-// AdminClient — generated from openapi/schemas.go.
+// AdminClient.
 #AdminClient: {
         id: string
         last_request_at?: int64
@@ -43,18 +43,18 @@ package vyzorix
         is_active: bool
 }
 
-// AdminClientListResult — generated from openapi/schemas.go.
+// AdminClientListResult.
 #AdminClientListResult: {
         clients: [...#AdminClient]
         total: int
 }
 
-// AdminClientResult — generated from openapi/schemas.go.
+// AdminClientResult.
 #AdminClientResult: {
         client: #AdminClient
 }
 
-// SupportBundleResult — generated from openapi/schemas.go.
+// SupportBundleResult.
 #SupportBundleResult: {
         generated_at: string
         hostname: string
@@ -68,34 +68,35 @@ package vyzorix
         operator_count?: int
 }
 
-// LogoutRequest — generated from openapi/schemas.go.
+// LogoutRequest.
 #LogoutRequest: {
         all_devices: bool
 }
 
-// SuccessResult — generated from openapi/schemas.go.
+// SuccessResult.
 #SuccessResult: {
         message?: string
         success: bool
 }
 
-// LockoutStatusResult — generated from openapi/schemas.go.
+// LockoutStatusResult.
 #LockoutStatusResult: {
         unlock_at?: int64
         reason?: string
         attempts: int
         max_attempts?: int
         locked: bool
+        retry_after?: int64
 }
 
-// RevokeResult — generated from openapi/schemas.go.
+// RevokeResult.
 #RevokeResult: {
         message?: string
         revoked_count?: int
         success: bool
 }
 
-// PushNotifications — generated from openapi/schemas.go.
+// PushNotifications.
 #PushNotifications: {
         thresholdBreach: bool
         deviceOffline: bool
@@ -105,7 +106,7 @@ package vyzorix
         registrationRequest: bool
 }
 
-// WebhookNotifications — generated from openapi/schemas.go.
+// WebhookNotifications.
 #WebhookNotifications: {
         url: string
         secret?: string
@@ -113,7 +114,7 @@ package vyzorix
         enabled: bool
 }
 
-// NotificationSettings — generated from openapi/schemas.go.
+// NotificationSettings.
 #NotificationSettings: {
         channels: [...string]
         webhook: #WebhookNotifications
@@ -122,7 +123,7 @@ package vyzorix
         enabled: bool
 }
 
-// ClientSettings — generated from openapi/schemas.go.
+// ClientSettings.
 #ClientSettings: {
         serverUrl: string
         deviceId: string
@@ -134,24 +135,24 @@ package vyzorix
         notificationsEnabled: bool
 }
 
-// SettingsResponseResult — generated from openapi/schemas.go.
+// SettingsResponseResult.
 #SettingsResponseResult: {
         notifications?: #NotificationSettings
         client?: #ClientSettings
         preferences?: {[string]: _}
 }
 
-// ThresholdsResult — generated from openapi/schemas.go.
+// ThresholdsResult.
 #ThresholdsResult: {
         thresholds?: #OperatorThresholds
 }
 
-// PreferencesResult — generated from openapi/schemas.go.
+// PreferencesResult.
 #PreferencesResult: {
         preferences: {[string]: _}
 }
 
-// WebhookTestResult — generated from openapi/schemas.go.
+// WebhookTestResult.
 #WebhookTestResult: {
         error?: string
         message?: string
@@ -160,29 +161,29 @@ package vyzorix
         success: bool
 }
 
-// WebhookSecretResult — generated from openapi/schemas.go.
+// WebhookSecretResult.
 #WebhookSecretResult: {
         secret: string
 }
 
-// DownloadProgressRequest — generated from openapi/schemas.go.
+// DownloadProgressRequest.
 #DownloadProgressRequest: {
         device_id: string
         version: string
         progress: int
 }
 
-// DownloadProgressResult — generated from openapi/schemas.go.
+// DownloadProgressResult.
 #DownloadProgressResult: {
         recorded: bool
 }
 
-// WebhookTestRequest — generated from openapi/schemas.go.
+// WebhookTestRequest.
 #WebhookTestRequest: {
         url: string
 }
 
-// CursorPaginationResult — generated from openapi/schemas.go.
+// CursorPaginationResult.
 #CursorPaginationResult: {
         nextCursor?: string
         limit: int

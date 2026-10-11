@@ -83,7 +83,7 @@ export type {
   ConfigVersionListResult,
   ConfigVersionRestoreResult,
   ConfigVersionRestoreResultSettings,
-  ConfigVersionSnapshot,
+
   ConnectionListResult,
   ConnectionMetricsResult,
   ConnectionStatusResult,

@@ -14,6 +14,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func openapiDeviceEvents(in []event.Event) []openapi.DeviceEvent {
+	out := make([]openapi.DeviceEvent, len(in))
+	for i, e := range in {
+		item := openapi.DeviceEvent{
+			ID:       e.ID,
+			DeviceID: e.DeviceID,
+			Type:     string(e.Type),
+			Severity: string(e.Severity),
+			Source:   e.Source,
+			Data:     e.Data,
+		}
+		if !e.Timestamp.IsZero() {
+			item.Timestamp = e.Timestamp.UnixMilli()
+			item.CreatedAt = e.Timestamp.UnixMilli()
+		}
+		out[i] = item
+	}
+	return out
+}
+
 // EventsHandler handles device events API endpoints.
 type EventsHandler struct {
 	eventRepo event.Repository
@@ -141,10 +161,10 @@ func (h *EventsHandler) GetEvents(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"events":  result.Events,
-		"hasMore": result.HasMore,
-		"count":   len(result.Events),
+	c.JSON(http.StatusOK, openapi.DeviceEventListResult{
+		Events:  openapiDeviceEvents(result.Events),
+		HasMore: result.HasMore,
+		Count:   len(result.Events),
 	})
 }
 
@@ -201,10 +221,10 @@ func (h *EventsHandler) GetEventsByType(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"events":  result.Events,
-		"hasMore": result.HasMore,
-		"count":   len(result.Events),
+	c.JSON(http.StatusOK, openapi.DeviceEventListResult{
+		Events:  openapiDeviceEvents(result.Events),
+		HasMore: result.HasMore,
+		Count:   len(result.Events),
 	})
 }
 
@@ -244,9 +264,9 @@ func (h *EventsHandler) GetRecentEvents(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"events": events,
-		"count":  len(events),
+	c.JSON(http.StatusOK, openapi.DeviceEventListResult{
+		Events: openapiDeviceEvents(events),
+		Count:  len(events),
 	})
 }
 

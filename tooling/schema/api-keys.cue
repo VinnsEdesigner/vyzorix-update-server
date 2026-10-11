@@ -1,19 +1,19 @@
 package vyzorix
 
-// CreateAPIKeyRequest — generated from openapi/schemas.go.
+// CreateAPIKeyRequest.
 #CreateAPIKeyRequest: {
         expires_in_days?: int
         name: string
         scope: string
 }
 
-// APIKey — generated from openapi/schemas.go.
+// APIKey.
 #APIKey: {
-        created_at: string
-        updated_at: string
-        expires_at?: string
-        last_request_at?: string
-        revoked_at?: string
+        created_at: int64
+        updated_at: int64
+        expires_at?: int64
+        last_request_at?: int64
+        revoked_at?: int64
         id: string
         operator_id?: string
         name: string
@@ -23,13 +23,13 @@ package vyzorix
         is_active: bool
 }
 
-// APIKeyWithSecret — generated from openapi/schemas.go.
+// APIKeyWithSecret.
 #APIKeyWithSecret: {
-        updated_at: string
-        created_at: string
-        expires_at?: string
-        revoked_at?: string
-        last_request_at?: string
+        updated_at: int64
+        created_at: int64
+        expires_at?: int64
+        revoked_at?: int64
+        last_request_at?: int64
         key_prefix: string
         scope: string
         id: string
@@ -40,7 +40,7 @@ package vyzorix
         is_active: bool
 }
 
-// APIKeyListResult — generated from openapi/schemas.go.
+// APIKeyListResult.
 #APIKeyListResult: {
         keys: [...#APIKey]
         pagination: #Pagination
@@ -48,9 +48,9 @@ package vyzorix
         keys_created_this_month: int
 }
 
-// GlobalAPIKeyStatsResult — generated from openapi/schemas.go.
+// GlobalAPIKeyStatsResult.
 #GlobalAPIKeyStatsResult: {
-        requests_by_scope: {[string]: _}
+        requests_by_scope: {[string]: int64}
         top_operators: [...#TopOperatorStat]
         total_keys: int
         active_keys: int
@@ -60,14 +60,28 @@ package vyzorix
         total_requests: int64
 }
 
-// AdminAPIKey — generated from openapi/schemas.go.
+// AdminAPIKey.
+// Flattened from the embedded APIKeyResponse so swag can introspect it.
 #AdminAPIKey: {
+        expires_at?: int64
+        last_request_at?: int64
+        revoked_at?: int64
         operator_id?: string
         operator_name?: string
+        id: string
+        name: string
+        key_prefix: string
+        scope: string
+        created_at: int64
+        updated_at: int64
+        request_count: int64
+        is_active: bool
 }
 
-// AdminAPIKeyListResult — generated from openapi/schemas.go.
+// AdminAPIKeyListResult.
 #AdminAPIKeyListResult: {
         keys: [...#AdminAPIKey]
         pagination: #Pagination
+        monthly_limit?: int
+        keys_created_this_month?: int
 }

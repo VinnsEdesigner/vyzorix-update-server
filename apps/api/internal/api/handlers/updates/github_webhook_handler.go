@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	"io"
 	"log/slog"
 	"net/http"
@@ -157,8 +158,8 @@ func (h *GitHubWebhookHandler) verifySignature(c *gin.Context, body []byte) bool
 
 // GetWebhookInfo returns webhook endpoint information (non-sensitive).
 func (h *GitHubWebhookHandler) GetWebhookInfo(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"webhook_enabled":  h.webhookSecret != "",
-		"supported_events": []string{"release", "push"},
+	c.JSON(http.StatusOK, openapi.WebhookInfoResult{
+		WebhookEnabled:  h.webhookSecret != "",
+		SupportedEvents: []string{"release", "push"},
 	})
 }

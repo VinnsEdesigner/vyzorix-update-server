@@ -1,6 +1,6 @@
 package vyzorix
 
-// DeviceStatus — generated from openapi/schemas.go.
+// DeviceStatus.
 #DeviceStatus: {
         device_id: string
         app_version: string
@@ -9,7 +9,7 @@ package vyzorix
         online: bool
 }
 
-// DeviceListItem — generated from openapi/schemas.go.
+// DeviceListItem.
 #DeviceListItem: {
         registered_at?: int64
         id: string
@@ -23,14 +23,14 @@ package vyzorix
         online?: bool
 }
 
-// DeviceListResult — generated from openapi/schemas.go.
+// DeviceListResult.
 #DeviceListResult: {
         nextCursor?: int
         devices: [...#DeviceListItem]
         total: int64
 }
 
-// DeviceDetailResult — generated from openapi/schemas.go.
+// DeviceDetailResult.
 #DeviceDetailResult: {
         registered_at?: int64
         id: string
@@ -43,23 +43,23 @@ package vyzorix
         last_seen?: int64
 }
 
-// DeviceCountResult — generated from openapi/schemas.go.
+// DeviceCountResult.
 #DeviceCountResult: {
         count: int
         serverTime?: int64
 }
 
-// DeviceTagsResult — generated from openapi/schemas.go.
+// DeviceTagsResult.
 #DeviceTagsResult: {
         tags: [...string]
 }
 
-// SetDeviceTagsRequest — generated from openapi/schemas.go.
+// SetDeviceTagsRequest.
 #SetDeviceTagsRequest: {
         tags: [...string]
 }
 
-// DeviceConfirmResult — generated from openapi/schemas.go.
+// DeviceConfirmResult.
 #DeviceConfirmResult: {
         registered_at?: int64
         device_id: string
@@ -69,103 +69,111 @@ package vyzorix
         online: bool
 }
 
-// DeviceConfirmRequest — generated from openapi/schemas.go.
+// DeviceConfirmRequest.
 #DeviceConfirmRequest: {
         imei: string
         commandSecret: string
 }
 
-// DeviceSettingsResult — generated from openapi/schemas.go.
+// DeviceSettingsResult.
 #DeviceSettingsResult: {
         id: string
         deviceImei: string
         customName?: string
         location?: string
-        metadata?: {[string]: _}
+        metadata?: {[string]: string}
         thresholds?: #OperatorThresholds
         createdAt: string
         updatedAt: string
 }
 
-// UpdateDeviceSettingsRequest — generated from openapi/schemas.go.
+// UpdateDeviceSettingsRequest.
 #UpdateDeviceSettingsRequest: {
         customName?: string
         location?: string
-        metadata?: {[string]: _}
+        metadata?: {[string]: string}
         thresholds?: #OperatorThresholds
 }
 
-// DeviceTagAddedResult — generated from openapi/schemas.go.
+// DeviceTagAddedResult.
 #DeviceTagAddedResult: {
         added: string
 }
 
-// DeviceTagRemovedResult — generated from openapi/schemas.go.
+// DeviceTagRemovedResult.
 #DeviceTagRemovedResult: {
         removed: string
 }
 
-// DeviceTransferRequest — generated from openapi/schemas.go.
+// DeviceTransferRequest.
 #DeviceTransferRequest: {
         target_organization_id: string
 }
 
-// DeviceTransferResult — generated from openapi/schemas.go.
+// DeviceTransferResult.
 #DeviceTransferResult: {
         message?: string
         device_id?: string
         from_org_id?: string
         to_org_id?: string
         success: bool
+        device_imei?: string
+        source_org?: string
+        target_org?: string
 }
 
-// DeviceFCMTokenRequest — generated from openapi/schemas.go.
+// DeviceFCMTokenRequest.
 #DeviceFCMTokenRequest: {
         fcmToken: string
 }
 
-// DeviceDisconnectResult — generated from openapi/schemas.go.
+// DeviceDisconnectResult.
 #DeviceDisconnectResult: {
         deviceId: string
         operatorId?: string
         disconnected: bool
 }
 
-// DeviceEvent — generated from openapi/schemas.go.
+// DeviceEvent.
 #DeviceEvent: {
-        created_at: string
+        created_at: int64
         data: {[string]: _}
         id: string
         device_id: string
         type: string
+        severity?: string
+        source?: string
+        timestamp: int64
 }
 
-// DeviceEventListResult — generated from openapi/schemas.go.
+// DeviceEventListResult.
 #DeviceEventListResult: {
         events: [...#DeviceEvent]
+        has_more?: bool
+        count?: int
 }
 
-// DeviceLog — generated from openapi/schemas.go.
+// DeviceLog.
 #DeviceLog: {
-        timestamp: string
+        timestamp: int64
         level: string
         message: string
         source?: string
 }
 
-// DeviceLogListResult — generated from openapi/schemas.go.
+// DeviceLogListResult.
 #DeviceLogListResult: {
         logs: [...#DeviceLog]
         pagination: #Pagination
 }
 
-// UpdateDeviceStatusInfo — generated from openapi/schemas.go.
+// UpdateDeviceStatusInfo.
 #UpdateDeviceStatusInfo: {
         currentVersion?: string
         needsUpdate: bool
 }
 
-// UpdatePushDeviceCounts — generated from openapi/schemas.go.
+// UpdatePushDeviceCounts.
 #UpdatePushDeviceCounts: {
         total: int
         pending: int
@@ -174,13 +182,13 @@ package vyzorix
         failed: int
 }
 
-// UpdateFailedDevice — generated from openapi/schemas.go.
+// UpdateFailedDevice.
 #UpdateFailedDevice: {
         deviceId: string
         reason: string
 }
 
-// UpdatePushHistoryDeviceCounts — generated from openapi/schemas.go.
+// UpdatePushHistoryDeviceCounts.
 #UpdatePushHistoryDeviceCounts: {
         pending?: int
         sent?: int
@@ -188,7 +196,7 @@ package vyzorix
         failed?: int
 }
 
-// UpdatePushDetailDevice — generated from openapi/schemas.go.
+// UpdatePushDetailDevice.
 #UpdatePushDetailDevice: {
         id: string
         deviceId: string
@@ -199,7 +207,7 @@ package vyzorix
         error?: string
 }
 
-// DeviceUpdateStatusRequest — generated from openapi/schemas.go.
+// DeviceUpdateStatusRequest.
 #DeviceUpdateStatusRequest: {
         dispatchId: string
         deviceId: string
@@ -207,13 +215,13 @@ package vyzorix
         error?: string
 }
 
-// DeviceUpdateStatusResponse — generated from openapi/schemas.go.
+// DeviceUpdateStatusResponse.
 #DeviceUpdateStatusResponse: {
         message: string
         acknowledged: bool
 }
 
-// DeviceInspection — generated from openapi/schemas.go.
+// DeviceInspection.
 #DeviceInspection: {
         battery?: float64
         device_id: string
@@ -223,7 +231,7 @@ package vyzorix
         fcm_token_valid: bool
 }
 
-// DeviceInspectionResult — generated from openapi/schemas.go.
+// DeviceInspectionResult.
 #DeviceInspectionResult: {
         connection: #DiagnosticsConnectionInfo
         identity: #DiagnosticsIdentityInfo
@@ -232,7 +240,7 @@ package vyzorix
         telemetry: #DiagnosticsTelemetryInfo
 }
 
-// DeviceLogEvent — generated from openapi/schemas.go.
+// DeviceLogEvent.
 #DeviceLogEvent: {
         data?: {[string]: _}
         id: string
@@ -240,7 +248,7 @@ package vyzorix
         timestamp: int64
 }
 
-// DeviceLogEventListResult — generated from openapi/schemas.go.
+// DeviceLogEventListResult.
 #DeviceLogEventListResult: {
         events: [...#DeviceLogEvent]
         pagination: #CursorPaginationResult

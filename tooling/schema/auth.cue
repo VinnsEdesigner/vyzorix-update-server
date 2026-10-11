@@ -1,6 +1,6 @@
 package vyzorix
 
-// LoginRequest — generated from openapi/schemas.go.
+// LoginRequest.
 #LoginRequest: {
         email: string
         password: string
@@ -8,7 +8,7 @@ package vyzorix
         remember: bool
 }
 
-// LoginResult — generated from openapi/schemas.go.
+// LoginResult.
 #LoginResult: {
         selected_organization?: #OrganizationInfo
         operator_id: string
@@ -22,9 +22,13 @@ package vyzorix
         mfa_enabled: bool
         needs_organization: bool
         requires_mfa?: bool
+        error?: string
+        message?: string
+        retry_after?: int64
+        locked_until?: int64
 }
 
-// LoginWithTokensResult — generated from openapi/schemas.go.
+// LoginWithTokensResult.
 #LoginWithTokensResult: {
         selected_organization?: #OrganizationInfo
         mfa_session?: string
@@ -42,9 +46,13 @@ package vyzorix
         needs_organization: bool
         requires_mfa?: bool
         mfa_enabled: bool
+        error?: string
+        message?: string
+        retry_after?: int64
+        locked_until?: int64
 }
 
-// RegisterRequest — generated from openapi/schemas.go.
+// RegisterRequest.
 #RegisterRequest: {
         email: string
         password: string
@@ -52,19 +60,19 @@ package vyzorix
         role?: string
 }
 
-// RegisterResult — generated from openapi/schemas.go.
+// RegisterResult.
 #RegisterResult: {
         operator_id: string
         email: string
         name: string
 }
 
-// RefreshTokenRequest — generated from openapi/schemas.go.
+// RefreshTokenRequest.
 #RefreshTokenRequest: {
         refresh_token: string
 }
 
-// RefreshTokenResult — generated from openapi/schemas.go.
+// RefreshTokenResult.
 #RefreshTokenResult: {
         access_token: string
         refresh_token: string

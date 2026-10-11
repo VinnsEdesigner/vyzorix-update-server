@@ -5,14 +5,13 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
-import type { ConfigVersionSnapshot } from './configVersionSnapshot';
 
 export interface ConfigVersion {
   changed_by?: string;
-  created_at?: string;
+  created_at?: number;
   id?: string;
   org_id?: string;
   resource_type?: string;
-  snapshot?: ConfigVersionSnapshot;
+  snapshot?: string;
   version?: number;
 }

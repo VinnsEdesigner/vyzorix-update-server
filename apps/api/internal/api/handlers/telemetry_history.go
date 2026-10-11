@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	telemetry "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/telemetry"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -17,6 +18,22 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
 )
+
+func telemetryHistoryEntries(in []telemetry.TelemetryEntry) []openapi.TelemetryHistoryEntry {
+	out := make([]openapi.TelemetryHistoryEntry, len(in))
+	for i, e := range in {
+		out[i] = openapi.TelemetryHistoryEntry{
+			ID:          e.ID,
+			DeviceID:    e.DeviceID,
+			ReceivedAt:  e.ReceivedAt.UnixMilli(),
+			Payload:     e.Payload,
+			RiskScore:   e.RiskScore,
+			BufferLevel: e.BufferLevel,
+			ThermalTemp: e.ThermalTemp,
+		}
+	}
+	return out
+}
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -330,11 +347,11 @@ func (h *TelemetryHistoryHandler) ExportJSON(c *gin.Context) {
 		req.EndTime,
 	))
 
-	c.JSON(http.StatusOK, gin.H{
-		"deviceId":   req.DeviceID,
-		"exportedAt": time.Now().Format(time.RFC3339),
-		"count":      len(entries),
-		"entries":    entries,
+	c.JSON(http.StatusOK, openapi.TelemetryHistoryQueryResult{
+		DeviceID:   req.DeviceID,
+		ExportedAt: time.Now().UnixMilli(),
+		Count:      len(entries),
+		Entries:    telemetryHistoryEntries(entries),
 	})
 }
 
@@ -382,13 +399,13 @@ func (h *TelemetryHistoryHandler) GetLatest(c *gin.Context) {
 	}
 
 	e := entries[0]
-	c.JSON(http.StatusOK, gin.H{
-		"id":          e.ID,
-		"deviceId":    e.DeviceID,
-		"receivedAt":  e.ReceivedAt,
-		"riskScore":   e.RiskScore,
-		"bufferLevel": e.BufferLevel,
-		"thermalTemp": e.ThermalTemp,
+	c.JSON(http.StatusOK, openapi.TelemetryEntry{
+		ID:          e.ID,
+		DeviceID:    e.DeviceID,
+		ReceivedAt:  e.ReceivedAt.UnixMilli(),
+		RiskScore:   e.RiskScore,
+		BufferLevel: e.BufferLevel,
+		ThermalTemp: int(e.ThermalTemp),
 	})
 }
 
@@ -471,23 +488,23 @@ func (h *TelemetryHistoryHandler) GetStats(c *gin.Context) {
 
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"deviceId":    deviceID,
-		"sampleCount": count,
-		"latestEntry": entries[0].ReceivedAt,
-		"oldestEntry": entries[count-1].ReceivedAt,
-		"riskScore": gin.H{
-			"avg": float64(totalRisk) / float64(count),
-			"min": minRisk,
-			"max": maxRisk,
+	c.JSON(http.StatusOK, openapi.TelemetryStatsResult{
+		DeviceID:    deviceID,
+		SampleCount: count,
+		LatestEntry: entries[0].ReceivedAt.UnixMilli(),
+		OldestEntry: entries[count-1].ReceivedAt.UnixMilli(),
+		RiskScore: openapi.MetricAggregateResult{
+			Avg: float64(totalRisk) / float64(count),
+			Min: float64(minRisk),
+			Max: float64(maxRisk),
 		},
-		"bufferLevel": gin.H{
-			"avg": float64(totalBuffer) / float64(count),
+		BufferLevel: openapi.MetricAggregateResult{
+			Avg: float64(totalBuffer) / float64(count),
 		},
-		"thermalTemp": gin.H{
-			"avg": float64(totalTemp) / float64(count) / 100,
-			"min": minTemp,
-			"max": maxTemp,
+		ThermalTemp: openapi.MetricAggregateResult{
+			Avg: float64(totalTemp) / float64(count) / 100,
+			Min: minTemp,
+			Max: maxTemp,
 		},
 	})
 }
@@ -550,9 +567,9 @@ func (h *TelemetryHistoryHandler) CleanupOld(c *gin.Context) {
 		"operatorId", op.ID,
 	)
 
-	c.JSON(http.StatusOK, gin.H{
-		"deleted":   deleted,
-		"olderThan": req.OlderThan,
+	c.JSON(http.StatusOK, openapi.TelemetryCleanupResult{
+		Deleted:   int(deleted),
+		OlderThan: req.OlderThan,
 	})
 }
 

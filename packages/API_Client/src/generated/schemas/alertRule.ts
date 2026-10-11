@@ -9,7 +9,7 @@ import type { AlertInstance } from './alertInstance';
 
 export interface AlertRule {
   condition?: string;
-  created_at?: string;
+  created_at?: number;
   enabled?: boolean;
   for_seconds?: number;
   id?: string;
@@ -21,6 +21,6 @@ export interface AlertRule {
   on_no_data?: string;
   org_id?: string;
   threshold?: number;
-  updated_at?: string;
+  updated_at?: number;
   webhook_url?: string;
 }

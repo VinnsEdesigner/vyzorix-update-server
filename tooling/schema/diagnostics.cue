@@ -1,6 +1,6 @@
 package vyzorix
 
-// DiagnosticsIdentityInfo — generated from openapi/schemas.go.
+// DiagnosticsIdentityInfo.
 #DiagnosticsIdentityInfo: {
         imei: string
         deviceName?: string
@@ -8,7 +8,7 @@ package vyzorix
         manufacturer?: string
 }
 
-// DiagnosticsSoftwareInfo — generated from openapi/schemas.go.
+// DiagnosticsSoftwareInfo.
 #DiagnosticsSoftwareInfo: {
         osVersion: string
         appVersion: string
@@ -16,7 +16,7 @@ package vyzorix
         buildId?: string
 }
 
-// DiagnosticsRegistrationInfo — generated from openapi/schemas.go.
+// DiagnosticsRegistrationInfo.
 #DiagnosticsRegistrationInfo: {
         status: string
         registeredAt?: int64
@@ -25,7 +25,7 @@ package vyzorix
         commandSecretSet: bool
 }
 
-// DiagnosticsTelemetryInfo — generated from openapi/schemas.go.
+// DiagnosticsTelemetryInfo.
 #DiagnosticsTelemetryInfo: {
         lastTimestamp: int64
         framesToday: int

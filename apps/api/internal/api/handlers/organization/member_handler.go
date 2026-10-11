@@ -109,23 +109,28 @@ func (h *MemberHandler) List(c *gin.Context) {
 		return
 	}
 
-	result := make([]gin.H, len(members))
+	result := make([]openapi.OrganizationMember, len(members))
 	for i, member := range members {
-		result[i] = gin.H{
-			"id":              member.ID,
-			"organization_id": member.OrganizationID,
-			"operator_id":     member.OperatorID,
-			"role":            member.Role,
-			"invited_by":      member.InvitedBy,
-			"joined_at":       member.JoinedAt,
-			"status":          string(member.Lifecycle),
-			"operator_name":   member.OperatorName,
-			"operator_email":  member.OperatorEmail,
+		item := openapi.OrganizationMember{
+			ID:             member.ID,
+			OrganizationID: member.OrganizationID,
+			OperatorID:     member.OperatorID,
+			Role:           string(member.Role),
+			Status:         string(member.Lifecycle),
+			OperatorName:   member.OperatorName,
+			OperatorEmail:  member.OperatorEmail,
 		}
+		if member.InvitedBy != nil {
+			item.InvitedBy = *member.InvitedBy
+		}
+		if !member.JoinedAt.IsZero() {
+			item.JoinedAt = int64Ptr(member.JoinedAt.UnixMilli())
+		}
+		result[i] = item
 	}
 
-	h.presenter.OK(c, gin.H{
-		"members": result,
+	h.presenter.OK(c, openapi.OrganizationMemberListResult{
+		Members: result,
 	})
 }
 
@@ -188,18 +193,25 @@ func (h *MemberHandler) Get(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":              member.ID,
-		"organization_id": member.OrganizationID,
-		"operator_id":     member.OperatorID,
-		"role":            member.Role,
-		"invited_by":      member.InvitedBy,
-		"joined_at":       member.JoinedAt,
-		"removed_at":      member.RemovedAt,
-		"status":          string(member.Lifecycle),
-		"operator_name":   member.OperatorName,
-		"operator_email":  member.OperatorEmail,
-	})
+	single := openapi.OrganizationMember{
+		ID:             member.ID,
+		OrganizationID: member.OrganizationID,
+		OperatorID:     member.OperatorID,
+		Role:           string(member.Role),
+		Status:         string(member.Lifecycle),
+		OperatorName:   member.OperatorName,
+		OperatorEmail:  member.OperatorEmail,
+	}
+	if member.InvitedBy != nil {
+		single.InvitedBy = *member.InvitedBy
+	}
+	if !member.JoinedAt.IsZero() {
+		single.JoinedAt = int64Ptr(member.JoinedAt.UnixMilli())
+	}
+	if member.RemovedAt != nil {
+		single.RemovedAt = int64Ptr(member.RemovedAt.UnixMilli())
+	}
+	h.presenter.OK(c, single)
 }
 
 // UpdateRole handles PATCH /v1/organizations/:id/members/:memberId.
@@ -280,14 +292,14 @@ func (h *MemberHandler) UpdateRole(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":              member.ID,
-		"organization_id": member.OrganizationID,
-		"operator_id":     member.OperatorID,
-		"role":            member.Role,
-		"status":          string(member.Lifecycle),
-		"operator_name":   member.OperatorName,
-		"operator_email":  member.OperatorEmail,
+	h.presenter.OK(c, openapi.OrganizationMember{
+		ID:             member.ID,
+		OrganizationID: member.OrganizationID,
+		OperatorID:     member.OperatorID,
+		Role:           string(member.Role),
+		Status:         string(member.Lifecycle),
+		OperatorName:   member.OperatorName,
+		OperatorEmail:  member.OperatorEmail,
 	})
 }
 
@@ -344,8 +356,8 @@ func (h *MemberHandler) Remove(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "member removed",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "member removed",
 	})
 }
 
@@ -394,8 +406,8 @@ func (h *MemberHandler) TransferOwnership(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "ownership transferred successfully",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "ownership transferred successfully",
 	})
 }
 
@@ -452,8 +464,8 @@ func (h *MemberHandler) Suspend(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "member suspended",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "member suspended",
 	})
 }
 
@@ -510,7 +522,7 @@ func (h *MemberHandler) Reinstate(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "member reinstated",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "member reinstated",
 	})
 }

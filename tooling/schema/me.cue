@@ -1,6 +1,6 @@
 package vyzorix
 
-// MetricStatsDTO — generated from openapi/schemas.go.
+// MetricStatsDTO.
 #MetricStatsDTO: {
         current: float64
         avg: float64
@@ -8,12 +8,12 @@ package vyzorix
         max: float64
 }
 
-// MessageResult — generated from openapi/schemas.go.
+// MessageResult.
 #MessageResult: {
         message: string
 }
 
-// MeResult — generated from openapi/schemas.go.
+// MeResult.
 #MeResult: {
         selected_organization?: #OrganizationInfo
         id: string
@@ -26,23 +26,22 @@ package vyzorix
         needs_organization: bool
 }
 
-// TimelineEventResult — generated from openapi/schemas.go.
+// TimelineEventResult — matches the runtime diagnostics EventDTO wire shape.
 #TimelineEventResult: {
         data?: {[string]: _}
         id: string
-        deviceId: string
         type: string
-        timestamp: string
+        timestamp: int64
 }
 
-// TimelineResult — generated from openapi/schemas.go.
+// TimelineResult — matches the runtime diagnostics TimelineResponse wire shape
+// ({ events, pagination }), NOT the previous { nextCursor, events, hasMore }.
 #TimelineResult: {
-        nextCursor?: string
         events: [...#TimelineEventResult]
-        hasMore: bool
+        pagination: #CursorPaginationResult
 }
 
-// MetricAggregateResult — generated from openapi/schemas.go.
+// MetricAggregateResult.
 #MetricAggregateResult: {
         avg: float64
         min: float64

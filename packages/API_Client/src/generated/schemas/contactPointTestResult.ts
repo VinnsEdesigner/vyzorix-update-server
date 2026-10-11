@@ -7,6 +7,7 @@
  */
 
 export interface ContactPointTestResult {
+  deliveries?: unknown;
   sent?: boolean;
-  tested_at?: string;
+  tested_at?: number;
 }

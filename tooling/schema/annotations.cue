@@ -1,6 +1,6 @@
 package vyzorix
 
-// AnnotationRequest — generated from openapi/schemas.go.
+// AnnotationRequest.
 #AnnotationRequest: {
         title: string
         text: string
@@ -10,12 +10,12 @@ package vyzorix
         tags: [...string]
 }
 
-// Annotation — generated from openapi/schemas.go.
+// Annotation.
 #Annotation: {
-        start_time: string
-        created_at: string
-        updated_at: string
-        end_time?: string
+        start_time: int64
+        created_at: int64
+        updated_at: int64
+        end_time?: int64
         id: string
         org_id: string
         title: string
@@ -24,7 +24,7 @@ package vyzorix
         tags: [...string]
 }
 
-// AnnotationListResult — generated from openapi/schemas.go.
+// AnnotationListResult.
 #AnnotationListResult: {
         annotations: [...#Annotation]
 }

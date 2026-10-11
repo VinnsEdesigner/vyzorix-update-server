@@ -8,8 +8,11 @@
 
 export interface DeviceTransferResult {
   device_id?: string;
+  device_imei?: string;
   from_org_id?: string;
   message?: string;
+  source_org?: string;
   success?: boolean;
+  target_org?: string;
   to_org_id?: string;
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
@@ -14,6 +13,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func clientRespToOpenAPI(in *dto.ClientResponse) *openapi.ClientCredential {
+	if in == nil {
+		return nil
+	}
+	return &openapi.ClientCredential{
+		ID:             in.ID,
+		OperatorID:     in.OperatorID,
+		Name:           in.Name,
+		Platform:       in.Platform,
+		AllowedOrigins: in.AllowedOrigins,
+		AllowedPaths:   in.AllowedPaths,
+		RateLimit:      in.RateLimit,
+		RequestCount:   in.RequestCount,
+		CreatedAt:      in.CreatedAt,
+		UpdatedAt:      in.UpdatedAt,
+		IsActive:       in.IsActive,
+	}
+}
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -43,8 +61,8 @@ func NewClientCredentialsHandler(authService *auth.AuthService, clientService *c
 
 // clientCredToSchema maps a client credential DTO onto the CUE-generated
 // ClientCredential wire struct.
-func clientCredToSchema(r *dto.ClientResponse) schema.ClientCredential {
-	return schema.ClientCredential{
+func clientCredToSchema(r *dto.ClientResponse) openapi.ClientCredential {
+	return openapi.ClientCredential{
 		ID:             r.ID,
 		OperatorID:     r.OperatorID,
 		Name:           r.Name,
@@ -130,12 +148,13 @@ func (h *ClientCredentialsHandler) Create(c *gin.Context) {
 	}
 
 	h.presenter.APIClientCreated(c, operatorID, clientResp.ID)
-	h.presenter.OK(c, gin.H{
-		"clientId":     clientResp.ID,
-		"clientSecret": secret, // Only returned once!.
-		"platform":     clientResp.Platform,
-		"name":         clientResp.Name,
-		"createdAt":    clientResp.CreatedAt,
+	h.presenter.OK(c, openapi.ClientCredential{
+		ClientID:     clientResp.ID,
+		ClientSecret: secret,
+		ID:           clientResp.ID,
+		Platform:     clientResp.Platform,
+		Name:         clientResp.Name,
+		CreatedAt:    clientResp.CreatedAt,
 	})
 }
 
@@ -168,11 +187,11 @@ func (h *ClientCredentialsHandler) List(c *gin.Context) {
 		return
 	}
 
-	items := make([]schema.ClientCredential, len(clients))
+	items := make([]openapi.ClientCredential, len(clients))
 	for i := range clients {
 		items[i] = clientCredToSchema(&clients[i])
 	}
-	h.presenter.OK(c, schema.ClientCredentialListResult{Clients: items})
+	h.presenter.OK(c, openapi.ClientCredentialListResult{Clients: items})
 }
 
 // Get handles GET /v1/auth/client-credentials/:clientId.
@@ -213,7 +232,7 @@ func (h *ClientCredentialsHandler) Get(c *gin.Context) {
 		return
 	}
 
-			h.presenter.OK(c, clientCredToSchema(clientResp))
+	h.presenter.OK(c, clientCredToSchema(clientResp))
 }
 
 // Delete handles DELETE /v1/auth/client-credentials/:clientId.
@@ -261,7 +280,7 @@ func (h *ClientCredentialsHandler) Delete(c *gin.Context) {
 	}
 
 	h.presenter.APIClientRevoked(c, operatorID, clientID)
-	h.presenter.OK(c, gin.H{"success": true, "clientId": clientID})
+	h.presenter.OK(c, openapi.AdminClientActionResult{Success: true, ClientID: clientID})
 }
 
 // Update handles PATCH /v1/auth/client-credentials/:clientId.
@@ -334,9 +353,9 @@ func (h *ClientCredentialsHandler) Update(c *gin.Context) {
 	}
 
 	// Note: In a real implementation, you'd call a service method to update.
-	h.presenter.OK(c, gin.H{
-		"client":  clientResp,
-		"message": "Client updated successfully",
+	h.presenter.OK(c, openapi.ClientCredentialUpdateResult{
+		Client:  clientRespToOpenAPI(clientResp),
+		Message: "Client updated successfully",
 	})
 }
 
@@ -381,9 +400,9 @@ func (h *ClientCredentialsHandler) RotateSecret(c *gin.Context) {
 	// Audit log the secret rotation.
 	h.presenter.APIClientSecretRotated(c, operatorID, clientID)
 
-	h.presenter.OK(c, gin.H{
-		"clientId":     clientID,
-		"clientSecret": newSecret,
-		"message":      "Client secret rotated successfully. Store this secret securely - it will not be shown again.",
+	h.presenter.OK(c, openapi.ClientSecretRotateResult{
+		ClientID:     clientID,
+		ClientSecret: newSecret,
+		Message:      "Client secret rotated successfully. Store this secret securely - it will not be shown again.",
 	})
 }

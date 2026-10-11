@@ -7,12 +7,12 @@
  */
 
 export interface AdminOperator {
-  created_at?: string;
+  created_at?: number;
   email?: string;
   email_verified?: boolean;
   id?: string;
   mfa_enabled?: boolean;
   name?: string;
   role?: string;
-  updated_at?: string;
+  updated_at?: number;
 }

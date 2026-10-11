@@ -7,14 +7,14 @@
  */
 
 export interface Annotation {
-  created_at?: string;
-  end_time?: string;
+  created_at?: number;
+  end_time?: number;
   id?: string;
   org_id?: string;
   source?: string;
-  start_time?: string;
+  start_time?: number;
   tags?: string[];
   text?: string;
   title?: string;
-  updated_at?: string;
+  updated_at?: number;
 }

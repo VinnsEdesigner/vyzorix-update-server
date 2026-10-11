@@ -107,14 +107,14 @@ func (h *OrganizationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	h.presenter.Created(c, gin.H{
-		"id":          org.ID,
-		"name":        org.Name,
-		"description": org.Description,
-		"created_by":  org.CreatedBy,
-		"created_at":  org.CreatedAt,
-		"max_members": org.MaxMembers,
-		"is_active":   org.IsActive(),
+	h.presenter.Created(c, openapi.Organization{
+		ID:          org.ID,
+		Name:        org.Name,
+		Description: org.Description,
+		CreatedBy:   org.CreatedBy,
+		CreatedAt:   org.CreatedAt.UnixMilli(),
+		MaxMembers:  org.MaxMembers,
+		IsActive:    org.IsActive(),
 	})
 }
 
@@ -142,22 +142,27 @@ func (h *OrganizationHandler) List(c *gin.Context) {
 		return
 	}
 
-	result := make([]gin.H, len(orgs))
+	result := make([]openapi.Organization, len(orgs))
 	for i, org := range orgs {
-		result[i] = gin.H{
-			"id":           org.ID,
-			"name":         org.Name,
-			"created_by":   org.CreatedBy,
-			"created_at":   org.CreatedAt,
-			"updated_at":   org.UpdatedAt,
-			"max_members":  org.MaxMembers,
-			"is_active":    org.IsActive(),
-			"member_count": org.MemberCount,
+		item := openapi.Organization{
+			ID:          org.ID,
+			Name:        org.Name,
+			CreatedBy:   org.CreatedBy,
+			MaxMembers:  org.MaxMembers,
+			IsActive:    org.IsActive(),
+			MemberCount: org.MemberCount,
 		}
+		if !org.CreatedAt.IsZero() {
+			item.CreatedAt = org.CreatedAt.UnixMilli()
+		}
+		if !org.UpdatedAt.IsZero() {
+			item.UpdatedAt = int64Ptr(org.UpdatedAt.UnixMilli())
+		}
+		result[i] = item
 	}
 
-	h.presenter.OK(c, gin.H{
-		"organizations": result,
+	h.presenter.OK(c, openapi.OrganizationListResult{
+		Organizations: result,
 	})
 }
 
@@ -216,15 +221,15 @@ func (h *OrganizationHandler) Get(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":           org.ID,
-		"name":         org.Name,
-		"created_by":   org.CreatedBy,
-		"created_at":   org.CreatedAt,
-		"updated_at":   org.UpdatedAt,
-		"max_members":  org.MaxMembers,
-		"is_active":    org.IsActive(),
-		"member_count": org.MemberCount,
+	h.presenter.OK(c, openapi.Organization{
+		ID:          org.ID,
+		Name:        org.Name,
+		CreatedBy:   org.CreatedBy,
+		CreatedAt:   org.CreatedAt.UnixMilli(),
+		UpdatedAt:   int64Ptr(org.UpdatedAt.UnixMilli()),
+		MaxMembers:  org.MaxMembers,
+		IsActive:    org.IsActive(),
+		MemberCount: org.MemberCount,
 	})
 }
 
@@ -295,15 +300,15 @@ func (h *OrganizationHandler) Update(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":           org.ID,
-		"name":         org.Name,
-		"created_by":   org.CreatedBy,
-		"created_at":   org.CreatedAt,
-		"updated_at":   org.UpdatedAt,
-		"max_members":  org.MaxMembers,
-		"is_active":    org.IsActive(),
-		"member_count": org.MemberCount,
+	h.presenter.OK(c, openapi.Organization{
+		ID:          org.ID,
+		Name:        org.Name,
+		CreatedBy:   org.CreatedBy,
+		CreatedAt:   org.CreatedAt.UnixMilli(),
+		UpdatedAt:   int64Ptr(org.UpdatedAt.UnixMilli()),
+		MaxMembers:  org.MaxMembers,
+		IsActive:    org.IsActive(),
+		MemberCount: org.MemberCount,
 	})
 }
 
@@ -361,7 +366,7 @@ func (h *OrganizationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "organization deleted",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "organization deleted",
 	})
 }

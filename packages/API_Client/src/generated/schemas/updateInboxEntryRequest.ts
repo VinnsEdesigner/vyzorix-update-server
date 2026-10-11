@@ -7,5 +7,6 @@
  */
 
 export interface UpdateInboxEntryRequest {
+  notes?: string;
   status?: string;
 }

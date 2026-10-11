@@ -8,6 +8,12 @@
 import type { TelemetryEntryMetrics } from './telemetryEntryMetrics';
 
 export interface TelemetryEntry {
+  buffer_level?: number;
+  device_id?: string;
+  id?: string;
   metrics?: TelemetryEntryMetrics;
-  timestamp?: string;
+  received_at?: number;
+  risk_score?: number;
+  thermal_temp?: number;
+  timestamp?: number;
 }

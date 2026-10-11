@@ -6,7 +6,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/client"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -25,10 +24,10 @@ var (
 )
 
 // adminClientToSchema maps the application DTO onto the CUE-generated wire
-// struct (tooling/schema/admin_schemas.cue → schema.AdminClient). The two are
+// struct (tooling/schema/admin_schemas.cue → openapi.AdminClient). The two are
 // shape-identical; the generated struct is the OpenAPI source of truth.
-func adminClientToSchema(r *dto.ClientResponse) schema.AdminClient {
-	return schema.AdminClient{
+func adminClientToSchema(r *dto.ClientResponse) openapi.AdminClient {
+	return openapi.AdminClient{
 		ID:             r.ID,
 		LastRequestAt:  r.LastRequestAt,
 		Name:           r.Name,
@@ -101,11 +100,11 @@ func (h *ClientsHandler) List(c *gin.Context) {
 		return
 	}
 
-	items := make([]schema.AdminClient, len(clients))
+	items := make([]openapi.AdminClient, len(clients))
 	for i := range clients {
 		items[i] = adminClientToSchema(&clients[i])
 	}
-	c.JSON(http.StatusOK, schema.AdminClientListResult{Clients: items, Total: total})
+	c.JSON(http.StatusOK, openapi.AdminClientListResult{Clients: items, Total: total})
 }
 
 // Get handles GET /v1/admin/clients/:clientId.
@@ -140,7 +139,7 @@ func (h *ClientsHandler) Get(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, schema.AdminClientResult{Client: adminClientToSchema(clientResp)})
+	c.JSON(http.StatusOK, openapi.AdminClientResult{Client: adminClientToSchema(clientResp)})
 }
 
 // Update handles PATCH /v1/admin/clients/:clientId.
@@ -185,7 +184,7 @@ func (h *ClientsHandler) Update(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, schema.AdminClientResult{Client: adminClientToSchema(clientResp)})
+	c.JSON(http.StatusOK, openapi.AdminClientResult{Client: adminClientToSchema(clientResp)})
 }
 
 // Delete handles DELETE /v1/admin/clients/:clientId.
@@ -224,7 +223,7 @@ func (h *ClientsHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "clientId": clientID})
+	c.JSON(http.StatusOK, openapi.AdminClientActionResult{Success: true, ClientID: clientID})
 }
 
 // RotateKey handles POST /v1/admin/clients/:clientId/rotate-key.

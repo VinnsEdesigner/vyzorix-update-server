@@ -5,10 +5,10 @@
  * Go-generated OpenAPI contract from handler annotations
  * OpenAPI spec version: 0.0.01
  */
+import type { CursorPaginationResult } from './cursorPaginationResult';
 import type { TimelineEventResult } from './timelineEventResult';
 
 export interface TimelineResult {
   events?: TimelineEventResult[];
-  hasMore?: boolean;
-  nextCursor?: string;
+  pagination?: CursorPaginationResult;
 }

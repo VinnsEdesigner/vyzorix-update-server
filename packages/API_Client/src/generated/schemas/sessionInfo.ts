@@ -7,8 +7,8 @@
  */
 
 export interface SessionInfo {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   ip_address?: string;
   is_current?: boolean;

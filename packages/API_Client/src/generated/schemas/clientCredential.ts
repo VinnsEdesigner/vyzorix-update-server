@@ -7,9 +7,19 @@
  */
 
 export interface ClientCredential {
-  clientId?: string;
-  createdAt?: string;
+  allowed_origins?: string[];
+  allowed_paths?: string[];
+  client_id?: string;
+  client_secret?: string;
+  created_at?: number;
   id?: string;
+  is_active?: boolean;
+  last_request_at?: number;
   name?: string;
+  operator_id?: string;
+  platform?: string;
+  rate_limit?: number;
+  request_count?: number;
   secret?: string;
+  updated_at?: number;
 }

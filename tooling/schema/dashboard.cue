@@ -1,6 +1,6 @@
 package vyzorix
 
-// DashboardStats — generated from openapi/schemas.go.
+// DashboardStats.
 #DashboardStats: {
         total_devices: int
         online_devices: int

@@ -6,7 +6,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -14,6 +13,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func authOrgsToOpenAPI(in []auth.OrganizationInfo) []openapi.Organization {
+	out := make([]openapi.Organization, len(in))
+	for i, o := range in {
+		out[i] = openapi.Organization{ID: o.ID, Name: o.Name}
+	}
+	return out
+}
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -96,7 +103,7 @@ func (h *OrganizationHandler) SelectOrganization(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.SelectOrganizationResult{
+	h.presenter.OK(c, openapi.SelectOrganizationResult{
 		OrganizationID:   result.OrganizationID,
 		OrganizationName: result.OrganizationName,
 		Role:             string(result.Role),
@@ -127,7 +134,7 @@ func (h *OrganizationHandler) GetOrganizations(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"organizations": orgs,
+	h.presenter.OK(c, openapi.OrganizationListResult{
+		Organizations: authOrgsToOpenAPI(orgs),
 	})
 }

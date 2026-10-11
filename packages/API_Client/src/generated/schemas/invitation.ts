@@ -8,11 +8,15 @@
 
 export interface Invitation {
   email?: string;
-  expires_at?: string;
+  expires_at?: number;
   id?: string;
-  invited_at?: string;
+  invited_at?: number;
   invited_by?: string;
+  inviter_name?: string;
   organization_id?: string;
+  organization_name?: string;
+  responded_at?: number;
+  responder_id?: string;
   role?: string;
   status?: string;
   token?: string;

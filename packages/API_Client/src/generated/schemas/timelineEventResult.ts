@@ -9,8 +9,7 @@ import type { TimelineEventResultData } from './timelineEventResultData';
 
 export interface TimelineEventResult {
   data?: TimelineEventResultData;
-  deviceId?: string;
   id?: string;
-  timestamp?: string;
+  timestamp?: number;
   type?: string;
 }

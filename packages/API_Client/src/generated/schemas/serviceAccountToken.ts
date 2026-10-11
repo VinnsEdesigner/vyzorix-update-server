@@ -7,12 +7,12 @@
  */
 
 export interface ServiceAccountToken {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   key_prefix?: string;
   name?: string;
-  revoked_at?: string;
+  revoked_at?: number;
   scopes?: string[];
   service_id?: string;
   valid?: boolean;

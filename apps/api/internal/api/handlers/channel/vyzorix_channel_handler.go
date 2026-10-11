@@ -11,8 +11,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	wschannel "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws/channel"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -48,7 +46,7 @@ func NewHandler(bridge *wschannel.HubBridge, presenter *response.Presenter) *Han
 func (h *Handler) Status(c *gin.Context) {
 	orgID := middleware.GetOrganizationID(c)
 	streams := h.bridge.Manager().StreamCount()
-	c.JSON(http.StatusOK, schema.ChannelStatusResult{Org: orgID, ActiveStreams: streams})
+	c.JSON(http.StatusOK, openapi.ChannelStatusResult{Org: orgID, ActiveStreams: streams})
 }
 
 // Subscribe registers a logical subscription to a channel scope for the
@@ -95,7 +93,7 @@ func (h *Handler) Subscribe(c *gin.Context) {
 		h.presenter.Forbidden(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, schema.ChannelSubscribeResult{Subscribed: addr})
+	c.JSON(http.StatusOK, openapi.ChannelSubscribeResult{Subscribed: addr})
 }
 
 // Unsubscribe removes a logical subscription.
@@ -123,7 +121,7 @@ func (h *Handler) Unsubscribe(c *gin.Context) {
 		return
 	}
 	h.bridge.Unsubscribe("stream/"+orgID+"/"+scope, op.ID)
-	c.JSON(http.StatusOK, schema.ChannelUnsubscribeResult{Unsubscribed: orgID + "/" + scope})
+	c.JSON(http.StatusOK, openapi.ChannelUnsubscribeResult{Unsubscribed: orgID + "/" + scope})
 }
 
 func validScope(scope string) bool {

@@ -3,6 +3,7 @@
 package configversion
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -39,15 +40,15 @@ func NewHandler(versionSvc *appconfig.Service, settingsSvc *organization.Organiz
 // Service returns the underlying versioning service (GraphQL wiring).
 func (h *Handler) Service() *appconfig.Service { return h.versionSvc }
 
-func versionJSON(v *configversion.ConfigVersion) gin.H {
-	return gin.H{
-		"id":            v.ID,
-		"org_id":        v.OrgID,
-		"resource_type": string(v.ResourceType),
-		"version":       v.Version,
-		"snapshot":      v.Snapshot,
-		"changed_by":    v.ChangedBy,
-		"created_at":    v.CreatedAt,
+func versionJSON(v *configversion.ConfigVersion) openapi.ConfigVersion {
+	return openapi.ConfigVersion{
+		ID:           v.ID,
+		OrgID:        v.OrgID,
+		ResourceType: string(v.ResourceType),
+		Version:      int(v.Version),
+		Snapshot:     v.Snapshot,
+		ChangedBy:    v.ChangedBy,
+		CreatedAt:    v.CreatedAt.UnixMilli(),
 	}
 }
 
@@ -82,11 +83,13 @@ func (h *Handler) List(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list config versions"))
 		return
 	}
-	items := make([]gin.H, 0, len(versions))
+	items := make([]openapi.ConfigVersion, 0, len(versions))
 	for _, v := range versions {
 		items = append(items, versionJSON(v))
 	}
-	c.JSON(http.StatusOK, gin.H{"versions": items})
+	c.JSON(http.StatusOK, openapi.ConfigVersionListResult{
+		Versions: items,
+	})
 }
 
 // Get handles GET /v1/config-versions/:resource/:version.
@@ -159,7 +162,20 @@ func (h *Handler) Restore(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "restore failed: "+err.Error()))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"restored_to_version": version, "settings": restored})
+	settingsJSON, err := json.Marshal(restored)
+	if err != nil {
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to encode restored settings"))
+		return
+	}
+	var settingsMap map[string]any
+	if err := json.Unmarshal(settingsJSON, &settingsMap); err != nil {
+		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to encode restored settings"))
+		return
+	}
+	c.JSON(http.StatusOK, openapi.ConfigVersionRestoreResult{
+		RestoredToVersion: int(version),
+		Settings:          settingsMap,
+	})
 }
 
 func (h *Handler) writeServiceError(c *gin.Context, err error) {

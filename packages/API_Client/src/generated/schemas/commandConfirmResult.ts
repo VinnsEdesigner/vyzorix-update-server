@@ -12,4 +12,5 @@ export interface CommandConfirmResult {
   expires_at?: number;
   risk_tier?: string;
   trace_id?: string;
+  ttl_seconds?: number;
 }

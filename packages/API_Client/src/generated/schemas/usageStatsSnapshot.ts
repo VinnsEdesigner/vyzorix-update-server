@@ -9,7 +9,7 @@ import type { UsageStatsCounts } from './usageStatsCounts';
 import type { UsageStatsSnapshotToggles } from './usageStatsSnapshotToggles';
 
 export interface UsageStatsSnapshot {
-  collected_at?: string;
+  collected_at?: number;
   counts?: UsageStatsCounts;
   toggles?: UsageStatsSnapshotToggles;
 }

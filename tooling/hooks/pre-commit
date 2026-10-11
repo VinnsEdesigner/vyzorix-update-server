@@ -19,7 +19,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 API_DIR="$REPO_ROOT/apps/api"
 
 if ! command -v go &>/dev/null; then
-  fail "Go is not installed. Install Go 1.26+ or use --no-verify."
+  fail "Go is not installed. Install Go 1.27+ or use --no-verify."
 fi
 
 cd "$API_DIR"
@@ -80,6 +80,30 @@ if go run ./cmd/graphql-schema -out "$GQL_TMP" >/dev/null 2>&1; then
 else
   rm -rf "$GQL_TMP"
   info "graphql-schema generator failed — skipping graphql drift check."
+fi
+
+# --- CUE schema drift gate: tooling/schema/*.cue -> generated Go ---
+# build_schemas.py is the single source of truth for the wire DTOs: it emits the
+# `openapi` package that swag init reads. Regenerate to a temp dir and fail if
+# the committed output is stale. (TypeScript comes from the spec via orval, not
+# from CUE, so there is no CUE->TS artifact to check.)
+if command -v python3 &>/dev/null; then
+  info "Checking CUE schema drift (tooling/schema/*.cue -> generated Go)..."
+  CUE_TMP=$(mktemp -d)
+  if (cd "$REPO_ROOT" && GO_OUT="$CUE_TMP/schemas.go" \
+        python3 tooling/codegen/build_schemas.py >/dev/null 2>&1); then
+    if ! cmp -s "$CUE_TMP/schemas.go" "$API_DIR/internal/api/openapi/schemas.go" 2>/dev/null; then
+      rm -rf "$CUE_TMP"
+      fail "openapi/schemas.go drift detected — run 'python3 tooling/codegen/build_schemas.py' from the repo root."
+    fi
+    rm -rf "$CUE_TMP"
+    pass "CUE schema drift: clean"
+  else
+    rm -rf "$CUE_TMP"
+    fail "build_schemas.py failed (unparseable .cue line?) — fix tooling/schema/*.cue."
+  fi
+else
+  info "python3 not installed — skipping CUE schema drift check."
 fi
 echo ""
 pass "All checks passed. Commit proceeding."

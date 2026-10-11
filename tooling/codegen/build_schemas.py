@@ -1,30 +1,44 @@
 #!/usr/bin/env python3
-"""Generate Go structs and TypeScript interfaces from CUE schema files.
+"""Generate the Go wire-type package from CUE schema files.
 
-Reads .cue files from tooling/schema/ and emits:
-  - Go structs into apps/api/internal/api/openapi/zz_generated_schemas.go
-  - TypeScript interfaces into packages/API_Client/src/generated/schema/
+Reads .cue files from tooling/schema/ and emits Go structs into
+apps/api/internal/api/openapi/schemas.go — the package `swag init` reads.
 
-The CUE files are the single source of truth for configuration schemas.
-Handlers return the generated Go structs directly (not gin.H), so the
-wire format always matches the schema. The OpenAPI spec is then generated
-from the Go structs via swaggo, and orval generates TS types from the spec.
+CUE is the single source of truth for the wire DTOs. The TypeScript types are
+NOT generated here: they come from the OpenAPI spec via orval (CUE -> Go structs
+-> swag init -> openapi3.json -> orval -> generated/schemas). Deriving TS twice
+would be a redundant second source; orval already produces a superset (body DTOs
++ *Params + helper types) that the SDK and React Query hooks consume.
 
-CUE file format (simplified — we parse, we don't need the full CUE engine):
+CUE file format (deliberately restricted — a small, strict parser, not the full
+CUE engine):
     package vyzorix
 
     #TypeName: {
-        fieldName:  type | *default
-        optional?: type
+        fieldName:  type
+        optional?:  type
+        mapField?:  {[string]: <primitive>}
+        nested?:    #OtherType
+        list:       [...string] | [...#OtherType]
     }
+
+The parser is strict: any field line it cannot recognize is a hard error, so a
+typo or an unsupported CUE construct fails loudly instead of silently dropping
+the field from the generated struct.
 """
 import os
 import re
+import sys
 import glob
 
-SCHEMA_DIR = "tooling/schema"
-GO_OUT = "apps/api/internal/api/schema/zz_generated_schemas.go"
-TS_OUT = "packages/API_Client/src/generated/schema"
+SCHEMA_DIR = os.environ.get("SCHEMA_DIR", "tooling/schema")
+# The CUE schemas are the single source of truth for the swaggo DTO package.
+# build_schemas.py emits the `openapi` package directly, so `swag init` reads
+# generated structs and there is no second hand-maintained copy.
+GO_OUT = os.environ.get(
+    "GO_OUT", "apps/api/internal/api/openapi/schemas.go"
+)
+GO_PKG = os.environ.get("GO_PKG", "openapi")
 
 # CUE type → Go type mapping
 CUE_TO_GO = {
@@ -34,17 +48,6 @@ CUE_TO_GO = {
     "bool": "bool",
     "float": "float64",
     "any": "interface{}",
-}
-
-# CUE type → TypeScript type mapping
-CUE_TO_TS = {
-    "int": "number",
-    "int64": "number",
-    "string": "string",
-    "bool": "boolean",
-    "float": "number",
-    "float64": "number",
-    "any": "unknown",
 }
 
 
@@ -81,14 +84,16 @@ def parse_cue_file(filepath):
             line = line.strip()
             if not line or line.startswith("//"):
                 continue
-            # Open map: fieldName?: {[string]: _} (map[string]any / interface{}).
-            map_match = re.match(r"(\w+)(\?)?:\s*\{\[string\]:\s*_\}(?:\s*\|\s*\*(.+?))?$", line)
+            # Open map: fieldName?: {[string]: <type>} (map[string]<type>).
+            # Value type is `_` (any) or a CUE primitive.
+            map_match = re.match(r"(\w+)(\?)?:\s*\{\[string\]:\s*(\w+|_)\}(?:\s*\|\s*\*(.+?))?$", line)
             if map_match:
                 fields.append({
                     "name": map_match.group(1),
                     "type": "map",
+                    "map_value": map_match.group(3),
                     "optional": map_match.group(2) == "?",
-                    "default": map_match.group(3),
+                    "default": map_match.group(4),
                     "is_nested": False,
                 })
                 continue
@@ -142,6 +147,14 @@ def parse_cue_file(filepath):
                     "default": default,
                     "is_nested": is_nested,
                 })
+                continue
+            # Strict: an unrecognized field line is a hard error, not a silent
+            # drop. This is what keeps the restricted CUE subset honest.
+            raise ValueError(
+                f"{os.path.basename(filepath)}: cannot parse line in #{name}: {line!r}\n"
+                "  Supported: `name: type`, `name?: type`, `name?: {[string]: <primitive>}`, "
+                "`name?: #Type`, `name: [...type] | [...#Type]`."
+            )
 
         if fields:
             type_defs[name] = fields
@@ -162,7 +175,8 @@ def to_go_struct(schema):
     resolved = []
     for field in schema["fields"]:
         if field["type"] == "map":
-            go_type = "map[string]any"
+            mv = field.get("map_value", "_")
+            go_type = f"map[string]{CUE_TO_GO.get(mv, mv)}" if mv != "_" else "map[string]any"
         elif field["type"] == "any":
             go_type = "any"
         elif field.get("is_nested"):
@@ -200,28 +214,6 @@ def to_go_struct(schema):
         if field["optional"]:
             json_tag += ",omitempty"
         lines.append(f"\t{pascal(field['name'])} {go_type} `json:\"{json_tag}\"`")
-    lines.append("}")
-    return "\n".join(lines)
-
-
-def to_ts_interface(schema):
-    """Convert a schema to a TypeScript interface."""
-    lines = [f"export interface {schema['name']} {{"]
-    for field in schema["fields"]:
-        # Handle nested type refs
-        if field["type"] == "map":
-            ts_type = "Record<string, unknown>"
-        elif field["type"] == "any":
-            ts_type = "unknown"
-        elif field.get("is_nested"):
-            ts_type = field["type"]
-        elif field["type"].startswith("[..."):
-            elem = field["type"].replace("[...", "").replace("]", "")
-            ts_type = f"{elem}[]"
-        else:
-            ts_type = CUE_TO_TS.get(field["type"], field["type"])
-        optional = "?" if field["optional"] else ""
-        lines.append(f"\t{field['name']}{optional}: {ts_type};")
     lines.append("}")
     return "\n".join(lines)
 
@@ -277,22 +269,18 @@ def main():
     os.makedirs(go_dir, exist_ok=True)
     with open(GO_OUT, "w") as f:
         f.write("// Code generated by tooling/codegen/build_schemas.py from .cue files.\n")
-        f.write("// DO NOT EDIT MANUALLY.\n\n")
-        f.write("package schema\n\n")
+        f.write("// DO NOT EDIT MANUALLY.\n")
+        f.write("//\n")
+        f.write("// This package holds the request/response structs that back the\n")
+        f.write("// swaggo annotations. swag init parses these into swagger.json\n")
+        f.write("// definitions, which build_openapi3.py lifts into OpenAPI3\n")
+        f.write("// components.schemas so orval generates real TypeScript types.\n\n")
+        f.write(f"package {GO_PKG}\n\n")
         for schema in all_schemas:
             f.write(to_go_struct(schema) + "\n\n")
 
-    # Generate TypeScript
-    os.makedirs(TS_OUT, exist_ok=True)
-    with open(os.path.join(TS_OUT, "index.ts"), "w") as f:
-        f.write("// Code generated by tooling/codegen/build_schemas.py from .cue files.\n")
-        f.write("// DO NOT EDIT MANUALLY.\n\n")
-        for schema in all_schemas:
-            f.write(to_ts_interface(schema) + "\n\n")
-
-    print(f"\nGenerated {len(all_schemas)} schemas:")
-    print(f"  Go:       {GO_OUT}")
-    print(f"  TypeScript: {TS_OUT}/index.ts")
+    print(f"\nGenerated {len(all_schemas)} schemas -> {GO_OUT}")
+    print("TypeScript comes from the spec via orval (not generated here).")
 
 
 if __name__ == "__main__":

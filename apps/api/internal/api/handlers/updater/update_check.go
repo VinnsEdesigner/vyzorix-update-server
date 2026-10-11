@@ -17,8 +17,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -190,14 +188,14 @@ func (h *Handler) CheckUpdate(c *gin.Context) {
 	}
 
 	// Flatten response: update_available at top level, version fields directly accessible.
-	c.JSON(http.StatusOK, gin.H{
-		"update_available": manifest.VersionCode > clientCode,
-		"version":          manifest.Version,
-		"version_code":     manifest.VersionCode,
-		"apk_filename":     manifest.APKFilename,
-		"apk_sha256":       manifest.APKSHA256,
-		"release_notes":    manifest.ReleaseNotes,
-		"apk_size_bytes":   manifest.APKSizeBytes,
+	c.JSON(http.StatusOK, openapi.UpdaterCheckResult{
+		UpdateAvailable: manifest.VersionCode > clientCode,
+		Version:         manifest.Version,
+		VersionCode:     manifest.VersionCode,
+		ApkFilename:     manifest.APKFilename,
+		ApkSha256:       manifest.APKSHA256,
+		ReleaseNotes:    manifest.ReleaseNotes,
+		ApkSizeBytes:    manifest.APKSizeBytes,
 	})
 }
 
@@ -226,7 +224,7 @@ func (h *Handler) DownloadProgress(c *gin.Context) {
 	}
 
 	h.log.Info("download progress", "deviceId", req.DeviceID, "filename", req.Filename, "progress", req.Progress)
-	c.JSON(http.StatusOK, schema.DownloadProgressResult{Recorded: true})
+	c.JSON(http.StatusOK, openapi.DownloadProgressResult{Recorded: true})
 }
 
 // serveJSON serves a static JSON file with proper headers.

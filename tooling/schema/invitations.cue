@@ -1,13 +1,13 @@
 package vyzorix
 
-// CreateInvitationRequest — generated from openapi/schemas.go.
+// CreateInvitationRequest.
 #CreateInvitationRequest: {
         email: string
         role: string
         org_id?: string
 }
 
-// Invitation — generated from openapi/schemas.go.
+// Invitation.
 #Invitation: {
         id: string
         organization_id: string
@@ -16,16 +16,20 @@ package vyzorix
         status: string
         token?: string
         invited_by?: string
-        invited_at?: string
-        expires_at?: string
+        invited_at?: int64
+        responded_at?: int64
+        responder_id?: string
+        organization_name?: string
+        inviter_name?: string
+        expires_at?: int64
 }
 
-// InvitationListResult — generated from openapi/schemas.go.
+// InvitationListResult.
 #InvitationListResult: {
         invitations: [...#Invitation]
 }
 
-// InvitationByTokenResult — generated from openapi/schemas.go.
+// InvitationByTokenResult.
 #InvitationByTokenResult: {
         id: string
         organization_id: string
@@ -33,7 +37,7 @@ package vyzorix
         email: string
         role: string
         status: string
-        invited_at?: string
+        invited_at?: int64
         inviter_name?: string
-        expires_at?: string
+        expires_at?: int64
 }

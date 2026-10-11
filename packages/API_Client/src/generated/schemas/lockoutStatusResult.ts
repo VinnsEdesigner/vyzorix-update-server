@@ -11,5 +11,6 @@ export interface LockoutStatusResult {
   locked?: boolean;
   max_attempts?: number;
   reason?: string;
+  retry_after?: number;
   unlock_at?: number;
 }

@@ -8,7 +8,7 @@
 import type { AlertInstanceLabels } from './alertInstanceLabels';
 
 export interface AlertInstance {
-  evaluated_at?: string;
+  evaluated_at?: number;
   labels?: AlertInstanceLabels;
   state?: string;
   value?: number;

@@ -10,12 +10,12 @@ import type { ContactPointConfig } from './contactPointConfig';
 export interface ContactPoint {
   channel?: string;
   config?: ContactPointConfig;
-  created_at?: string;
+  created_at?: number;
   enabled?: boolean;
   id?: string;
   name?: string;
   org_id?: string;
   secret?: boolean;
   template_id?: string;
-  updated_at?: string;
+  updated_at?: number;
 }

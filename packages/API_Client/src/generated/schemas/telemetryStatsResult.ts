@@ -10,8 +10,8 @@ import type { MetricAggregateResult } from './metricAggregateResult';
 export interface TelemetryStatsResult {
   bufferLevel?: MetricAggregateResult;
   deviceId?: string;
-  latestEntry?: string;
-  oldestEntry?: string;
+  latestEntry?: number;
+  oldestEntry?: number;
   riskScore?: MetricAggregateResult;
   sampleCount?: number;
   thermalTemp?: MetricAggregateResult;

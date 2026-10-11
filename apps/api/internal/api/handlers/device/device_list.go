@@ -12,9 +12,9 @@ import (
 	hub "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
+
+func int64Ptr(v int64) *int64 { return &v }
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -107,20 +107,8 @@ func (h *ListHandler) Handle(c *gin.Context) {
 	}
 
 	// Build response with online status from hub.
-	type DeviceRow struct {
-		ID             string `json:"id"`
-		Imei           string `json:"imei"`
-		OrganizationID string `json:"organization_id,omitempty"`
-		DeviceName     string `json:"device_name"`
-		Model          string `json:"model"`
-		Manufacturer   string `json:"manufacturer"`
-		AppVersion     string `json:"app_version"`
-		Status         string `json:"status"`
-		LastSeen       int64  `json:"last_seen"`
-		RegisteredAt   int64  `json:"registered_at"`
-	}
 
-	devices := make([]DeviceRow, 0, len(response.Devices))
+	devices := make([]openapi.DeviceListItem, 0, len(response.Devices))
 
 	for _, d := range response.Devices {
 		// Check if device is online via WebSocket hub.
@@ -139,17 +127,16 @@ func (h *ListHandler) Handle(c *gin.Context) {
 			status = "online"
 		}
 
-		devices = append(devices, DeviceRow{
-			ID:             d.ID,
-			Imei:           d.ID, // ID field is the device IMEI.
-			OrganizationID: d.OrganizationID,
-			DeviceName:     d.DeviceName,
-			Model:          d.Model,
-			Manufacturer:   d.Manufacturer,
-			AppVersion:     d.AppVersion,
-			Status:         status,
-			LastSeen:       d.LastSeen,
-			RegisteredAt:   d.RegisteredAt,
+		devices = append(devices, openapi.DeviceListItem{
+			ID:           d.ID,
+			IMEI:         d.ID, // ID field is the device IMEI.
+			DeviceName:   d.DeviceName,
+			Model:        d.Model,
+			Manufacturer: d.Manufacturer,
+			AppVersion:   d.AppVersion,
+			Status:       status,
+			LastSeen:     int64Ptr(d.LastSeen),
+			RegisteredAt: int64Ptr(d.RegisteredAt),
 		})
 
 		// Stop if we have enough results.
@@ -158,12 +145,13 @@ func (h *ListHandler) Handle(c *gin.Context) {
 		}
 	}
 
-	result := gin.H{"devices": devices}
-	if response.Pagination.Total > offset+len(devices) {
-		result["nextCursor"] = offset + len(devices)
+	result := openapi.DeviceListResult{
+		Devices: devices,
+		Total:   int64(response.Pagination.Total),
 	}
-
-	result["total"] = response.Pagination.Total
+	if int64(response.Pagination.Total) > int64(offset+len(devices)) {
+		result.NextCursor = offset + len(devices)
+	}
 
 	c.JSON(http.StatusOK, result)
 }
@@ -204,20 +192,7 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 		return
 	}
 
-	type DeviceRow struct {
-		ID             string `json:"id"`
-		Imei           string `json:"imei"`
-		OrganizationID string `json:"organization_id"`
-		DeviceName     string `json:"device_name"`
-		Model          string `json:"model"`
-		Manufacturer   string `json:"manufacturer"`
-		AppVersion     string `json:"app_version"`
-		Status         string `json:"status"`
-		LastSeen       int64  `json:"last_seen"`
-		RegisteredAt   int64  `json:"registered_at"`
-	}
-
-	result := make([]DeviceRow, len(devices))
+	result := make([]openapi.DeviceListItem, len(devices))
 
 	for i, d := range devices {
 		isOnline := h.isDeviceOnline(d.ID) || d.Online
@@ -230,23 +205,22 @@ func (h *ListHandler) ListByOperator(c *gin.Context) {
 			status = "online"
 		}
 
-		result[i] = DeviceRow{
-			ID:             d.ID,
-			Imei:           d.ID,
-			OrganizationID: d.OrganizationID,
-			DeviceName:     d.DeviceName,
-			Model:          d.Model,
-			Manufacturer:   d.Manufacturer,
-			AppVersion:     d.AppVersion,
-			Status:         status,
-			LastSeen:       d.LastSeen,
-			RegisteredAt:   d.RegisteredAt,
+		result[i] = openapi.DeviceListItem{
+			ID:           d.ID,
+			IMEI:         d.ID,
+			DeviceName:   d.DeviceName,
+			Model:        d.Model,
+			Manufacturer: d.Manufacturer,
+			AppVersion:   d.AppVersion,
+			Status:       status,
+			LastSeen:     int64Ptr(d.LastSeen),
+			RegisteredAt: int64Ptr(d.RegisteredAt),
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"devices": result,
-		"total":   len(result),
+	c.JSON(http.StatusOK, openapi.DeviceListResult{
+		Devices: result,
+		Total:   int64(len(result)),
 	})
 }
 
@@ -291,16 +265,16 @@ func (h *ListHandler) GetDevice(c *gin.Context) {
 		status = "online"
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":            d.ID,
-		"imei":          d.ID,
-		"device_name":   d.DeviceName,
-		"model":         d.Model,
-		"manufacturer":  d.Manufacturer,
-		"app_version":   d.AppVersion,
-		"status":        status,
-		"last_seen":     d.LastSeen,
-		"registered_at": d.RegisteredAt,
+	c.JSON(http.StatusOK, openapi.DeviceDetailResult{
+		ID:           d.ID,
+		IMEI:         d.ID,
+		DeviceName:   d.DeviceName,
+		Model:        d.Model,
+		Manufacturer: d.Manufacturer,
+		AppVersion:   d.AppVersion,
+		Status:       status,
+		LastSeen:     int64Ptr(d.LastSeen),
+		RegisteredAt: int64Ptr(d.RegisteredAt),
 	})
 }
 
@@ -328,9 +302,9 @@ func (h *ListHandler) Count(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"count":      count,
-		"serverTime": c.GetInt64("serverTime"),
+	c.JSON(http.StatusOK, openapi.DeviceCountResult{
+		Count:      count,
+		ServerTime: int64Ptr(c.GetInt64("serverTime")),
 	})
 }
 
@@ -349,9 +323,9 @@ func (h *ListHandler) CountByOrganization(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"count":      count,
-		"serverTime": c.GetInt64("serverTime"),
+	c.JSON(http.StatusOK, openapi.DeviceCountResult{
+		Count:      count,
+		ServerTime: int64Ptr(c.GetInt64("serverTime")),
 	})
 }
 
@@ -369,10 +343,12 @@ func (h *ListHandler) GetTags(c *gin.Context) {
 	imei := c.Param("imei")
 	d, err := h.deviceService.GetDevice(c.Request.Context(), imei)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		c.JSON(http.StatusNotFound, openapi.ErrorResponse{
+			Error: "device not found",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeviceTagsResult{Tags: d.Tags})
+	c.JSON(http.StatusOK, openapi.DeviceTagsResult{Tags: d.Tags})
 }
 
 // SetTags handles PUT /v1/devices/:imei/tags.
@@ -393,14 +369,18 @@ func (h *ListHandler) SetTags(c *gin.Context) {
 		Tags []string `json:"tags"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
+		c.JSON(http.StatusBadRequest, openapi.ErrorResponse{
+			Error: "invalid body",
+		})
 		return
 	}
 	if err := h.deviceService.SetDeviceTags(c.Request.Context(), imei, body.Tags); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set tags"})
+		c.JSON(http.StatusInternalServerError, openapi.ErrorResponse{
+			Error: "failed to set tags",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeviceTagsResult{Tags: body.Tags})
+	c.JSON(http.StatusOK, openapi.DeviceTagsResult{Tags: body.Tags})
 }
 
 // AddTag handles POST /v1/devices/:imei/tags/:tag.
@@ -418,10 +398,12 @@ func (h *ListHandler) AddTag(c *gin.Context) {
 	imei := c.Param("imei")
 	tag := c.Param("tag")
 	if err := h.deviceService.AddDeviceTag(c.Request.Context(), imei, tag); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add tag"})
+		c.JSON(http.StatusInternalServerError, openapi.ErrorResponse{
+			Error: "failed to add tag",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeviceTagAddedResult{Added: tag})
+	c.JSON(http.StatusOK, openapi.DeviceTagAddedResult{Added: tag})
 }
 
 // RemoveTag handles DELETE /v1/devices/:imei/tags/:tag.
@@ -439,8 +421,10 @@ func (h *ListHandler) RemoveTag(c *gin.Context) {
 	imei := c.Param("imei")
 	tag := c.Param("tag")
 	if err := h.deviceService.RemoveDeviceTag(c.Request.Context(), imei, tag); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove tag"})
+		c.JSON(http.StatusInternalServerError, openapi.ErrorResponse{
+			Error: "failed to remove tag",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeviceTagRemovedResult{Removed: tag})
+	c.JSON(http.StatusOK, openapi.DeviceTagRemovedResult{Removed: tag})
 }

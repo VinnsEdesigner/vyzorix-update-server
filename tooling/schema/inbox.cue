@@ -1,6 +1,6 @@
 package vyzorix
 
-// InboxRequest — generated from openapi/schemas.go.
+// InboxRequest.
 #InboxRequest: {
         imei: string
         deviceName: string
@@ -14,13 +14,13 @@ package vyzorix
         idempotencyKey?: string
 }
 
-// InboxAckRequest — generated from openapi/schemas.go.
+// InboxAckRequest.
 #InboxAckRequest: {
         action: string
         notes?: string
 }
 
-// InboxEntryResponse — generated from openapi/schemas.go.
+// InboxEntryResponse.
 #InboxEntryResponse: {
         acknowledgedAt?: int64
         approvingAt?: int64
@@ -42,13 +42,13 @@ package vyzorix
         createdAt: int64
 }
 
-// InboxListResult — generated from openapi/schemas.go.
+// InboxListResult.
 #InboxListResult: {
         requests: [...#InboxEntryResponse]
         pagination: #Pagination
 }
 
-// InboxAckResult — generated from openapi/schemas.go.
+// InboxAckResult.
 #InboxAckResult: {
         acknowledgedAt?: int64
         approvingAt?: int64
@@ -62,7 +62,7 @@ package vyzorix
         fcmPushSent: bool
 }
 
-// InboxResendResult — generated from openapi/schemas.go.
+// InboxResendResult.
 #InboxResendResult: {
         id: string
         imei: string

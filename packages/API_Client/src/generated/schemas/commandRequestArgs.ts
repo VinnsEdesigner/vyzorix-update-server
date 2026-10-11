@@ -6,4 +6,4 @@
  * OpenAPI spec version: 0.0.01
  */
 
-export type CommandRequestArgs = { [key: string]: unknown };
+export type CommandRequestArgs = {[key: string]: unknown};

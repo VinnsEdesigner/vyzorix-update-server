@@ -3,7 +3,6 @@ package auth
 import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
 
@@ -70,7 +69,7 @@ func (h *EmailVerifyHandler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.EmailVerifyResult{Verified: true, Email: result.Email})
+	h.presenter.OK(c, openapi.EmailVerifyResult{Verified: true, Email: result.Email})
 }
 
 // ResendVerification handles POST /v1/auth/resend-verification.
@@ -106,7 +105,9 @@ func (h *EmailVerifyHandler) ResendVerification(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"message": "If that email exists, a verification email has been sent."})
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "If that email exists, a verification email has been sent.",
+	})
 }
 
 // PollVerification handles GET /v1/auth/poll-verification.
@@ -160,7 +161,7 @@ func (h *EmailVerifyHandler) VerifyEmailGet(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.EmailVerifyResult{Verified: true, Email: result.Email})
+	h.presenter.OK(c, openapi.EmailVerifyResult{Verified: true, Email: result.Email})
 }
 
 // ResendVerificationGet handles GET /v1/auth/resend-verification (alternative to POST).
@@ -188,7 +189,9 @@ func (h *EmailVerifyHandler) ResendVerificationGet(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"message": "If that email exists, a verification email has been sent."})
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "If that email exists, a verification email has been sent.",
+	})
 }
 
 // CancelVerification handles POST /v1/auth/cancel-verification.
@@ -224,5 +227,5 @@ func (h *EmailVerifyHandler) CancelVerification(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.SuccessResult{Success: true})
+	h.presenter.OK(c, openapi.SuccessResult{Success: true})
 }

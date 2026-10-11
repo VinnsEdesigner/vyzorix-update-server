@@ -13,6 +13,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// thresholdsToOpenAPI maps the domain thresholds onto the generated wire DTO.
+func thresholdsToOpenAPI(t *devicedomain.Thresholds) *openapi.OperatorThresholds {
+	if t == nil {
+		return nil
+	}
+	return &openapi.OperatorThresholds{
+		RiskWarn:    t.RiskWarn,
+		RiskCrit:    t.RiskCrit,
+		ThermalWarn: t.ThermalWarn,
+		ThermalCrit: t.ThermalCrit,
+		BufferWarn:  t.BufferWarn,
+		BufferCrit:  t.BufferCrit,
+	}
+}
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.DeviceSettingsResult
@@ -227,8 +242,8 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"thresholds": thresholds,
+	h.presenter.OK(c, openapi.ThresholdsResult{
+		Thresholds: thresholdsToOpenAPI(thresholds),
 	})
 }
 
@@ -294,7 +309,7 @@ func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"thresholds": settings.Thresholds,
+	h.presenter.OK(c, openapi.ThresholdsResult{
+		Thresholds: thresholdsToOpenAPI(settings.Thresholds),
 	})
 }

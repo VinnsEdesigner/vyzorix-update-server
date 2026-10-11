@@ -1,18 +1,18 @@
 package vyzorix
 
-// PollVerificationResult — generated from openapi/schemas.go.
+// PollVerificationResult.
 #PollVerificationResult: {
         status: string
         email?: string
         emailError?: string
 }
 
-// ResendVerificationRequest — generated from openapi/schemas.go.
+// ResendVerificationRequest.
 #ResendVerificationRequest: {
         email: string
 }
 
-// CancelVerificationRequest — generated from openapi/schemas.go.
+// CancelVerificationRequest.
 #CancelVerificationRequest: {
         email: string
 }

@@ -10,8 +10,6 @@ import (
 	infraauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/security"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -77,24 +75,24 @@ func (h *SessionsHandler) ListSessions(c *gin.Context) {
 	}
 
 	// Build response with session metadata (excluding sensitive data).
-	sessionList := make([]gin.H, 0, len(sessions))
+	sessionList := make([]openapi.SessionInfo, 0, len(sessions))
 	currentSessionID := middleware.GetCurrentSessionID(c)
 
 	for _, sess := range sessions {
-		sessionList = append(sessionList, gin.H{
-			"id":                       sess.ID,
-			"ip_address":               sess.IPAddress,
-			"user_agent":               sess.UserAgent,
-			"created_at":               sess.CreatedAt,
-			"expires_at":               sess.ExpiresAt,
-			"is_current":               sess.ID == currentSessionID,
-			"selected_organization_id": sess.SelectedOrganizationID,
+		sessionList = append(sessionList, openapi.SessionInfo{
+			ID:                     sess.ID,
+			IPAddress:              sess.IPAddress,
+			UserAgent:              sess.UserAgent,
+			CreatedAt:              sess.CreatedAt.UnixMilli(),
+			ExpiresAt:              sess.ExpiresAt.UnixMilli(),
+			IsCurrent:              sess.ID == currentSessionID,
+			SelectedOrganizationID: sess.SelectedOrganizationID,
 		})
 	}
 
-	h.presenter.OK(c, gin.H{
-		"sessions": sessionList,
-		"total":    len(sessionList),
+	h.presenter.OK(c, openapi.SessionListResult{
+		Sessions: sessionList,
+		Total:    len(sessionList),
 	})
 }
 
@@ -122,24 +120,24 @@ func (h *SessionsHandler) CheckConcurrent(c *gin.Context) {
 	}
 
 	// Check for different IPs or user agents.
-	var concurrentLogins []gin.H
+	var concurrentLogins []openapi.SessionInfo
 	currentSessionID := middleware.GetCurrentSessionID(c)
 
 	for _, sess := range sessions {
 		if sess.ID != currentSessionID {
-			concurrentLogins = append(concurrentLogins, gin.H{
-				"session_id": sess.ID,
-				"ip_address": sess.IPAddress,
-				"user_agent": sess.UserAgent,
-				"created_at": sess.CreatedAt,
+			concurrentLogins = append(concurrentLogins, openapi.SessionInfo{
+				ID:        sess.ID,
+				IPAddress: sess.IPAddress,
+				UserAgent: sess.UserAgent,
+				CreatedAt: sess.CreatedAt.UnixMilli(),
 			})
 		}
 	}
 
-	h.presenter.OK(c, gin.H{
-		"has_concurrent": len(concurrentLogins) > 0,
-		"count":          len(concurrentLogins),
-		"sessions":       concurrentLogins,
+	h.presenter.OK(c, openapi.ConcurrentSessionsResult{
+		HasConcurrent: len(concurrentLogins) > 0,
+		Count:         len(concurrentLogins),
+		Sessions:      concurrentLogins,
 	})
 }
 
@@ -202,7 +200,7 @@ func (h *SessionsHandler) RevokeSession(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "Session revoked"})
+	h.presenter.OK(c, openapi.SuccessResult{Success: true, Message: "Session revoked"})
 }
 
 // RevokeAllExceptCurrent handles DELETE /v1/auth/sessions - Revoke all sessions except current.
@@ -241,10 +239,10 @@ func (h *SessionsHandler) RevokeAllExceptCurrent(c *gin.Context) {
 		}
 	}
 
-	h.presenter.OK(c, gin.H{
-		"success":       true,
-		"revoked_count": count,
-		"message":       "All other sessions revoked",
+	h.presenter.OK(c, openapi.RevokeResult{
+		Success:      true,
+		RevokedCount: count,
+		Message:      "All other sessions revoked",
 	})
 }
 
@@ -283,10 +281,10 @@ func (h *SessionsHandler) RevokeAllDevices(c *gin.Context) {
 	// Clear the session cookie.
 	c.SetCookie("vyz_session", "", -1, "/", "", false, true)
 
-	h.presenter.OK(c, gin.H{
-		"success":       true,
-		"revoked_count": count,
-		"message":       "All sessions revoked. Please login again.",
+	h.presenter.OK(c, openapi.RevokeResult{
+		Success:      true,
+		RevokedCount: count,
+		Message:      "All sessions revoked. Please login again.",
 	})
 }
 
@@ -327,14 +325,14 @@ func (h *SessionsHandler) GetSession(c *gin.Context) {
 
 	for _, sess := range sessions {
 		if sess.ID == sessionID {
-			h.presenter.OK(c, gin.H{
-				"id":                       sess.ID,
-				"ip_address":               sess.IPAddress,
-				"user_agent":               sess.UserAgent,
-				"created_at":               sess.CreatedAt,
-				"expires_at":               sess.ExpiresAt,
-				"is_current":               sess.ID == currentSessionID,
-				"selected_organization_id": sess.SelectedOrganizationID,
+			h.presenter.OK(c, openapi.SessionInfo{
+				ID:                     sess.ID,
+				IPAddress:              sess.IPAddress,
+				UserAgent:              sess.UserAgent,
+				CreatedAt:              sess.CreatedAt.UnixMilli(),
+				ExpiresAt:              sess.ExpiresAt.UnixMilli(),
+				IsCurrent:              sess.ID == currentSessionID,
+				SelectedOrganizationID: sess.SelectedOrganizationID,
 			})
 			return
 		}

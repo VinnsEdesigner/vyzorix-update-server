@@ -7,7 +7,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
@@ -15,6 +14,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func dtoOperatorsToOpenAPI(in []dto.OperatorListResponse) []openapi.AdminOperator {
+	out := make([]openapi.AdminOperator, len(in))
+	for i, o := range in {
+		out[i] = openapi.AdminOperator{
+			ID: o.ID, Email: o.Email, Name: o.Name, Role: o.Role,
+			MFAEnabled: o.MFAEnabled, EmailVerified: o.EmailVerified, CreatedAt: o.CreatedAt,
+		}
+	}
+	return out
+}
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -70,7 +80,10 @@ func (h *AdminHandler) ListOperators(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"operators": operators, "total": total})
+	c.JSON(http.StatusOK, openapi.AdminOperatorListResult{
+		Operators: dtoOperatorsToOpenAPI(operators),
+		Total:     total,
+	})
 }
 
 // CreateOperator handles POST /v1/auth/admin/operators.
@@ -133,7 +146,7 @@ func (h *AdminHandler) CreateOperator(c *gin.Context) {
 	}
 
 	h.presenter.AdminAction(c, op.ID, "create_operator", "operator", newOp.ID, nil)
-	h.presenter.Created(c, schema.AdminOperator{
+	h.presenter.Created(c, openapi.AdminOperator{
 		ID:        newOp.ID,
 		Email:     newOp.Email,
 		Name:      newOp.Name,
@@ -181,7 +194,7 @@ func (h *AdminHandler) GetOperator(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, schema.AdminOperator{
+	c.JSON(http.StatusOK, openapi.AdminOperator{
 		ID:            targetOp.ID,
 		Email:         targetOp.Email,
 		Name:          targetOp.Name,
@@ -253,7 +266,7 @@ func (h *AdminHandler) UpdateOperator(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, schema.AdminOperator{
+	c.JSON(http.StatusOK, openapi.AdminOperator{
 		ID:        updatedOp.ID,
 		Email:     updatedOp.Email,
 		Name:      updatedOp.Name,
@@ -316,5 +329,5 @@ func (h *AdminHandler) DeleteOperator(c *gin.Context) {
 	}
 
 	h.presenter.AdminAction(c, op.ID, "delete_operator", "operator", operatorID, nil)
-	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "operator deleted"})
+	h.presenter.OK(c, openapi.SuccessResult{Success: true, Message: "operator deleted"})
 }

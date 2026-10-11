@@ -253,18 +253,18 @@ func (h *ConnectionStatusHandler) GetMetrics(c *gin.Context) {
 		queueMetrics = qm
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"timestamp":      time.Now().Unix(),
-		"totalConnected": len(orgClients),
-		"totalQueued":    h.hub.TotalQueuedMessages(),
-		"aggregateMetrics": gin.H{
+	c.JSON(http.StatusOK, openapi.ConnectionMetricsResult{
+		Timestamp:      time.Now().Unix(),
+		TotalConnected: len(orgClients),
+		TotalQueued:    h.hub.TotalQueuedMessages(),
+		AggregateMetrics: map[string]int64{
 			"totalMessagesSent":     totalMessagesSent,
 			"totalMessagesReceived": totalMessagesReceived,
 			"totalConnectAttempts":  totalConnectAttempts,
 			"totalConnectSuccesses": totalConnectSuccesses,
 			"totalConnectFailures":  totalConnectFailures,
 		},
-		"queueMetrics": queueMetrics,
+		QueueMetrics: queueMetrics,
 	})
 }
 
@@ -329,9 +329,9 @@ func (h *ConnectionStatusHandler) DisconnectDevice(c *gin.Context) {
 		"operatorId", op.ID,
 	)
 
-	c.JSON(http.StatusOK, gin.H{
-		"deviceId":     deviceID,
-		"disconnected": true,
-		"operatorId":   op.ID,
+	c.JSON(http.StatusOK, openapi.DeviceDisconnectResult{
+		DeviceID:     deviceID,
+		Disconnected: true,
+		OperatorID:   op.ID,
 	})
 }

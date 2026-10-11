@@ -11,8 +11,11 @@ export interface LoginWithTokensResult {
   access_token?: string;
   device_fingerprint?: string;
   email?: string;
+  error?: string;
   expires_at?: number;
   last_organization_id?: string;
+  locked_until?: number;
+  message?: string;
   mfa_enabled?: boolean;
   mfa_session?: string;
   name?: string;
@@ -21,6 +24,7 @@ export interface LoginWithTokensResult {
   organizations?: OrganizationInfo[];
   refresh_token?: string;
   requires_mfa?: boolean;
+  retry_after?: number;
   selected_organization?: OrganizationInfo;
   session_id?: string;
   signing_key?: string;

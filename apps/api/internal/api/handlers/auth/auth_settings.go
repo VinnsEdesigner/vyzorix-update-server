@@ -11,7 +11,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -20,6 +19,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+func int64Ptr(v int64) *int64 { return &v }
 
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
@@ -221,14 +222,14 @@ func (h *SettingsHandler) UpdateName(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.OperatorSettingsResultLegacy{
+	h.presenter.OK(c, openapi.OperatorSettingsResultLegacy{
 		ID:            op.ID,
 		Email:         op.Email,
 		Name:          op.Name,
 		Role:          h.getOperatorRole(c, op),
 		MFAEnabled:    op.MFAEnabled,
 		EmailVerified: op.EmailVerified,
-		Client:        &schema.ClientSettings{ServerURL: op.ClientSettings.ServerURL, DeviceID: op.ClientSettings.DeviceID, RequestTimeoutMs: op.ClientSettings.RequestTimeoutMs, LogBufferLimit: op.ClientSettings.LogBufferLimit, SignalHistoryLimit: op.ClientSettings.SignalHistoryLimit, AutoReconnect: op.ClientSettings.AutoReconnect, StrictHmac: op.ClientSettings.StrictHmac, NotificationsEnabled: op.ClientSettings.NotificationsEnabled},
+		Client:        &openapi.ClientSettings{ServerURL: op.ClientSettings.ServerURL, DeviceID: op.ClientSettings.DeviceID, RequestTimeoutMs: op.ClientSettings.RequestTimeoutMs, LogBufferLimit: op.ClientSettings.LogBufferLimit, SignalHistoryLimit: op.ClientSettings.SignalHistoryLimit, AutoReconnect: op.ClientSettings.AutoReconnect, StrictHmac: op.ClientSettings.StrictHmac, NotificationsEnabled: op.ClientSettings.NotificationsEnabled},
 	})
 }
 
@@ -629,11 +630,11 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	})
 
 	if err != nil {
-		h.presenter.OK(c, gin.H{
-			"success":      false,
-			"error":        "webhook_timeout",
-			"message":      "Webhook did not respond within 10 seconds",
-			"responseTime": responseTime,
+		h.presenter.OK(c, openapi.WebhookTestResult{
+			Success:      false,
+			Error:        "webhook_timeout",
+			Message:      "Webhook did not respond within 10 seconds",
+			ResponseTime: int64Ptr(responseTime),
 		})
 		return
 	}
@@ -645,22 +646,22 @@ func (h *SettingsHandler) TestWebhook(c *gin.Context) {
 	}
 
 	if resp != nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		h.presenter.OK(c, gin.H{
-			"success":      true,
-			"statusCode":   resp.StatusCode,
-			"responseTime": responseTime,
+		h.presenter.OK(c, openapi.WebhookTestResult{
+			Success:      true,
+			StatusCode:   resp.StatusCode,
+			ResponseTime: int64Ptr(responseTime),
 		})
 	} else {
 		statusCode := 0
 		if resp != nil {
 			statusCode = resp.StatusCode
 		}
-		h.presenter.OK(c, gin.H{
-			"success":      false,
-			"error":        "webhook_failed",
-			"statusCode":   statusCode,
-			"responseTime": responseTime,
-			"message":      "Webhook returned non-2xx status",
+		h.presenter.OK(c, openapi.WebhookTestResult{
+			Success:      false,
+			Error:        "webhook_failed",
+			StatusCode:   statusCode,
+			ResponseTime: int64Ptr(responseTime),
+			Message:      "Webhook returned non-2xx status",
 		})
 	}
 }
@@ -704,8 +705,8 @@ func (h *SettingsHandler) RotateWebhookSecret(c *gin.Context) {
 		Success: true,
 	})
 
-	h.presenter.OK(c, gin.H{
-		"secret": secret,
+	h.presenter.OK(c, openapi.WebhookSecretResult{
+		Secret: secret,
 	})
 }
 
@@ -730,7 +731,7 @@ func (h *SettingsHandler) GetPreferences(c *gin.Context) {
 		h.presenter.InternalError(c, "failed to get preferences")
 		return
 	}
-	h.presenter.OK(c, schema.PreferencesResult{Preferences: prefs})
+	h.presenter.OK(c, openapi.PreferencesResult{Preferences: prefs})
 }
 
 // UpdatePreferences handles PATCH /v1/auth/me/preferences.
@@ -761,5 +762,5 @@ func (h *SettingsHandler) UpdatePreferences(c *gin.Context) {
 		h.presenter.InternalError(c, "failed to update preferences")
 		return
 	}
-	h.presenter.OK(c, schema.PreferencesResult{Preferences: prefs})
+	h.presenter.OK(c, openapi.PreferencesResult{Preferences: prefs})
 }

@@ -7,7 +7,7 @@
  */
 
 export interface AlertHistoryEvent {
-  created_at?: string;
+  created_at?: number;
   from_state?: string;
   id?: string;
   rule_id?: string;

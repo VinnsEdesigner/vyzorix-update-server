@@ -1,13 +1,13 @@
 package vyzorix
 
-// UsageStatsSnapshot — generated from openapi/schemas.go.
+// UsageStatsSnapshot.
 #UsageStatsSnapshot: {
-        collected_at: string
-        toggles: {[string]: _}
+        collected_at: int64
+        toggles: {[string]: bool}
         counts: #UsageStatsCounts
 }
 
-// UsageStatsCounts — generated from openapi/schemas.go.
+// UsageStatsCounts.
 #UsageStatsCounts: {
         devices: int
         operators: int

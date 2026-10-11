@@ -8,9 +8,12 @@
 import type { DeviceEventData } from './deviceEventData';
 
 export interface DeviceEvent {
-  created_at?: string;
+  created_at?: number;
   data?: DeviceEventData;
   device_id?: string;
   id?: string;
+  severity?: string;
+  source?: string;
+  timestamp?: number;
   type?: string;
 }

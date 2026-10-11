@@ -1,6 +1,6 @@
 package vyzorix
 
-// TelemetryFrameDTO — generated from openapi/schemas.go.
+// TelemetryFrameDTO.
 #TelemetryFrameDTO: {
         timestamp: int64
         uptime: int64
@@ -9,54 +9,52 @@ package vyzorix
         bufferLevel: float64
 }
 
-// TelemetryStatsDTO — generated from openapi/schemas.go.
+// TelemetryStatsDTO.
 #TelemetryStatsDTO: {
         riskScore: #MetricStatsDTO
         thermalTemp: #MetricStatsDTO
         bufferLevel: #MetricStatsDTO
 }
 
-// GetTelemetryResponse — generated from openapi/schemas.go.
+// GetTelemetryResponse.
 #GetTelemetryResponse: {
         frames: [...#TelemetryFrameDTO]
         stats: #TelemetryStatsDTO
 }
 
-// TelemetryEntry — generated from openapi/schemas.go.
+// TelemetryEntry.
 #TelemetryEntry: {
-        timestamp: string
-        metrics: {[string]: _}
+        timestamp: int64
+        metrics: {[string]: float64}
+        id?: string
+        device_id?: string
+        received_at: int64
+        risk_score: int
+        buffer_level: int
+        thermal_temp: int
 }
 
-// TelemetryHistoryRequest — generated from openapi/schemas.go.
-#TelemetryHistoryRequest: {
-        device_id: string
-        start_time: int64
-        end_time: int64
-        limit: int
-}
-
-// TelemetryHistoryResponse — generated from openapi/schemas.go.
+// TelemetryHistoryResponse.
 #TelemetryHistoryResponse: {
         device_id: string
         entries: [...#TelemetryEntry]
         pagination: #Pagination
 }
 
-// TelemetryStatsResult — generated from openapi/schemas.go.
+// TelemetryStatsResult.
 #TelemetryStatsResult: {
         deviceId: string
-        latestEntry: string
-        oldestEntry: string
+        latestEntry: int64
+        oldestEntry: int64
         riskScore: #MetricAggregateResult
         bufferLevel: #MetricAggregateResult
         thermalTemp: #MetricAggregateResult
         sampleCount: int
 }
 
-// TelemetryHistoryEntry — generated from openapi/schemas.go.
+// TelemetryHistoryEntry.
 #TelemetryHistoryEntry: {
-        receivedAt: string
+        receivedAt: int64
         id: string
         deviceId: string
         payload?: string
@@ -65,7 +63,7 @@ package vyzorix
         thermalTemp?: float64
 }
 
-// TelemetryHistoryQueryResult — generated from openapi/schemas.go.
+// TelemetryHistoryQueryResult.
 #TelemetryHistoryQueryResult: {
         deviceId: string
         entries: [...#TelemetryHistoryEntry]
@@ -73,4 +71,12 @@ package vyzorix
         startTime: int64
         endTime: int64
         queryTime: int64
+        exported_at: int64
+        count: int
+}
+
+// TelemetryCleanupResult.
+#TelemetryCleanupResult: {
+        deleted: int
+        older_than: int64
 }

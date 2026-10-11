@@ -7,16 +7,16 @@
  */
 
 export interface APIKey {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   is_active?: boolean;
   key_prefix?: string;
-  last_request_at?: string;
+  last_request_at?: number;
   name?: string;
   operator_id?: string;
   request_count?: number;
-  revoked_at?: string;
+  revoked_at?: number;
   scope?: string;
-  updated_at?: string;
+  updated_at?: number;
 }

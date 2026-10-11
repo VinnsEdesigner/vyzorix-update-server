@@ -12,7 +12,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/inbox"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/appcheck"
@@ -305,7 +304,7 @@ type UpdateInboxEntryRequest struct {
 // @Produce      json
 // @Param        X-Organization-ID  header  string  true  "Organization ID"
 // @Param        imei     path  string  true  "device IMEI"
-// @Param        body  body  openapi.UpdateInboxEntryRequest  true  "inbox update (notes)"
+// @Param        body  body  openapi.UpdateInboxEntryRequest  true  "inbox update (notes, optional status)"
 // @Success      200  {object}  openapi.InboxEntryResponse  "updated inbox entry"
 // @Failure      400  {object}  openapi.ErrorResponse  "IMEI required / invalid body"
 // @Failure      500  {object}  openapi.ErrorResponse  "internal error"
@@ -323,7 +322,7 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 		return
 	}
 
-	var req schema.UpdateInboxEntryRequest
+	var req openapi.UpdateInboxEntryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "Invalid request body"))
 		return
@@ -333,6 +332,30 @@ func (h *Handler) UpdateInboxEntry(c *gin.Context) {
 	operatorID := ""
 	if operator != nil {
 		operatorID = operator.ID
+	}
+
+	// A `status` in the body is a state change (only `rejected` is a valid
+	// operator transition here), not a notes edit. Route it through the same
+	// service path as the ack endpoint so the state machine and timestamps are
+	// handled consistently; otherwise treat the request as a notes update.
+	if req.Status != "" {
+		if req.Status != "rejected" {
+			_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "status must be 'rejected'"))
+			return
+		}
+		if _, err := h.service.RejectDevice(c.Request.Context(), imei, operatorID, orgID, req.Notes); err != nil {
+			se := inbox.ToServiceError(err)
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			return
+		}
+		entry, err := h.service.GetInboxEntry(c.Request.Context(), imei, orgID)
+		if err != nil {
+			se := inbox.ToServiceError(err)
+			_ = c.Error(apperrors.NewServerErrorFromStatus(se.Status, se.Message))
+			return
+		}
+		c.JSON(http.StatusOK, entry)
+		return
 	}
 
 	result, err := h.service.UpdateInboxEntry(c.Request.Context(), imei, operatorID, orgID, req.Notes)

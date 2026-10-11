@@ -196,7 +196,7 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 	// Check lockout BEFORE any expensive operations.
 	if h.lockout.IsLocked(req.Email) {
 		retryAfter := h.lockout.RetryAfter(req.Email)
-		h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Too many failed attempts. Account temporarily locked.", "retry_after": retryAfter.Seconds(), "locked_until": time.Now().Add(retryAfter).Unix()})
+		h.presenter.OK(c, openapi.LoginResult{Error: "account_locked", Message: "Too many failed attempts. Account temporarily locked.", RetryAfter: int64Ptr(int64(retryAfter.Seconds())), LockedUntil: int64Ptr(time.Now().Add(retryAfter).UnixMilli())})
 		return
 	}
 
@@ -232,12 +232,15 @@ func (h *LoginHandler) Handle(c *gin.Context) {
 		case errors.Is(err, application.ErrMFARequired):
 			// Clear lockout on successful credential verification.
 			h.lockout.Clear(req.Email)
-			h.presenter.OK(c, gin.H{
-				"mfa_required": true,
-				"operator_id":  result.OperatorID,
+			h.presenter.OK(c, openapi.LoginResult{
+				RequiresMFA: true,
+				OperatorID:  result.OperatorID,
 			})
 		case errors.Is(err, application.ErrAccountLocked):
-			h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Account temporarily locked due to suspicious activity"})
+			h.presenter.OK(c, openapi.ErrorResponse{
+				Error:   "account_locked",
+				Message: "Account temporarily locked due to suspicious activity",
+			})
 		default:
 			slog.Info("login error",
 				"trace_id", middleware.GetTraceID(c),
@@ -321,7 +324,7 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 	// Check lockout BEFORE any expensive operations.
 	if h.lockout.IsLocked(req.Email) {
 		retryAfter := h.lockout.RetryAfter(req.Email)
-		h.presenter.OK(c, gin.H{"error": "account_locked", "message": "Too many failed attempts. Account temporarily locked.", "retry_after": retryAfter.Seconds(), "locked_until": time.Now().Add(retryAfter).Unix()})
+		h.presenter.OK(c, openapi.LoginWithTokensResult{Error: "account_locked", Message: "Too many failed attempts. Account temporarily locked.", RetryAfter: int64Ptr(int64(retryAfter.Seconds())), LockedUntil: int64Ptr(time.Now().Add(retryAfter).UnixMilli())})
 		return
 	}
 
@@ -342,12 +345,12 @@ func (h *LoginHandler) HandleWithTokens(c *gin.Context) {
 		case errors.Is(err, application.ErrMFARequired):
 			// MFA is required - return partial response with mfa_required flag.
 			// MFA is about operator's own account security, not organization role.
-			h.presenter.OK(c, gin.H{
-				"mfa_required": true,
-				"operator_id":  result.OperatorID,
-				"email":        result.Email,
-				"name":         result.Name,
-				"mfa_enabled":  true,
+			h.presenter.OK(c, openapi.LoginWithTokensResult{
+				RequiresMFA: true,
+				OperatorID:  result.OperatorID,
+				Email:       result.Email,
+				Name:        result.Name,
+				MFAEnabled:  true,
 			})
 		case errors.Is(err, application.ErrInvalidCredentials):
 			h.lockout.RecordFailed(req.Email, c.ClientIP(), c.GetHeader("User-Agent"))

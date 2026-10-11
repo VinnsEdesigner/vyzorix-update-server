@@ -11,7 +11,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	alertapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/alert"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/alert"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
@@ -81,28 +80,18 @@ func (r *ruleRequest) toInput(orgID string) *alertapp.RuleInput {
 	}
 }
 
-// stringMapToAny converts map[string]string to map[string]any for the
-// generated CUE struct field (Labels map[string]any).
-func stringMapToAny(m map[string]string) map[string]any {
-	out := make(map[string]any, len(m))
-	for k, v := range m {
-		out[k] = v
-	}
-	return out
-}
-
-func ruleJSON(v *alertapp.RuleView) schema.AlertRule {
+func ruleJSON(v *alertapp.RuleView) openapi.AlertRule {
 	rule := v.Rule
-	instances := make([]schema.AlertInstance, 0, len(v.Instances))
+	instances := make([]openapi.AlertInstance, 0, len(v.Instances))
 	for _, inst := range v.Instances {
-		instances = append(instances, schema.AlertInstance{
-			Labels:      stringMapToAny(inst.Labels),
+		instances = append(instances, openapi.AlertInstance{
+			Labels:      inst.Labels,
 			State:       string(inst.State),
 			Value:       inst.Value,
-			EvaluatedAt: inst.EvaluatedAt.Format(time.RFC3339),
+			EvaluatedAt: inst.EvaluatedAt.UnixMilli(),
 		})
 	}
-	return schema.AlertRule{
+	return openapi.AlertRule{
 		ID:                    rule.ID,
 		OrgID:                 rule.OrgID,
 		Name:                  rule.Name,
@@ -113,8 +102,8 @@ func ruleJSON(v *alertapp.RuleView) schema.AlertRule {
 		NotifyIntervalSeconds: rule.NotifyIntervalSeconds,
 		Enabled:               rule.Enabled,
 		WebhookURL:            rule.WebhookURL,
-		CreatedAt:             rule.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:             rule.UpdatedAt.Format(time.RFC3339),
+		CreatedAt:             rule.CreatedAt.UnixMilli(),
+		UpdatedAt:             rule.UpdatedAt.UnixMilli(),
 		OnNoData:              string(rule.OnNoData),
 		OnError:               string(rule.OnError),
 		Instances:             instances,
@@ -139,11 +128,11 @@ func (h *Handler) List(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list alert rules"))
 		return
 	}
-	rules := make([]schema.AlertRule, 0, len(views))
+	rules := make([]openapi.AlertRule, 0, len(views))
 	for _, v := range views {
 		rules = append(rules, ruleJSON(v))
 	}
-	c.JSON(http.StatusOK, schema.AlertRuleListResult{Rules: rules})
+	c.JSON(http.StatusOK, openapi.AlertRuleListResult{Rules: rules})
 }
 
 // Create handles POST /v1/alerts/rules.
@@ -251,7 +240,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeletedResult{Deleted: true})
+	c.JSON(http.StatusOK, openapi.DeletedResult{Deleted: true})
 }
 
 // History handles GET /v1/alerts/history (org-wide) and
@@ -281,18 +270,20 @@ func (h *Handler) History(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to load alert history"))
 		return
 	}
-	items := make([]gin.H, 0, len(events))
+	items := make([]openapi.AlertHistoryEvent, 0, len(events))
 	for _, evt := range events {
-		items = append(items, gin.H{
-			"id":         evt.ID,
-			"rule_id":    evt.RuleID,
-			"from_state": string(evt.FromState),
-			"to_state":   string(evt.ToState),
-			"value":      evt.Value,
-			"created_at": evt.CreatedAt,
+		items = append(items, openapi.AlertHistoryEvent{
+			ID:        evt.ID,
+			RuleID:    evt.RuleID,
+			FromState: string(evt.FromState),
+			ToState:   string(evt.ToState),
+			Value:     evt.Value,
+			CreatedAt: evt.CreatedAt,
 		})
 	}
-	c.JSON(http.StatusOK, gin.H{"events": items})
+	c.JSON(http.StatusOK, openapi.AlertHistoryResult{
+		Events: items,
+	})
 }
 
 // Evaluate handles POST /v1/alerts/rules/:id/evaluate — a manual, on-demand
@@ -319,7 +310,7 @@ func (h *Handler) Evaluate(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "evaluation failed"))
 		return
 	}
-	c.JSON(http.StatusOK, schema.AlertEvaluateResult{RuleID: view.Rule.ID, Transitioned: transitioned})
+	c.JSON(http.StatusOK, openapi.AlertEvaluateResult{RuleID: view.Rule.ID, Transitioned: transitioned})
 }
 
 func (h *Handler) writeServiceError(c *gin.Context, err error) {

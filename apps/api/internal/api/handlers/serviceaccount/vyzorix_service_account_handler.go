@@ -10,7 +10,6 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	svcapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/serviceaccount"
@@ -62,28 +61,26 @@ type rotateTokenRequest struct {
 	Scopes    []string `json:"scopes"`
 }
 
-func serviceAccountJSON(sa *serviceaccount.ServiceAccount) gin.H {
-	return gin.H{
-		"id":         sa.ID,
-		"org_id":     sa.OrgID,
-		"name":       sa.Name,
-		"enabled":    sa.Enabled,
-		"created_at": sa.CreatedAt,
-		"updated_at": sa.UpdatedAt,
+func serviceAccountJSON(sa *serviceaccount.ServiceAccount) openapi.ServiceAccount {
+	return openapi.ServiceAccount{
+		ID:        sa.ID,
+		OrgID:     sa.OrgID,
+		Name:      sa.Name,
+		Enabled:   sa.Enabled,
+		CreatedAt: sa.CreatedAt.UnixMilli(),
+		UpdatedAt: sa.UpdatedAt.UnixMilli(),
 	}
 }
 
-func tokenJSON(token *serviceaccount.Token) gin.H {
-	return gin.H{
-		"id":         token.ID,
-		"service_id": token.ServiceID,
-		"name":       token.Name,
-		"key_prefix": token.KeyPrefix,
-		"scopes":     token.Scopes,
-		"valid":      token.Valid,
-		"expires_at": token.ExpiresAt,
-		"created_at": token.CreatedAt,
-		"revoked_at": token.RevokedAt,
+func tokenJSON(token *serviceaccount.Token) openapi.ServiceAccountToken {
+	return openapi.ServiceAccountToken{
+		ID:        token.ID,
+		ServiceID: token.ServiceID,
+		Name:      token.Name,
+		KeyPrefix: token.KeyPrefix,
+		Scopes:    token.Scopes,
+		Valid:     token.Valid,
+		CreatedAt: token.CreatedAt.UnixMilli(),
 	}
 }
 
@@ -114,11 +111,13 @@ func (h *Handler) List(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list service accounts"))
 		return
 	}
-	items := make([]gin.H, 0, len(accounts))
+	items := make([]openapi.ServiceAccount, 0, len(accounts))
 	for _, sa := range accounts {
 		items = append(items, serviceAccountJSON(sa))
 	}
-	c.JSON(http.StatusOK, gin.H{"service_accounts": items})
+	c.JSON(http.StatusOK, openapi.ServiceAccountListResult{
+		ServiceAccounts: items,
+	})
 }
 
 // Create handles POST /v1/service-accounts.
@@ -166,7 +165,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, schema.DeletedResult{Deleted: true})
+	c.JSON(http.StatusOK, openapi.DeletedResult{Deleted: true})
 }
 
 // ListTokens handles GET /v1/service-accounts/:id/tokens.
@@ -191,11 +190,13 @@ func (h *Handler) ListTokens(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeInternalServerError, "failed to list tokens"))
 		return
 	}
-	items := make([]gin.H, 0, len(tokens))
+	items := make([]openapi.ServiceAccountToken, 0, len(tokens))
 	for _, token := range tokens {
 		items = append(items, tokenJSON(token))
 	}
-	c.JSON(http.StatusOK, gin.H{"tokens": items})
+	c.JSON(http.StatusOK, openapi.ServiceAccountTokenListResult{
+		Tokens: items,
+	})
 }
 
 // CreateToken handles POST /v1/service-accounts/:id/tokens. Returns the full
@@ -221,7 +222,7 @@ func (h *Handler) CreateToken(c *gin.Context) {
 	if req.ServiceID == "" {
 		req.ServiceID = c.Param("id")
 	}
-	token, fullKey, err := h.service.CreateToken(c.Request.Context(), &svcapp.TokenInput{
+	_, fullKey, err := h.service.CreateToken(c.Request.Context(), &svcapp.TokenInput{
 		ServiceID: req.ServiceID,
 		Name:      req.Name,
 		Scopes:    req.Scopes,
@@ -231,8 +232,9 @@ func (h *Handler) CreateToken(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	response := tokenJSON(token)
-	response["full_key"] = fullKey
+	response := openapi.ServiceAccountTokenCreated{
+		Secret: fullKey,
+	}
 	c.JSON(http.StatusCreated, response)
 }
 
@@ -259,7 +261,7 @@ func (h *Handler) RevokeToken(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, schema.RevokedResult{Revoked: true})
+	c.JSON(http.StatusOK, openapi.RevokedResult{Revoked: true})
 }
 
 // RotateToken handles POST /v1/service-accounts/:id/tokens/:token_id/rotate.
@@ -286,7 +288,7 @@ func (h *Handler) RotateToken(c *gin.Context) {
 		_ = c.Error(apperrors.NewServerError(apperrors.CodeValidationFailed, "invalid request body: "+err.Error()))
 		return
 	}
-	token, fullKey, err := h.service.RotateToken(c.Request.Context(), c.Param("token_id"), &svcapp.TokenInput{
+	_, fullKey, err := h.service.RotateToken(c.Request.Context(), c.Param("token_id"), &svcapp.TokenInput{
 		ServiceID: c.Param("id"),
 		Name:      req.Name,
 		Scopes:    req.Scopes,
@@ -296,8 +298,9 @@ func (h *Handler) RotateToken(c *gin.Context) {
 		h.writeServiceError(c, err)
 		return
 	}
-	response := tokenJSON(token)
-	response["full_key"] = fullKey
+	response := openapi.ServiceAccountTokenCreated{
+		Secret: fullKey,
+	}
 	c.JSON(http.StatusCreated, response)
 }
 

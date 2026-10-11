@@ -59,11 +59,11 @@ func (h *StatusHandler) Handle(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"device_id":    status.DeviceID,
-		"online":       status.Online,
-		"last_seen":    status.LastSeen,
-		"app_version":  status.AppVersion,
-		"device_class": status.DeviceClass,
+	c.JSON(http.StatusOK, openapi.DeviceStatus{
+		DeviceID:    status.DeviceID,
+		Online:      status.Online,
+		LastSeen:    status.LastSeen,
+		AppVersion:  status.AppVersion,
+		DeviceClass: status.DeviceClass,
 	})
 }

@@ -1,20 +1,20 @@
 package vyzorix
 
-// ContactPointRequest — generated from openapi/schemas.go.
+// ContactPointRequest.
 #ContactPointRequest: {
         name: string
         channel: string
         secret: string
-        config: {[string]: _}
+        config: {[string]: string}
         template_id: string
         enabled: bool
 }
 
-// ContactPoint — generated from openapi/schemas.go.
+// ContactPoint.
 #ContactPoint: {
-        created_at: string
-        updated_at: string
-        config: {[string]: _}
+        created_at: int64
+        updated_at: int64
+        config: {[string]: string}
         id: string
         org_id: string
         name: string
@@ -24,13 +24,14 @@ package vyzorix
         enabled: bool
 }
 
-// ContactPointListResult — generated from openapi/schemas.go.
+// ContactPointListResult.
 #ContactPointListResult: {
         contact_points: [...#ContactPoint]
 }
 
-// ContactPointTestResult — generated from openapi/schemas.go.
+// ContactPointTestResult.
 #ContactPointTestResult: {
-        tested_at: string
+        tested_at: int64
         sent: bool
+        deliveries?: _
 }

@@ -7,8 +7,6 @@ import (
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // Compile-time references for swaggo-annotated openapi DTO types.
@@ -58,11 +56,11 @@ func (h *LockoutHandler) GetLockoutStatus(c *gin.Context) {
 
 	locked, attemptsRemaining, retryAfter := h.lockout.GetLockoutInfo(op.Email)
 	if locked {
-		h.presenter.OK(c, gin.H{
-			"locked":             true,
-			"reason":             "Too many failed attempts",
-			"retry_after":        retryAfter.Seconds(),
-			"attempts_remaining": attemptsRemaining,
+		h.presenter.OK(c, openapi.LockoutStatusResult{
+			Locked:     true,
+			Reason:     "Too many failed attempts",
+			RetryAfter: int64Ptr(int64(retryAfter.Seconds())),
+			Attempts:   attemptsRemaining,
 		})
 
 		return
@@ -114,5 +112,5 @@ func (h *LockoutHandler) UnlockAccount(c *gin.Context) {
 	h.lockout.RecordSuccessfulAttempt(targetOp.Email)
 
 	h.presenter.AdminAction(c, op.ID, "unlock_account", "operator", targetOperatorID, nil)
-	h.presenter.OK(c, schema.SuccessResult{Success: true, Message: "Account unlocked successfully"})
+	h.presenter.OK(c, openapi.SuccessResult{Success: true, Message: "Account unlocked successfully"})
 }

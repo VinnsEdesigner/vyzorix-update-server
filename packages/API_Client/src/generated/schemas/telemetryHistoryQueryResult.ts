@@ -8,9 +8,11 @@
 import type { TelemetryHistoryEntry } from './telemetryHistoryEntry';
 
 export interface TelemetryHistoryQueryResult {
+  count?: number;
   deviceId?: string;
   endTime?: number;
   entries?: TelemetryHistoryEntry[];
+  exported_at?: number;
   queryTime?: number;
   startTime?: number;
   totalCount?: number;

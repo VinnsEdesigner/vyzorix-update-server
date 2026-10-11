@@ -1,22 +1,22 @@
 package vyzorix
 
-// ChannelSubscribeRequest — generated from openapi/schemas.go.
+// ChannelSubscribeRequest.
 #ChannelSubscribeRequest: {
         scope: string
 }
 
-// ChannelStatusResult — generated from openapi/schemas.go.
+// ChannelStatusResult.
 #ChannelStatusResult: {
         org: string
         active_streams: int
 }
 
-// ChannelSubscribeResult — generated from openapi/schemas.go.
+// ChannelSubscribeResult.
 #ChannelSubscribeResult: {
         subscribed: string
 }
 
-// ChannelUnsubscribeResult — generated from openapi/schemas.go.
+// ChannelUnsubscribeResult.
 #ChannelUnsubscribeResult: {
         unsubscribed: string
 }

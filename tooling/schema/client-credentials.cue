@@ -1,6 +1,6 @@
 package vyzorix
 
-// ClientCredential — generated from openapi/schemas.go.
+// ClientCredential.
 #ClientCredential: {
         id:               string
         operator_id:      string
@@ -15,19 +15,34 @@ package vyzorix
         is_active:        bool
         last_request_at?: int64
         secret?:          string
+        client_id?: string
+        client_secret?: string
 }
 
-// ClientCredentialListResult — generated from openapi/schemas.go.
+// ClientCredentialListResult.
 #ClientCredentialListResult: {
         clients: [...#ClientCredential]
 }
 
-// CreateClientCredentialRequest — generated from openapi/schemas.go.
+// CreateClientCredentialRequest.
 #CreateClientCredentialRequest: {
         name: string
 }
 
-// UpdateClientCredentialRequest — generated from openapi/schemas.go.
+// UpdateClientCredentialRequest.
 #UpdateClientCredentialRequest: {
         name?: string
+}
+
+// ClientCredentialUpdateResult.
+#ClientCredentialUpdateResult: {
+        client?: #ClientCredential
+        message?: string
+}
+
+// ClientSecretRotateResult.
+#ClientSecretRotateResult: {
+        client_id?: string
+        client_secret?: string
+        message?: string
 }

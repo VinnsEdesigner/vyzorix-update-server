@@ -84,3 +84,6 @@ playwright-report/
 apps/api/api
 
 apps/api/graphql-schema
+
+# Agent memory / scratch (local only)
+.openhands/

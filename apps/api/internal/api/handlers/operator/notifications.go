@@ -4,14 +4,13 @@ import (
 	"net/http"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
 	apperrors "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	infrawebhook "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/webhook"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 )
 
 // NotificationHandler handles notification endpoints.
@@ -117,5 +116,5 @@ func (h *NotificationHandler) RotateWebhookSecret(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, schema.WebhookSecretResult{Secret: secret})
+	c.JSON(http.StatusOK, openapi.WebhookSecretResult{Secret: secret})
 }

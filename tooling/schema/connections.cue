@@ -1,24 +1,29 @@
 package vyzorix
 
-// ConnectionStatusResult — generated from openapi/schemas.go.
+// ConnectionStatusResult.
 #ConnectionStatusResult: {
         device_id: string
         status?: string
         online: bool
 }
 
-// ConnectionListResult — generated from openapi/schemas.go.
+// ConnectionListResult.
 #ConnectionListResult: {
         connections: [...#ConnectionStatusResult]
 }
 
-// ConnectionMetricsResult — generated from openapi/schemas.go.
+// ConnectionMetricsResult.
 #ConnectionMetricsResult: {
         total_connections: int
         online_connections: int
+        timestamp: int64
+        total_connected: int
+        total_queued: int
+        aggregate_metrics?: {[string]: int64}
+        queue_metrics?: _
 }
 
-// DiagnosticsConnectionInfo — generated from openapi/schemas.go.
+// DiagnosticsConnectionInfo.
 #DiagnosticsConnectionInfo: {
         webSocketStatus: string
         fcmStatus: string

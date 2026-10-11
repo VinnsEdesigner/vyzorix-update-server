@@ -12,6 +12,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func orgThresholdsToOpenAPI(t *organization.Thresholds) *openapi.OperatorThresholds {
+	if t == nil {
+		return nil
+	}
+	return &openapi.OperatorThresholds{
+		RiskWarn:    t.RiskWarn,
+		RiskCrit:    t.RiskCrit,
+		ThermalWarn: t.ThermalWarn,
+		ThermalCrit: t.ThermalCrit,
+		BufferWarn:  t.BufferWarn,
+		BufferCrit:  t.BufferCrit,
+	}
+}
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.OrganizationSettingsResult
@@ -188,8 +202,8 @@ func (h *SettingsHandler) GetThresholds(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"thresholds": settings.DefaultThresholds,
+	h.presenter.OK(c, openapi.ThresholdsResult{
+		Thresholds: orgThresholdsToOpenAPI(settings.DefaultThresholds),
 	})
 }
 
@@ -247,7 +261,7 @@ func (h *SettingsHandler) UpdateThresholds(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"thresholds": settings.DefaultThresholds,
+	h.presenter.OK(c, openapi.ThresholdsResult{
+		Thresholds: orgThresholdsToOpenAPI(settings.DefaultThresholds),
 	})
 }

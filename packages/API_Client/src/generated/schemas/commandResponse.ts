@@ -7,7 +7,7 @@
  */
 
 export interface CommandResponse {
-  args?: number[];
+  args?: string[];
   command?: string;
   delivery?: string;
   deviceId?: string;

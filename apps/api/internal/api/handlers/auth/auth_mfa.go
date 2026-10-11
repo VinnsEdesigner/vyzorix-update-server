@@ -4,7 +4,6 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/schema"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	appauth "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/audit"
@@ -85,7 +84,7 @@ func (h *MFAHandler) GetMFAStatus(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.MFAStatusResult{MFAEnabled: mfaEnabled})
+	h.presenter.OK(c, openapi.MFAStatusResult{MFAEnabled: mfaEnabled})
 }
 
 // EnrollMFA handles POST /v1/auth/mfa/enroll.
@@ -118,7 +117,7 @@ func (h *MFAHandler) EnrollMFA(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.WebhookSecretResult{Secret: result.Secret})
+	h.presenter.OK(c, openapi.WebhookSecretResult{Secret: result.Secret})
 }
 
 // VerifySetupMFA handles POST /v1/auth/mfa/verify-setup.
@@ -156,7 +155,7 @@ func (h *MFAHandler) VerifySetupMFA(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{"verified": true})
+	h.presenter.OK(c, openapi.MFAVerifiedResult{Verified: true})
 }
 
 // EnableMFA handles POST /v1/auth/mfa/enable.
@@ -211,7 +210,7 @@ func (h *MFAHandler) EnableMFA(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.MFAEnableResult{Success: true, BackupCodes: backupCodes})
+	h.presenter.OK(c, openapi.MFAEnableResult{Success: true, BackupCodes: backupCodes})
 }
 
 // DisableMFA handles POST /v1/auth/mfa/disable.
@@ -260,7 +259,7 @@ func (h *MFAHandler) DisableMFA(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.SuccessResult{Success: true})
+	h.presenter.OK(c, openapi.SuccessResult{Success: true})
 }
 
 // VerifyBackupCode handles POST /v1/auth/mfa/verify-backup.
@@ -305,7 +304,7 @@ func (h *MFAHandler) VerifyBackupCode(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.MFABackupCodeResult{Valid: true})
+	h.presenter.OK(c, openapi.MFABackupCodeResult{Valid: true})
 }
 
 // RegenerateBackupCodes handles POST /v1/auth/mfa/regenerate-backup-codes.
@@ -332,7 +331,7 @@ func (h *MFAHandler) RegenerateBackupCodes(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, schema.MFARegenerateResult{BackupCodes: backupCodes})
+	h.presenter.OK(c, openapi.MFARegenerateResult{BackupCodes: backupCodes})
 }
 
 // VerifyMFA handles POST /v1/auth/mfa/verify - Main MFA verification during login.
@@ -435,19 +434,19 @@ func (h *MFAHandler) VerifyMFA(c *gin.Context) {
 		h.auditLogger.MFAVerifySuccess(c.Request.Context(), req.OperatorID, session.ID, c.ClientIP())
 	}
 
-	h.presenter.OK(c, gin.H{
-		"success":       true,
-		"session_id":    session.ID,
-		"access_token":  accessToken, // Proper JWT access token.
-		"refresh_token": refreshToken,
-		"expires_at":    expiresAt,
-		"signing_key":   session.SigningKey,
-		"operator": gin.H{
-			"id":          op.ID,
-			"email":       op.Email,
-			"name":        op.Name,
-			"role":        role,
-			"mfa_enabled": op.MFAEnabled,
+	h.presenter.OK(c, openapi.MFAVerifyResult{
+		Success:      true,
+		SessionID:    session.ID,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresAt:    expiresAt,
+		SigningKey:   session.SigningKey,
+		Operator: openapi.MFAOperator{
+			ID:         op.ID,
+			Email:      op.Email,
+			Name:       op.Name,
+			Role:       role,
+			MFAEnabled: op.MFAEnabled,
 		},
 	})
 }

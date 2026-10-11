@@ -6932,7 +6932,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "inbox update (notes)",
+          "description": "inbox update (notes, optional status)",
           "content": {
             "application/json": {
               "schema": {
@@ -13421,10 +13421,10 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -13436,7 +13436,7 @@
             "type": "string"
           },
           "last_request_at": {
-            "type": "string"
+            "type": "integer"
           },
           "name": {
             "type": "string"
@@ -13448,13 +13448,13 @@
             "type": "integer"
           },
           "revoked_at": {
-            "type": "string"
+            "type": "integer"
           },
           "scope": {
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -13485,10 +13485,10 @@
             "type": "string"
           },
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -13500,7 +13500,7 @@
             "type": "string"
           },
           "last_request_at": {
-            "type": "string"
+            "type": "integer"
           },
           "name": {
             "type": "string"
@@ -13512,13 +13512,13 @@
             "type": "integer"
           },
           "revoked_at": {
-            "type": "string"
+            "type": "integer"
           },
           "scope": {
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -13526,10 +13526,10 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -13541,7 +13541,7 @@
             "type": "string"
           },
           "last_request_at": {
-            "type": "string"
+            "type": "integer"
           },
           "name": {
             "type": "string"
@@ -13556,13 +13556,13 @@
             "type": "integer"
           },
           "revoked_at": {
-            "type": "string"
+            "type": "integer"
           },
           "scope": {
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -13574,6 +13574,12 @@
             "items": {
               "$ref": "#/components/schemas/AdminAPIKey"
             }
+          },
+          "keys_created_this_month": {
+            "type": "integer"
+          },
+          "monthly_limit": {
+            "type": "integer"
           },
           "pagination": {
             "$ref": "#/components/schemas/Pagination"
@@ -13653,7 +13659,7 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "email": {
             "type": "string"
@@ -13674,7 +13680,7 @@
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -13699,7 +13705,7 @@
             "type": "string"
           },
           "transitioned": {
-            "type": "integer"
+            "type": "boolean"
           }
         }
       },
@@ -13707,7 +13713,7 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "from_state": {
             "type": "string"
@@ -13741,7 +13747,7 @@
         "type": "object",
         "properties": {
           "evaluated_at": {
-            "type": "string"
+            "type": "integer"
           },
           "labels": {
             "type": "object",
@@ -13764,7 +13770,7 @@
             "type": "string"
           },
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "enabled": {
             "type": "boolean"
@@ -13803,7 +13809,7 @@
             "type": "number"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           },
           "webhook_url": {
             "type": "string"
@@ -13860,10 +13866,10 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "end_time": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -13875,7 +13881,7 @@
             "type": "string"
           },
           "start_time": {
-            "type": "string"
+            "type": "integer"
           },
           "tags": {
             "type": "array",
@@ -13890,7 +13896,7 @@
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -13977,20 +13983,56 @@
       "ClientCredential": {
         "type": "object",
         "properties": {
-          "clientId": {
+          "allowed_origins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "client_id": {
             "type": "string"
           },
-          "createdAt": {
+          "client_secret": {
             "type": "string"
+          },
+          "created_at": {
+            "type": "integer"
           },
           "id": {
             "type": "string"
           },
+          "is_active": {
+            "type": "boolean"
+          },
+          "last_request_at": {
+            "type": "integer"
+          },
           "name": {
             "type": "string"
           },
+          "operator_id": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "rate_limit": {
+            "type": "integer"
+          },
+          "request_count": {
+            "type": "integer"
+          },
           "secret": {
             "type": "string"
+          },
+          "updated_at": {
+            "type": "integer"
           }
         }
       },
@@ -14073,6 +14115,9 @@
           },
           "trace_id": {
             "type": "string"
+          },
+          "ttl_seconds": {
+            "type": "integer"
           }
         }
       },
@@ -14164,7 +14209,7 @@
         "properties": {
           "args": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": {}
           },
           "command": {
             "type": "string"
@@ -14192,7 +14237,7 @@
           "args": {
             "type": "array",
             "items": {
-              "type": "integer"
+              "type": "string"
             }
           },
           "command": {
@@ -14282,7 +14327,7 @@
             "type": "string"
           },
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -14294,8 +14339,7 @@
             "type": "string"
           },
           "snapshot": {
-            "type": "object",
-            "additionalProperties": {}
+            "type": "string"
           },
           "version": {
             "type": "integer"
@@ -14339,10 +14383,27 @@
       "ConnectionMetricsResult": {
         "type": "object",
         "properties": {
+          "aggregate_metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
           "online_connections": {
             "type": "integer"
           },
+          "queue_metrics": {},
+          "timestamp": {
+            "type": "integer"
+          },
+          "total_connected": {
+            "type": "integer"
+          },
           "total_connections": {
+            "type": "integer"
+          },
+          "total_queued": {
             "type": "integer"
           }
         }
@@ -14374,7 +14435,7 @@
             }
           },
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "enabled": {
             "type": "boolean"
@@ -14395,7 +14456,7 @@
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -14439,11 +14500,12 @@
       "ContactPointTestResult": {
         "type": "object",
         "properties": {
+          "deliveries": {},
           "sent": {
             "type": "boolean"
           },
           "tested_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -14679,7 +14741,7 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "data": {
             "type": "object",
@@ -14691,6 +14753,15 @@
           "id": {
             "type": "string"
           },
+          "severity": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "integer"
+          },
           "type": {
             "type": "string"
           }
@@ -14699,11 +14770,17 @@
       "DeviceEventListResult": {
         "type": "object",
         "properties": {
+          "count": {
+            "type": "integer"
+          },
           "events": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DeviceEvent"
             }
+          },
+          "has_more": {
+            "type": "boolean"
           }
         }
       },
@@ -14912,14 +14989,23 @@
           "device_id": {
             "type": "string"
           },
+          "device_imei": {
+            "type": "string"
+          },
           "from_org_id": {
             "type": "string"
           },
           "message": {
             "type": "string"
           },
+          "source_org": {
+            "type": "string"
+          },
           "success": {
             "type": "boolean"
+          },
+          "target_org": {
+            "type": "string"
           },
           "to_org_id": {
             "type": "string"
@@ -15374,18 +15460,30 @@
             "type": "string"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
           },
           "invited_at": {
-            "type": "string"
+            "type": "integer"
           },
           "invited_by": {
             "type": "string"
           },
+          "inviter_name": {
+            "type": "string"
+          },
           "organization_id": {
+            "type": "string"
+          },
+          "organization_name": {
+            "type": "string"
+          },
+          "responded_at": {
+            "type": "integer"
+          },
+          "responder_id": {
             "type": "string"
           },
           "role": {
@@ -15406,13 +15504,13 @@
             "type": "string"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
           },
           "invited_at": {
-            "type": "string"
+            "type": "integer"
           },
           "inviter_name": {
             "type": "string"
@@ -15457,6 +15555,9 @@
           "reason": {
             "type": "string"
           },
+          "retry_after": {
+            "type": "integer"
+          },
           "unlock_at": {
             "type": "integer"
           }
@@ -15488,7 +15589,16 @@
           "email": {
             "type": "string"
           },
+          "error": {
+            "type": "string"
+          },
           "last_organization_id": {
+            "type": "string"
+          },
+          "locked_until": {
+            "type": "integer"
+          },
+          "message": {
             "type": "string"
           },
           "mfa_enabled": {
@@ -15515,6 +15625,9 @@
           "requires_mfa": {
             "type": "boolean"
           },
+          "retry_after": {
+            "type": "integer"
+          },
           "selected_organization": {
             "$ref": "#/components/schemas/OrganizationInfo"
           },
@@ -15535,10 +15648,19 @@
           "email": {
             "type": "string"
           },
+          "error": {
+            "type": "string"
+          },
           "expires_at": {
             "type": "integer"
           },
           "last_organization_id": {
+            "type": "string"
+          },
+          "locked_until": {
+            "type": "integer"
+          },
+          "message": {
             "type": "string"
           },
           "mfa_enabled": {
@@ -15567,6 +15689,9 @@
           },
           "requires_mfa": {
             "type": "boolean"
+          },
+          "retry_after": {
+            "type": "integer"
           },
           "selected_organization": {
             "$ref": "#/components/schemas/OrganizationInfo"
@@ -15944,7 +16069,7 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "created_by": {
             "type": "string"
@@ -15968,7 +16093,7 @@
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -16007,7 +16132,7 @@
             "type": "string"
           },
           "joined_at": {
-            "type": "string"
+            "type": "integer"
           },
           "operator_email": {
             "type": "string"
@@ -16022,7 +16147,7 @@
             "type": "string"
           },
           "removed_at": {
-            "type": "string"
+            "type": "integer"
           },
           "role": {
             "type": "string"
@@ -16275,7 +16400,7 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "enabled": {
             "type": "boolean"
@@ -16290,7 +16415,7 @@
             "type": "string"
           },
           "updated_at": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -16309,10 +16434,10 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -16324,7 +16449,7 @@
             "type": "string"
           },
           "revoked_at": {
-            "type": "string"
+            "type": "integer"
           },
           "scopes": {
             "type": "array",
@@ -16343,38 +16468,8 @@
       "ServiceAccountTokenCreated": {
         "type": "object",
         "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "key_prefix": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "revoked_at": {
-            "type": "string"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "secret": {
             "type": "string"
-          },
-          "service_id": {
-            "type": "string"
-          },
-          "valid": {
-            "type": "boolean"
           }
         }
       },
@@ -16392,38 +16487,8 @@
       "ServiceAccountTokenRotated": {
         "type": "object",
         "properties": {
-          "created_at": {
-            "type": "string"
-          },
-          "expires_at": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "key_prefix": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "revoked_at": {
-            "type": "string"
-          },
-          "scopes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "secret": {
             "type": "string"
-          },
-          "service_id": {
-            "type": "string"
-          },
-          "valid": {
-            "type": "boolean"
           }
         }
       },
@@ -16431,10 +16496,10 @@
         "type": "object",
         "properties": {
           "created_at": {
-            "type": "string"
+            "type": "integer"
           },
           "expires_at": {
-            "type": "string"
+            "type": "integer"
           },
           "id": {
             "type": "string"
@@ -16542,6 +16607,15 @@
       "TelemetryEntry": {
         "type": "object",
         "properties": {
+          "buffer_level": {
+            "type": "integer"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
           "metrics": {
             "type": "object",
             "additionalProperties": {
@@ -16549,8 +16623,17 @@
               "format": "float64"
             }
           },
+          "received_at": {
+            "type": "integer"
+          },
+          "risk_score": {
+            "type": "integer"
+          },
+          "thermal_temp": {
+            "type": "integer"
+          },
           "timestamp": {
-            "type": "string"
+            "type": "integer"
           }
         }
       },
@@ -16590,7 +16673,7 @@
             "type": "string"
           },
           "receivedAt": {
-            "type": "string"
+            "type": "integer"
           },
           "riskScore": {
             "type": "integer"
@@ -16603,6 +16686,9 @@
       "TelemetryHistoryQueryResult": {
         "type": "object",
         "properties": {
+          "count": {
+            "type": "integer"
+          },
           "deviceId": {
             "type": "string"
           },
@@ -16614,6 +16700,9 @@
             "items": {
               "$ref": "#/components/schemas/TelemetryHistoryEntry"
             }
+          },
+          "exported_at": {
+            "type": "integer"
           },
           "queryTime": {
             "type": "integer"
@@ -16650,10 +16739,10 @@
             "type": "string"
           },
           "latestEntry": {
-            "type": "string"
+            "type": "integer"
           },
           "oldestEntry": {
-            "type": "string"
+            "type": "integer"
           },
           "riskScore": {
             "$ref": "#/components/schemas/MetricAggregateResult"
@@ -16704,14 +16793,11 @@
             "type": "object",
             "additionalProperties": {}
           },
-          "deviceId": {
-            "type": "string"
-          },
           "id": {
             "type": "string"
           },
           "timestamp": {
-            "type": "string"
+            "type": "integer"
           },
           "type": {
             "type": "string"
@@ -16727,11 +16813,8 @@
               "$ref": "#/components/schemas/TimelineEventResult"
             }
           },
-          "hasMore": {
-            "type": "boolean"
-          },
-          "nextCursor": {
-            "type": "string"
+          "pagination": {
+            "$ref": "#/components/schemas/CursorPaginationResult"
           }
         }
       },
@@ -16840,6 +16923,9 @@
           "current_version": {
             "type": "string"
           },
+          "error": {
+            "type": "string"
+          },
           "latest_version": {
             "type": "string"
           },
@@ -16934,6 +17020,9 @@
         "type": "object",
         "properties": {
           "notes": {
+            "type": "string"
+          },
+          "status": {
             "type": "string"
           }
         }
@@ -17452,7 +17541,7 @@
         "type": "object",
         "properties": {
           "collected_at": {
-            "type": "string"
+            "type": "integer"
           },
           "counts": {
             "$ref": "#/components/schemas/UsageStatsCounts"

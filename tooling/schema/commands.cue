@@ -1,6 +1,6 @@
 package vyzorix
 
-// CommandRequest — generated from openapi/schemas.go.
+// CommandRequest.
 #CommandRequest: {
         args?: {[string]: _}
         command: string
@@ -11,7 +11,7 @@ package vyzorix
         timestamp: int64
 }
 
-// CommandDispatchResult — generated from openapi/schemas.go.
+// CommandDispatchResult.
 #CommandDispatchResult: {
         status: string
         dispatchId: string
@@ -20,7 +20,7 @@ package vyzorix
         device_online: bool
 }
 
-// CommandStatus — generated from openapi/schemas.go.
+// CommandStatus.
 #CommandStatus: {
         dispatchId: string
         command_id: string
@@ -30,7 +30,7 @@ package vyzorix
         serverTime: int64
 }
 
-// CommandRetryResult — generated from openapi/schemas.go.
+// CommandRetryResult.
 #CommandRetryResult: {
         dispatchId: string
         command_id: string
@@ -38,19 +38,19 @@ package vyzorix
         serverTime: int64
 }
 
-// CommandCancelResult — generated from openapi/schemas.go.
+// CommandCancelResult.
 #CommandCancelResult: {
         dispatchId: string
         cancelled: bool
         serverTime: int64
 }
 
-// CommandPendingResult — generated from openapi/schemas.go.
+// CommandPendingResult.
 #CommandPendingResult: {
         commands: [...#CommandResponse]
 }
 
-// CommandResponse — generated from openapi/schemas.go.
+// CommandResponse.
 #CommandResponse: {
         id?: string
         deviceId?: string
@@ -62,7 +62,7 @@ package vyzorix
         serverTime?: int64
 }
 
-// CommandHistoryEntry — generated from openapi/schemas.go.
+// CommandHistoryEntry.
 #CommandHistoryEntry: {
         id?: string
         dispatchId: string
@@ -77,22 +77,23 @@ package vyzorix
         latencyMs?: int64
 }
 
-// CommandHistoryResult — generated from openapi/schemas.go.
+// CommandHistoryResult.
 #CommandHistoryResult: {
         commands: [...#CommandHistoryEntry]
         pagination: #Pagination
 }
 
-// CommandConfirmRequest — generated from openapi/schemas.go.
+// CommandConfirmRequest.
 #CommandConfirmRequest: {
         command: string
 }
 
-// CommandConfirmResult — generated from openapi/schemas.go.
+// CommandConfirmResult.
 #CommandConfirmResult: {
         confirmation_token?: string
         risk_tier: string
         trace_id?: string
         expires_at?: int64
         confirmation_required: bool
+        ttl_seconds: int
 }

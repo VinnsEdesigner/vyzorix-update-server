@@ -7,14 +7,5 @@
  */
 
 export interface ServiceAccountTokenCreated {
-  created_at?: string;
-  expires_at?: string;
-  id?: string;
-  key_prefix?: string;
-  name?: string;
-  revoked_at?: string;
-  scopes?: string[];
   secret?: string;
-  service_id?: string;
-  valid?: boolean;
 }

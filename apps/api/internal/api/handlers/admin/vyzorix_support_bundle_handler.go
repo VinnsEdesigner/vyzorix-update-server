@@ -38,27 +38,27 @@ func (h *SupportBundleHandler) GetBundle(c *gin.Context) {
 	defer cancel()
 
 	name, _ := os.Hostname()
-	bundle := gin.H{
-		"generated_at": time.Now().UTC().Format(time.RFC3339),
-		"hostname":     name,
-		"go_version":   runtime.Version(),
-		"goroutines":   runtime.NumGoroutine(),
-		"go_max_procs": runtime.GOMAXPROCS(0),
-		"go_num_cpu":   runtime.NumCPU(),
+	bundle := openapi.SupportBundleResult{
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		Hostname:    name,
+		GoVersion:   runtime.Version(),
+		Goroutines:  runtime.NumGoroutine(),
+		GoMaxProcs:  runtime.GOMAXPROCS(0),
+		GoNumCpu:    runtime.NumCPU(),
 	}
 
 	if h.db != nil {
 		var schemaVersion int
 		_ = h.db.DB().QueryRowContext(ctx, `SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1`).Scan(&schemaVersion)
-		bundle["schema_version"] = schemaVersion
+		bundle.SchemaVersion = schemaVersion
 
 		var deviceCount, orgCount, operatorCount int
 		_ = h.db.DB().QueryRowContext(ctx, `SELECT COUNT(*) FROM devices`).Scan(&deviceCount)
 		_ = h.db.DB().QueryRowContext(ctx, `SELECT COUNT(*) FROM organizations WHERE is_active = 1`).Scan(&orgCount)
 		_ = h.db.DB().QueryRowContext(ctx, `SELECT COUNT(*) FROM operators`).Scan(&operatorCount)
-		bundle["device_count"] = deviceCount
-		bundle["org_count"] = orgCount
-		bundle["operator_count"] = operatorCount
+		bundle.DeviceCount = deviceCount
+		bundle.OrgCount = orgCount
+		bundle.OperatorCount = operatorCount
 	}
 
 	c.Header("Content-Disposition", "attachment; filename=vyzorix-support-bundle.json")

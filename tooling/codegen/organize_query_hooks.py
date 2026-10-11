@@ -73,7 +73,11 @@ def main():
         if not ts_files:
             continue
 
-        old_filename = ts_files[0]
+        # orval emits the raw file as `<tag>.ts`; prefer that as the source so a
+        # stale already-renamed file left from a previous run can't be mistaken
+        # for it.
+        raw_name = f"{tag_name}.ts"
+        old_filename = raw_name if raw_name in ts_files else ts_files[0]
         old_basename = old_filename.replace(".ts", "")
         new_basename = TAG_RENAMES.get(tag_name, tag_name)
         new_dir = os.path.join(SOURCE, tag_name)  # keep original folder name

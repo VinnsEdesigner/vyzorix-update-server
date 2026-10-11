@@ -13,6 +13,24 @@ import (
 	usagestats "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/usagestats"
 )
 
+func usageSnapshotToOpenAPI(s *usagestats.Snapshot) *openapi.UsageStatsSnapshot {
+	if s == nil {
+		return nil
+	}
+	return &openapi.UsageStatsSnapshot{
+		Counts: openapi.UsageStatsCounts{
+			Devices:       s.Counts.Devices,
+			Operators:     s.Counts.Operators,
+			Organizations: s.Counts.Organizations,
+			AlertRules:    s.Counts.AlertRules,
+			Annotations:   s.Counts.Annotations,
+			ContactPoints: s.Counts.ContactPoints,
+		},
+		Toggles:     s.Toggles,
+		CollectedAt: s.CollectedAt.UnixMilli(),
+	}
+}
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var _ openapi.UpdateCheckerResult
 
@@ -56,28 +74,28 @@ func (h *UpdateCheckerHandler) Check(c *gin.Context) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": "failed to check for updates", "current_version": h.currentVersion})
+		c.JSON(http.StatusOK, openapi.UpdateCheckerResult{Error: "failed to check for updates", CurrentVersion: h.currentVersion, UpdateAvailable: false})
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	var release githubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": "failed to parse release info", "current_version": h.currentVersion})
+		c.JSON(http.StatusOK, openapi.UpdateCheckerResult{Error: "failed to parse release info", CurrentVersion: h.currentVersion, UpdateAvailable: false})
 		return
 	}
 
 	updateAvailable := release.TagName != h.currentVersion && release.TagName != ""
-	response := gin.H{
-		"current_version":  h.currentVersion,
-		"latest_version":   release.TagName,
-		"update_available": updateAvailable,
-		"release_name":     release.Name,
-		"release_url":      release.HTMLURL,
+	response := openapi.UpdateCheckerResult{
+		CurrentVersion:  h.currentVersion,
+		LatestVersion:   release.TagName,
+		UpdateAvailable: updateAvailable,
+		ReleaseName:     release.Name,
+		ReleaseURL:      release.HTMLURL,
 	}
 	if h.statsSvc != nil {
 		if snap := h.statsSvc.Snapshot(); snap != nil {
-			response["usage_stats"] = snap
+			response.UsageStats = usageSnapshotToOpenAPI(snap)
 		}
 	}
 	c.JSON(http.StatusOK, response)

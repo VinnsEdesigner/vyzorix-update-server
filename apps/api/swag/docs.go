@@ -5675,7 +5675,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "inbox update (notes)",
+                        "description": "inbox update (notes, optional status)",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -10878,10 +10878,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -10893,7 +10893,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "last_request_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -10905,13 +10905,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "revoked_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "scope": {
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -10942,10 +10942,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -10957,7 +10957,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "last_request_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -10969,13 +10969,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "revoked_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "scope": {
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -10983,10 +10983,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -10998,7 +10998,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "last_request_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -11013,13 +11013,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "revoked_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "scope": {
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -11031,6 +11031,12 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.AdminAPIKey"
                     }
+                },
+                "keys_created_this_month": {
+                    "type": "integer"
+                },
+                "monthly_limit": {
+                    "type": "integer"
                 },
                 "pagination": {
                     "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.Pagination"
@@ -11110,7 +11116,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "email": {
                     "type": "string"
@@ -11131,7 +11137,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -11156,7 +11162,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "transitioned": {
-                    "type": "integer"
+                    "type": "boolean"
                 }
             }
         },
@@ -11164,7 +11170,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "from_state": {
                     "type": "string"
@@ -11198,7 +11204,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "evaluated_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "labels": {
                     "type": "object",
@@ -11221,7 +11227,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "enabled": {
                     "type": "boolean"
@@ -11260,7 +11266,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "webhook_url": {
                     "type": "string"
@@ -11317,10 +11323,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "end_time": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -11332,7 +11338,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_time": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "tags": {
                     "type": "array",
@@ -11347,7 +11353,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -11434,20 +11440,56 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ClientCredential": {
             "type": "object",
             "properties": {
-                "clientId": {
+                "allowed_origins": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "allowed_paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "client_id": {
                     "type": "string"
                 },
-                "createdAt": {
+                "client_secret": {
                     "type": "string"
+                },
+                "created_at": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "last_request_at": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
+                "operator_id": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "rate_limit": {
+                    "type": "integer"
+                },
+                "request_count": {
+                    "type": "integer"
+                },
                 "secret": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
                 }
             }
         },
@@ -11530,6 +11572,9 @@ const docTemplate = `{
                 },
                 "trace_id": {
                     "type": "string"
+                },
+                "ttl_seconds": {
+                    "type": "integer"
                 }
             }
         },
@@ -11621,7 +11666,7 @@ const docTemplate = `{
             "properties": {
                 "args": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {}
                 },
                 "command": {
                     "type": "string"
@@ -11649,7 +11694,7 @@ const docTemplate = `{
                 "args": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "type": "string"
                     }
                 },
                 "command": {
@@ -11739,7 +11784,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -11751,8 +11796,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "snapshot": {
-                    "type": "object",
-                    "additionalProperties": {}
+                    "type": "string"
                 },
                 "version": {
                     "type": "integer"
@@ -11796,10 +11840,27 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ConnectionMetricsResult": {
             "type": "object",
             "properties": {
+                "aggregate_metrics": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
                 "online_connections": {
                     "type": "integer"
                 },
+                "queue_metrics": {},
+                "timestamp": {
+                    "type": "integer"
+                },
+                "total_connected": {
+                    "type": "integer"
+                },
                 "total_connections": {
+                    "type": "integer"
+                },
+                "total_queued": {
                     "type": "integer"
                 }
             }
@@ -11831,7 +11892,7 @@ const docTemplate = `{
                     }
                 },
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "enabled": {
                     "type": "boolean"
@@ -11852,7 +11913,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -11896,11 +11957,12 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ContactPointTestResult": {
             "type": "object",
             "properties": {
+                "deliveries": {},
                 "sent": {
                     "type": "boolean"
                 },
                 "tested_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -12136,7 +12198,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "data": {
                     "type": "object",
@@ -12148,6 +12210,15 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "severity": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "integer"
+                },
                 "type": {
                     "type": "string"
                 }
@@ -12156,11 +12227,17 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEventListResult": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer"
+                },
                 "events": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.DeviceEvent"
                     }
+                },
+                "has_more": {
+                    "type": "boolean"
                 }
             }
         },
@@ -12369,14 +12446,23 @@ const docTemplate = `{
                 "device_id": {
                     "type": "string"
                 },
+                "device_imei": {
+                    "type": "string"
+                },
                 "from_org_id": {
                     "type": "string"
                 },
                 "message": {
                     "type": "string"
                 },
+                "source_org": {
+                    "type": "string"
+                },
                 "success": {
                     "type": "boolean"
+                },
+                "target_org": {
+                    "type": "string"
                 },
                 "to_org_id": {
                     "type": "string"
@@ -12831,18 +12917,30 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
                 "invited_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "invited_by": {
                     "type": "string"
                 },
+                "inviter_name": {
+                    "type": "string"
+                },
                 "organization_id": {
+                    "type": "string"
+                },
+                "organization_name": {
+                    "type": "string"
+                },
+                "responded_at": {
+                    "type": "integer"
+                },
+                "responder_id": {
                     "type": "string"
                 },
                 "role": {
@@ -12863,13 +12961,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
                 },
                 "invited_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "inviter_name": {
                     "type": "string"
@@ -12914,6 +13012,9 @@ const docTemplate = `{
                 "reason": {
                     "type": "string"
                 },
+                "retry_after": {
+                    "type": "integer"
+                },
                 "unlock_at": {
                     "type": "integer"
                 }
@@ -12945,7 +13046,16 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "error": {
+                    "type": "string"
+                },
                 "last_organization_id": {
+                    "type": "string"
+                },
+                "locked_until": {
+                    "type": "integer"
+                },
+                "message": {
                     "type": "string"
                 },
                 "mfa_enabled": {
@@ -12972,6 +13082,9 @@ const docTemplate = `{
                 "requires_mfa": {
                     "type": "boolean"
                 },
+                "retry_after": {
+                    "type": "integer"
+                },
                 "selected_organization": {
                     "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
                 },
@@ -12992,10 +13105,19 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "error": {
+                    "type": "string"
+                },
                 "expires_at": {
                     "type": "integer"
                 },
                 "last_organization_id": {
+                    "type": "string"
+                },
+                "locked_until": {
+                    "type": "integer"
+                },
+                "message": {
                     "type": "string"
                 },
                 "mfa_enabled": {
@@ -13024,6 +13146,9 @@ const docTemplate = `{
                 },
                 "requires_mfa": {
                     "type": "boolean"
+                },
+                "retry_after": {
+                    "type": "integer"
                 },
                 "selected_organization": {
                     "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.OrganizationInfo"
@@ -13401,7 +13526,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "created_by": {
                     "type": "string"
@@ -13425,7 +13550,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -13464,7 +13589,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "joined_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "operator_email": {
                     "type": "string"
@@ -13479,7 +13604,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "removed_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "role": {
                     "type": "string"
@@ -13732,7 +13857,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "enabled": {
                     "type": "boolean"
@@ -13747,7 +13872,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -13766,10 +13891,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -13781,7 +13906,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "revoked_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "scopes": {
                     "type": "array",
@@ -13800,38 +13925,8 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenCreated": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "key_prefix": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "revoked_at": {
-                    "type": "string"
-                },
-                "scopes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "secret": {
                     "type": "string"
-                },
-                "service_id": {
-                    "type": "string"
-                },
-                "valid": {
-                    "type": "boolean"
                 }
             }
         },
@@ -13849,38 +13944,8 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.ServiceAccountTokenRotated": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "expires_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "key_prefix": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "revoked_at": {
-                    "type": "string"
-                },
-                "scopes": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "secret": {
                     "type": "string"
-                },
-                "service_id": {
-                    "type": "string"
-                },
-                "valid": {
-                    "type": "boolean"
                 }
             }
         },
@@ -13888,10 +13953,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "expires_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -13999,6 +14064,15 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryEntry": {
             "type": "object",
             "properties": {
+                "buffer_level": {
+                    "type": "integer"
+                },
+                "device_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
                 "metrics": {
                     "type": "object",
                     "additionalProperties": {
@@ -14006,8 +14080,17 @@ const docTemplate = `{
                         "format": "float64"
                     }
                 },
+                "received_at": {
+                    "type": "integer"
+                },
+                "risk_score": {
+                    "type": "integer"
+                },
+                "thermal_temp": {
+                    "type": "integer"
+                },
                 "timestamp": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -14047,7 +14130,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "receivedAt": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "riskScore": {
                     "type": "integer"
@@ -14060,6 +14143,9 @@ const docTemplate = `{
         "github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryQueryResult": {
             "type": "object",
             "properties": {
+                "count": {
+                    "type": "integer"
+                },
                 "deviceId": {
                     "type": "string"
                 },
@@ -14071,6 +14157,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TelemetryHistoryEntry"
                     }
+                },
+                "exported_at": {
+                    "type": "integer"
                 },
                 "queryTime": {
                     "type": "integer"
@@ -14107,10 +14196,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "latestEntry": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "oldestEntry": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "riskScore": {
                     "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.MetricAggregateResult"
@@ -14161,14 +14250,11 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {}
                 },
-                "deviceId": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
                 "timestamp": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "type": {
                     "type": "string"
@@ -14184,11 +14270,8 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.TimelineEventResult"
                     }
                 },
-                "hasMore": {
-                    "type": "boolean"
-                },
-                "nextCursor": {
-                    "type": "string"
+                "pagination": {
+                    "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.CursorPaginationResult"
                 }
             }
         },
@@ -14297,6 +14380,9 @@ const docTemplate = `{
                 "current_version": {
                     "type": "string"
                 },
+                "error": {
+                    "type": "string"
+                },
                 "latest_version": {
                     "type": "string"
                 },
@@ -14391,6 +14477,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "notes": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -14909,7 +14998,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "collected_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "counts": {
                     "$ref": "#/definitions/github_com_VinnsEdesigner_vyzorix_apps_api_internal_api_openapi.UsageStatsCounts"

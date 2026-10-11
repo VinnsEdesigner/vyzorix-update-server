@@ -13,6 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func int64Ptr(v int64) *int64 { return &v }
+
 // Compile-time references for swaggo-annotated openapi DTO types.
 var (
 	_ openapi.CreateInvitationRequest
@@ -124,16 +126,15 @@ func (h *InvitationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	h.presenter.Created(c, gin.H{
-		"id":              inv.ID,
-		"organization_id": inv.OrganizationID,
-		"email":           inv.Email,
-		"role":            inv.Role,
-		"status":          inv.Status,
-		"token":           inv.Token,
-		"invited_by":      inv.InvitedBy,
-		"invited_at":      inv.InvitedAt,
-		"expires_at":      inv.ExpiresAt,
+	h.presenter.Created(c, openapi.Invitation{
+		ID:             inv.ID,
+		OrganizationID: inv.OrganizationID,
+		Email:          inv.Email,
+		Role:           string(inv.Role),
+		Status:         string(inv.Status),
+		Token:          inv.Token,
+		InvitedBy:      inv.InvitedBy,
+		InvitedAt:      int64Ptr(inv.InvitedAt.UnixMilli()),
 	})
 }
 
@@ -191,26 +192,30 @@ func (h *InvitationHandler) ListByOrganization(c *gin.Context) {
 		return
 	}
 
-	result := make([]gin.H, len(invitations))
+	result := make([]openapi.Invitation, len(invitations))
 	for i, inv := range invitations {
-		result[i] = gin.H{
-			"id":                inv.ID,
-			"organization_id":   inv.OrganizationID,
-			"email":             inv.Email,
-			"role":              inv.Role,
-			"status":            inv.Status,
-			"invited_by":        inv.InvitedBy,
-			"invited_at":        inv.InvitedAt,
-			"responded_at":      inv.RespondedAt,
-			"responder_id":      inv.RespondedBy,
-			"expires_at":        inv.ExpiresAt,
-			"organization_name": inv.OrganizationName,
-			"inviter_name":      inv.InviterName,
+		item := openapi.Invitation{
+			ID:               inv.ID,
+			OrganizationID:   inv.OrganizationID,
+			Email:            inv.Email,
+			Role:             string(inv.Role),
+			Status:           string(inv.Status),
+			InvitedBy:        inv.InvitedBy,
+			OrganizationName: inv.OrganizationName,
+			InviterName:      inv.InviterName,
 		}
+		if !inv.InvitedAt.IsZero() {
+			item.InvitedAt = int64Ptr(inv.InvitedAt.UnixMilli())
+		}
+		if inv.RespondedAt != nil {
+			item.RespondedAt = int64Ptr(inv.RespondedAt.UnixMilli())
+		}
+		item.ResponderID = inv.RespondedBy
+		result[i] = item
 	}
 
-	h.presenter.OK(c, gin.H{
-		"invitations": result,
+	h.presenter.OK(c, openapi.InvitationListResult{
+		Invitations: result,
 	})
 }
 
@@ -237,23 +242,27 @@ func (h *InvitationHandler) ListByInviter(c *gin.Context) {
 		return
 	}
 
-	result := make([]gin.H, len(invitations))
+	result := make([]openapi.Invitation, len(invitations))
 	for i, inv := range invitations {
-		result[i] = gin.H{
-			"id":                inv.ID,
-			"organization_id":   inv.OrganizationID,
-			"email":             inv.Email,
-			"role":              inv.Role,
-			"status":            inv.Status,
-			"invited_at":        inv.InvitedAt,
-			"responded_at":      inv.RespondedAt,
-			"expires_at":        inv.ExpiresAt,
-			"organization_name": inv.OrganizationName,
+		item := openapi.Invitation{
+			ID:               inv.ID,
+			OrganizationID:   inv.OrganizationID,
+			Email:            inv.Email,
+			Role:             string(inv.Role),
+			Status:           string(inv.Status),
+			OrganizationName: inv.OrganizationName,
 		}
+		if !inv.InvitedAt.IsZero() {
+			item.InvitedAt = int64Ptr(inv.InvitedAt.UnixMilli())
+		}
+		if inv.RespondedAt != nil {
+			item.RespondedAt = int64Ptr(inv.RespondedAt.UnixMilli())
+		}
+		result[i] = item
 	}
 
-	h.presenter.OK(c, gin.H{
-		"invitations": result,
+	h.presenter.OK(c, openapi.InvitationListResult{
+		Invitations: result,
 	})
 }
 
@@ -290,16 +299,15 @@ func (h *InvitationHandler) GetByToken(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"id":                inv.ID,
-		"organization_id":   inv.OrganizationID,
-		"organization_name": inv.OrganizationName,
-		"email":             inv.Email,
-		"role":              inv.Role,
-		"status":            inv.Status,
-		"invited_at":        inv.InvitedAt,
-		"inviter_name":      inv.InviterName,
-		"expires_at":        inv.ExpiresAt,
+	h.presenter.OK(c, openapi.InvitationByTokenResult{
+		ID:               inv.ID,
+		OrganizationID:   inv.OrganizationID,
+		OrganizationName: inv.OrganizationName,
+		Email:            inv.Email,
+		Role:             string(inv.Role),
+		Status:           string(inv.Status),
+		InviterName:      inv.InviterName,
+		InvitedAt:        int64Ptr(inv.InvitedAt.UnixMilli()),
 	})
 }
 
@@ -374,8 +382,8 @@ func (h *InvitationHandler) Accept(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "invitation accepted",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "invitation accepted",
 	})
 }
 
@@ -437,8 +445,8 @@ func (h *InvitationHandler) Reject(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "invitation rejected",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "invitation rejected",
 	})
 }
 
@@ -465,23 +473,25 @@ func (h *InvitationHandler) ListPendingForEmail(c *gin.Context) {
 		return
 	}
 
-	result := make([]gin.H, len(invitations))
+	result := make([]openapi.Invitation, len(invitations))
 	for i, inv := range invitations {
-		result[i] = gin.H{
-			"id":                inv.ID,
-			"organization_id":   inv.OrganizationID,
-			"organization_name": inv.OrganizationName,
-			"email":             inv.Email,
-			"role":              inv.Role,
-			"status":            inv.Status,
-			"invited_at":        inv.InvitedAt,
-			"inviter_name":      inv.InviterName,
-			"expires_at":        inv.ExpiresAt,
+		item := openapi.Invitation{
+			ID:               inv.ID,
+			OrganizationID:   inv.OrganizationID,
+			OrganizationName: inv.OrganizationName,
+			Email:            inv.Email,
+			Role:             string(inv.Role),
+			Status:           string(inv.Status),
+			InviterName:      inv.InviterName,
 		}
+		if !inv.InvitedAt.IsZero() {
+			item.InvitedAt = int64Ptr(inv.InvitedAt.UnixMilli())
+		}
+		result[i] = item
 	}
 
-	h.presenter.OK(c, gin.H{
-		"invitations": result,
+	h.presenter.OK(c, openapi.InvitationListResult{
+		Invitations: result,
 	})
 }
 
@@ -554,7 +564,7 @@ func (h *InvitationHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	h.presenter.OK(c, gin.H{
-		"message": "invitation deleted",
+	h.presenter.OK(c, openapi.MessageResult{
+		Message: "invitation deleted",
 	})
 }

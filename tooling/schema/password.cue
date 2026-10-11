@@ -1,11 +1,11 @@
 package vyzorix
 
-// ForgotPasswordRequest — generated from openapi/schemas.go.
+// ForgotPasswordRequest.
 #ForgotPasswordRequest: {
         email: string
 }
 
-// ResetPasswordRequest — generated from openapi/schemas.go.
+// ResetPasswordRequest.
 #ResetPasswordRequest: {
         token: string
         newPassword: string

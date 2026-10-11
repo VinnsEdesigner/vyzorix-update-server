@@ -11,7 +11,7 @@ export interface TelemetryHistoryEntry {
   deviceId?: string;
   id?: string;
   payload?: string;
-  receivedAt?: string;
+  receivedAt?: number;
   riskScore?: number;
   thermalTemp?: number;
 }

@@ -6,18 +6,18 @@
  * OpenAPI spec version: 0.0.01
  */
 export interface APIKey {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   is_active?: boolean;
   key_prefix?: string;
-  last_request_at?: string;
+  last_request_at?: number;
   name?: string;
   operator_id?: string;
   request_count?: number;
-  revoked_at?: string;
+  revoked_at?: number;
   scope?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface Pagination {
@@ -36,38 +36,40 @@ export interface APIKeyListResult {
 
 export interface APIKeyWithSecret {
   api_key?: string;
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   is_active?: boolean;
   key_prefix?: string;
-  last_request_at?: string;
+  last_request_at?: number;
   name?: string;
   operator_id?: string;
   request_count?: number;
-  revoked_at?: string;
+  revoked_at?: number;
   scope?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface AdminAPIKey {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   is_active?: boolean;
   key_prefix?: string;
-  last_request_at?: string;
+  last_request_at?: number;
   name?: string;
   operator_id?: string;
   operator_name?: string;
   request_count?: number;
-  revoked_at?: string;
+  revoked_at?: number;
   scope?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface AdminAPIKeyListResult {
   keys?: AdminAPIKey[];
+  keys_created_this_month?: number;
+  monthly_limit?: number;
   pagination?: Pagination;
 }
 
@@ -96,14 +98,14 @@ export interface AdminClientResult {
 }
 
 export interface AdminOperator {
-  created_at?: string;
+  created_at?: number;
   email?: string;
   email_verified?: boolean;
   id?: string;
   mfa_enabled?: boolean;
   name?: string;
   role?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface AdminOperatorListResult {
@@ -113,11 +115,11 @@ export interface AdminOperatorListResult {
 
 export interface AlertEvaluateResult {
   rule_id?: string;
-  transitioned?: number;
+  transitioned?: boolean;
 }
 
 export interface AlertHistoryEvent {
-  created_at?: string;
+  created_at?: number;
   from_state?: string;
   id?: string;
   rule_id?: string;
@@ -132,7 +134,7 @@ export interface AlertHistoryResult {
 export type AlertInstanceLabels = {[key: string]: string};
 
 export interface AlertInstance {
-  evaluated_at?: string;
+  evaluated_at?: number;
   labels?: AlertInstanceLabels;
   state?: string;
   value?: number;
@@ -140,7 +142,7 @@ export interface AlertInstance {
 
 export interface AlertRule {
   condition?: string;
-  created_at?: string;
+  created_at?: number;
   enabled?: boolean;
   for_seconds?: number;
   id?: string;
@@ -152,7 +154,7 @@ export interface AlertRule {
   on_no_data?: string;
   org_id?: string;
   threshold?: number;
-  updated_at?: string;
+  updated_at?: number;
   webhook_url?: string;
 }
 
@@ -174,16 +176,16 @@ export interface AlertRuleRequest {
 }
 
 export interface Annotation {
-  created_at?: string;
-  end_time?: string;
+  created_at?: number;
+  end_time?: number;
   id?: string;
   org_id?: string;
   source?: string;
-  start_time?: string;
+  start_time?: number;
   tags?: string[];
   text?: string;
   title?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface AnnotationListResult {
@@ -221,11 +223,21 @@ export interface ChannelUnsubscribeResult {
 }
 
 export interface ClientCredential {
-  clientId?: string;
-  createdAt?: string;
+  allowed_origins?: string[];
+  allowed_paths?: string[];
+  client_id?: string;
+  client_secret?: string;
+  created_at?: number;
   id?: string;
+  is_active?: boolean;
+  last_request_at?: number;
   name?: string;
+  operator_id?: string;
+  platform?: string;
+  rate_limit?: number;
+  request_count?: number;
   secret?: string;
+  updated_at?: number;
 }
 
 export interface ClientCredentialListResult {
@@ -259,6 +271,7 @@ export interface CommandConfirmResult {
   expires_at?: number;
   risk_tier?: string;
   trace_id?: string;
+  ttl_seconds?: number;
 }
 
 export interface CommandDispatchResult {
@@ -289,7 +302,7 @@ export interface CommandHistoryResult {
 }
 
 export interface CommandResponse {
-  args?: number[];
+  args?: string[];
   command?: string;
   delivery?: string;
   deviceId?: string;
@@ -303,7 +316,7 @@ export interface CommandPendingResult {
   commands?: CommandResponse[];
 }
 
-export type CommandRequestArgs = { [key: string]: unknown };
+export type CommandRequestArgs = {[key: string]: unknown};
 
 export interface CommandRequest {
   args?: CommandRequestArgs;
@@ -332,8 +345,8 @@ export interface CommandStatus {
 }
 
 export interface SessionInfo {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   ip_address?: string;
   is_current?: boolean;
@@ -347,15 +360,13 @@ export interface ConcurrentSessionsResult {
   sessions?: SessionInfo[];
 }
 
-export type ConfigVersionSnapshot = {[key: string]: unknown};
-
 export interface ConfigVersion {
   changed_by?: string;
-  created_at?: string;
+  created_at?: number;
   id?: string;
   org_id?: string;
   resource_type?: string;
-  snapshot?: ConfigVersionSnapshot;
+  snapshot?: string;
   version?: number;
 }
 
@@ -380,9 +391,16 @@ export interface ConnectionListResult {
   connections?: ConnectionStatusResult[];
 }
 
+export type ConnectionMetricsResultAggregateMetrics = {[key: string]: number};
+
 export interface ConnectionMetricsResult {
+  aggregate_metrics?: ConnectionMetricsResultAggregateMetrics;
   online_connections?: number;
+  queue_metrics?: unknown;
+  timestamp?: number;
+  total_connected?: number;
   total_connections?: number;
+  total_queued?: number;
 }
 
 export type ContactPointConfig = {[key: string]: string};
@@ -390,14 +408,14 @@ export type ContactPointConfig = {[key: string]: string};
 export interface ContactPoint {
   channel?: string;
   config?: ContactPointConfig;
-  created_at?: string;
+  created_at?: number;
   enabled?: boolean;
   id?: string;
   name?: string;
   org_id?: string;
   secret?: boolean;
   template_id?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface ContactPointListResult {
@@ -416,8 +434,9 @@ export interface ContactPointRequest {
 }
 
 export interface ContactPointTestResult {
+  deliveries?: unknown;
   sent?: boolean;
-  tested_at?: string;
+  tested_at?: number;
 }
 
 export interface CreateAPIKeyRequest {
@@ -518,15 +537,20 @@ export interface DeviceDisconnectResult {
 export type DeviceEventData = {[key: string]: unknown};
 
 export interface DeviceEvent {
-  created_at?: string;
+  created_at?: number;
   data?: DeviceEventData;
   device_id?: string;
   id?: string;
+  severity?: string;
+  source?: string;
+  timestamp?: number;
   type?: string;
 }
 
 export interface DeviceEventListResult {
+  count?: number;
   events?: DeviceEvent[];
+  has_more?: boolean;
 }
 
 export interface DeviceFCMTokenRequest {
@@ -661,9 +685,12 @@ export interface DeviceTransferRequest {
 
 export interface DeviceTransferResult {
   device_id?: string;
+  device_imei?: string;
   from_org_id?: string;
   message?: string;
+  source_org?: string;
   success?: boolean;
+  target_org?: string;
   to_org_id?: string;
 }
 
@@ -833,11 +860,15 @@ export interface InboxResendResult {
 
 export interface Invitation {
   email?: string;
-  expires_at?: string;
+  expires_at?: number;
   id?: string;
-  invited_at?: string;
+  invited_at?: number;
   invited_by?: string;
+  inviter_name?: string;
   organization_id?: string;
+  organization_name?: string;
+  responded_at?: number;
+  responder_id?: string;
   role?: string;
   status?: string;
   token?: string;
@@ -845,9 +876,9 @@ export interface Invitation {
 
 export interface InvitationByTokenResult {
   email?: string;
-  expires_at?: string;
+  expires_at?: number;
   id?: string;
-  invited_at?: string;
+  invited_at?: number;
   inviter_name?: string;
   organization_id?: string;
   organization_name?: string;
@@ -864,6 +895,7 @@ export interface LockoutStatusResult {
   locked?: boolean;
   max_attempts?: number;
   reason?: string;
+  retry_after?: number;
   unlock_at?: number;
 }
 
@@ -883,7 +915,10 @@ export interface OrganizationInfo {
 export interface LoginResult {
   device_fingerprint?: string;
   email?: string;
+  error?: string;
   last_organization_id?: string;
+  locked_until?: number;
+  message?: string;
   mfa_enabled?: boolean;
   mfa_session?: string;
   name?: string;
@@ -891,6 +926,7 @@ export interface LoginResult {
   operator_id?: string;
   organizations?: OrganizationInfo[];
   requires_mfa?: boolean;
+  retry_after?: number;
   selected_organization?: OrganizationInfo;
   signing_key?: string;
 }
@@ -899,8 +935,11 @@ export interface LoginWithTokensResult {
   access_token?: string;
   device_fingerprint?: string;
   email?: string;
+  error?: string;
   expires_at?: number;
   last_organization_id?: string;
+  locked_until?: number;
+  message?: string;
   mfa_enabled?: boolean;
   mfa_session?: string;
   name?: string;
@@ -909,6 +948,7 @@ export interface LoginWithTokensResult {
   organizations?: OrganizationInfo[];
   refresh_token?: string;
   requires_mfa?: boolean;
+  retry_after?: number;
   selected_organization?: OrganizationInfo;
   session_id?: string;
   signing_key?: string;
@@ -1061,7 +1101,7 @@ export interface OperatorSettingsResultLegacy {
 }
 
 export interface Organization {
-  created_at?: string;
+  created_at?: number;
   created_by?: string;
   description?: string;
   id?: string;
@@ -1069,7 +1109,7 @@ export interface Organization {
   max_members?: number;
   member_count?: number;
   name?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface OrganizationListResult {
@@ -1079,12 +1119,12 @@ export interface OrganizationListResult {
 export interface OrganizationMember {
   id?: string;
   invited_by?: string;
-  joined_at?: string;
+  joined_at?: number;
   operator_email?: string;
   operator_id?: string;
   operator_name?: string;
   organization_id?: string;
-  removed_at?: string;
+  removed_at?: number;
   role?: string;
   status?: string;
 }
@@ -1176,12 +1216,12 @@ export interface SelectOrganizationResult {
 }
 
 export interface ServiceAccount {
-  created_at?: string;
+  created_at?: number;
   enabled?: boolean;
   id?: string;
   name?: string;
   org_id?: string;
-  updated_at?: string;
+  updated_at?: number;
 }
 
 export interface ServiceAccountListResult {
@@ -1189,28 +1229,19 @@ export interface ServiceAccountListResult {
 }
 
 export interface ServiceAccountToken {
-  created_at?: string;
-  expires_at?: string;
+  created_at?: number;
+  expires_at?: number;
   id?: string;
   key_prefix?: string;
   name?: string;
-  revoked_at?: string;
+  revoked_at?: number;
   scopes?: string[];
   service_id?: string;
   valid?: boolean;
 }
 
 export interface ServiceAccountTokenCreated {
-  created_at?: string;
-  expires_at?: string;
-  id?: string;
-  key_prefix?: string;
-  name?: string;
-  revoked_at?: string;
-  scopes?: string[];
   secret?: string;
-  service_id?: string;
-  valid?: boolean;
 }
 
 export interface ServiceAccountTokenListResult {
@@ -1218,16 +1249,7 @@ export interface ServiceAccountTokenListResult {
 }
 
 export interface ServiceAccountTokenRotated {
-  created_at?: string;
-  expires_at?: string;
-  id?: string;
-  key_prefix?: string;
-  name?: string;
-  revoked_at?: string;
-  scopes?: string[];
   secret?: string;
-  service_id?: string;
-  valid?: boolean;
 }
 
 export interface SessionListResult {
@@ -1268,8 +1290,14 @@ export interface SupportBundleResult {
 export type TelemetryEntryMetrics = {[key: string]: number};
 
 export interface TelemetryEntry {
+  buffer_level?: number;
+  device_id?: string;
+  id?: string;
   metrics?: TelemetryEntryMetrics;
-  timestamp?: string;
+  received_at?: number;
+  risk_score?: number;
+  thermal_temp?: number;
+  timestamp?: number;
 }
 
 export interface TelemetryHistoryEntry {
@@ -1277,15 +1305,17 @@ export interface TelemetryHistoryEntry {
   deviceId?: string;
   id?: string;
   payload?: string;
-  receivedAt?: string;
+  receivedAt?: number;
   riskScore?: number;
   thermalTemp?: number;
 }
 
 export interface TelemetryHistoryQueryResult {
+  count?: number;
   deviceId?: string;
   endTime?: number;
   entries?: TelemetryHistoryEntry[];
+  exported_at?: number;
   queryTime?: number;
   startTime?: number;
   totalCount?: number;
@@ -1294,8 +1324,8 @@ export interface TelemetryHistoryQueryResult {
 export interface TelemetryStatsResult {
   bufferLevel?: MetricAggregateResult;
   deviceId?: string;
-  latestEntry?: string;
-  oldestEntry?: string;
+  latestEntry?: number;
+  oldestEntry?: number;
   riskScore?: MetricAggregateResult;
   sampleCount?: number;
   thermalTemp?: MetricAggregateResult;
@@ -1318,16 +1348,14 @@ export type TimelineEventResultData = {[key: string]: unknown};
 
 export interface TimelineEventResult {
   data?: TimelineEventResultData;
-  deviceId?: string;
   id?: string;
-  timestamp?: string;
+  timestamp?: number;
   type?: string;
 }
 
 export interface TimelineResult {
   events?: TimelineEventResult[];
-  hasMore?: boolean;
-  nextCursor?: string;
+  pagination?: CursorPaginationResult;
 }
 
 export interface UpdateAPIKeyRequest {
@@ -1374,13 +1402,14 @@ export interface UsageStatsCounts {
 export type UsageStatsSnapshotToggles = {[key: string]: boolean};
 
 export interface UsageStatsSnapshot {
-  collected_at?: string;
+  collected_at?: number;
   counts?: UsageStatsCounts;
   toggles?: UsageStatsSnapshotToggles;
 }
 
 export interface UpdateCheckerResult {
   current_version?: string;
+  error?: string;
   latest_version?: string;
   release_name?: string;
   release_url?: string;
@@ -1431,6 +1460,7 @@ export interface UpdateFailedDevice {
 }
 
 export interface UpdateInboxEntryRequest {
+  notes?: string;
   status?: string;
 }
 
