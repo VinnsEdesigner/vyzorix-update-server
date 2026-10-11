@@ -139,6 +139,7 @@ type Config struct {
 	EnforceHMAC                   bool
 	AuditLogSeparateDB            bool
 	EnableGraphQL                 bool
+	CacheTTLSeconds               int
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -310,6 +311,7 @@ func Load() (Config, error) {
 		EmailVerifyTokenExpiry:    emailVerifyExpiry,
 		PasswordResetTokenExpiry:  passwordResetExpiry,
 		EnableGraphQL:             getBool("ENABLE_GRAPHQL", true),
+		CacheTTLSeconds:           getInt("CACHE_TTL_SECONDS", 30),
 		AuditLogPath:              get("AUDIT_LOG_PATH", "./data/audit.log"),
 		AuditLogSeparateDB:        getBool("AUDIT_LOG_SEPARATE_DB", false),
 		AuditLogSeparateDBPath:    get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
@@ -591,6 +593,18 @@ func parseDurationEnv(k string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return d
+}
+
+func getInt(k string, fallback int) int {
+	v := strings.TrimSpace(os.Getenv(k))
+	if v == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return n
 }
 
 func getBool(k string, fallback bool) bool {

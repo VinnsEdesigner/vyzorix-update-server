@@ -261,6 +261,9 @@ func NewServer(cfg *ServerConfig) *Server {
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
 	s.lifecycleManager = lifecycle.NewManager()
+	if cfg.Config.CacheTTLSeconds > 0 {
+		s.cache = infracache.New(time.Duration(cfg.Config.CacheTTLSeconds) * time.Second)
+	}
 	if cfg.DB != nil {
 		collector := usagestats.NewCollector(cfg.DB.DB())
 		statsSvc := usagestats.NewService(collector, s.features)
@@ -818,6 +821,9 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	// this). The legacy NewServer path created it inside its constructor; the DI
 	// path must do the same or LifecycleManager() returns nil.
 	s.lifecycleManager = lifecycle.NewManager()
+	if cfg.Config.CacheTTLSeconds > 0 {
+		s.cache = infracache.New(time.Duration(cfg.Config.CacheTTLSeconds) * time.Second)
+	}
 
 	s.setupRoutes()
 
