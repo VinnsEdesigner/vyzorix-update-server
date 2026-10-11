@@ -609,7 +609,51 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 	}
 }
 
-// wireConfirmHandler creates and assigns the device confirm handler.
+// wireSupplementalHandlers wires the handlers the legacy NewServer constructor
+// built inline in wireHandlers but NewServerWithDeps (used by api_main.go)
+// omitted: contact points, service accounts, and annotations. GraphQL
+// registration dereferences all three, so without this the DI server panics at
+// startup with a nil-pointer.
+func (s *Server) wireSupplementalHandlers(cfg *ServerConfig) {
+	if cfg.DB == nil {
+		return
+	}
+
+	cpRepo := storage.NewContactPointRepository(cfg.DB.DB())
+	cpDeliveries := storage.NewDeliveryRepository(cfg.DB.DB())
+	notificationSvc := appnotification.NewService(cpRepo)
+
+	channels := map[notificationdomain.ChannelType]notificationdomain.Channel{
+		notificationdomain.ChannelTypeEmail:   appnotification.NewEmailChannel(emailService.NewService()),
+		notificationdomain.ChannelTypeWebhook: appnotification.NewWebhookChannel(infrawebhook.NewClient(10 * time.Second)),
+		notificationdomain.ChannelTypeSlack:   appnotification.NewSlackChannel(infrawebhook.NewClient(10 * time.Second)),
+	}
+	dispatcher := appnotification.NewDispatcher(cpRepo, cpDeliveries, channels, cfg.Log)
+
+	s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
+
+	// Service accounts + annotations are also GraphQL-wired but were only built
+	// on the legacy NewServer path; build them here so api_main.go's DI server
+	// doesn't dereference nil handlers during GraphQL registration.
+	saRepo := storage.NewServiceAccountRepository(cfg.DB.DB())
+	saTokenRepo := storage.NewServiceAccountTokenRepository(cfg.DB.DB())
+	saService := saapp.NewService(saRepo, saTokenRepo)
+	saService.SetAuditLogger(s.AuditLogger)
+	saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
+	if limit := os.Getenv("SA_TOKEN_LIMIT"); limit != "" {
+		if n, err := strconv.Atoi(limit); err == nil && n > 0 {
+			saService.SetMaxTokens(n)
+		}
+	}
+	s.ServiceAccountHandler = sahandlers.NewHandler(saService)
+	if s.tenantAPIKeyAuth != nil {
+		s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
+	}
+
+	annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
+	s.AnnotationHandler = annotationhandlers.NewHandler(appannotation.NewService(annotationRepo))
+}
+
 func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
 	if cfg.DeviceService == nil {
 		return
@@ -761,6 +805,7 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	}
 	s.wireInboxHandler(serverCfg)
 	s.wireConfirmHandler(serverCfg)
+	s.wireSupplementalHandlers(serverCfg)
 
 	// Create updater handler for OTA update distribution.
 	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
@@ -768,6 +813,11 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	// Store deviceRepo for the deletion worker in api_main.go.
 	s.DeviceRepo = cfg.DeviceRepo
 	s.FCMRetryWorker = cfg.FCMRetryWorker
+
+	// Background-service lifecycle registry (api_main.go registers workers on
+	// this). The legacy NewServer path created it inside its constructor; the DI
+	// path must do the same or LifecycleManager() returns nil.
+	s.lifecycleManager = lifecycle.NewManager()
 
 	s.setupRoutes()
 
