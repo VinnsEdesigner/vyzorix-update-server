@@ -337,72 +337,76 @@ refresh, and HMAC signing. The old `RESTRequestBatcher` and the per-method
 
 ---
 
-## 4. Vyzorix Realtime Channel — Centrifuge-Based WebSocket Manager
+## 4. Vyzorix Realtime Channel — Keep `graphql-ws` + the Go Hub
 
-### Problem
+### Decision
 
-The current WebSocket implementation (`use-websocket.ts`) is hand-rolled with:
-- Manual keepalive pings (every 20s when tab is hidden)
-- Manual 3-second reconnect with attempt counting
-- Manual auth via first-message JSON protocol
-- Manual connection state tracking (`"CONNECTING" | "OPEN" | "CLOSED"`)
-- Manual `visibilitychange` handler for background tab recovery
-- The `PersistentWebSocketProvider` manages multiple WS connections for
-  background conversations, each with its own `useWebSocket` instance
+**Keep the existing `graphql-ws` client + in-process Go hub.** Do NOT adopt an
+external broker (Centrifugo or otherwise) at the current scale. The earlier
+"replace raw WebSocket with Centrifugo" proposal targeted code that does not
+exist in this repository and solved a problem we do not yet have.
 
-This is ~200 lines of fragile browser-specific lifecycle code.
+### What actually exists (as of this writing)
 
-### Proposal
+- **Frontend**: `apps/VyzoriX_web/src/stores/websocket-store.ts` (154 lines)
+  wraps `graphql-ws`'s `createClient` — reconnect (`retryAttempts: Infinity`),
+  keepalive (`keepAlive: 10s`), `connectionAckWaitTimeout`, and connection-state
+  events all come from `graphql-ws`, not hand-rolled code. Subscriptions use the
+  code-first generated documents from `@vyzorix/api-client/generated-graphql`.
+  Transport path: `/{org}/graphql/ws` (`server_graphql.go`).
+- **Backend**: an in-process hub at `apps/api/internal/ws/` (~4.6k LOC) —
+  `hub.go` (register/unregister, broadcast), `subscriptions.go`,
+  `telemetry_filter.go`, `message_queue.go` (replay on reconnect),
+  `ws_rate_limiter.go`, `compression.go`, `channel/`. Device auth is HMAC
+  request signing; org scoping rides the org path segment. This is domain logic,
+  not boilerplate.
 
-Replace raw WebSocket with Centrifugo (a pub/sub broker with a Go SDK and
-JavaScript client). The Go backend runs a Centrifugo server; the frontend
-uses `centrifuge-js` to connect and subscribe to channels.
+There is **no** `use-websocket.ts` or `PersistentWebSocketProvider` in this repo
+(those are OpenHands files); the "~200 lines of fragile browser lifecycle" the
+old §4 described are not present here.
 
-```
-Go backend → Centrifugo server (embedded or sidecar)
-    ↓
-Centrifugo handles:
-  - WebSocket connection lifecycle (connect, reconnect, backoff)
-  - Authentication (JWT or token-based)
-  - Channel subscriptions (per-conversation, per-device, per-org)
-  - Message delivery guarantees (at-least-once)
-  - Connection state notifications
-    ↓
-Frontend (centrifuge-js) → subscribes to channels
-  - vyzorix:device:{imei}:telemetry
-  - vyzorix:device:{imei}:events
-  - vyzorix:updates:push:{pushId}
-  - vyzorix:conversation:{id}:events
-```
+### Why not an external broker now
 
-### What gets deleted
+An external broker (Centrifugo/NATS/Redis pub-sub) exists to solve **horizontal
+fan-out**: when N API replicas each hold some WebSocket clients, a message
+produced on replica A must reach subscribers on B/C/D. This deployment runs
+`numInstances: 1` (`render.yaml`) with **no** Redis/NATS/broker anywhere, so that
+problem does not exist yet.
 
-- `use-websocket.ts` (entire file — replaced by centrifuge-js)
-- `PersistentWebSocketProvider` (centrifuge manages multiple subscriptions
-  over a single connection, not multiple WS connections)
-- Manual keepalive/reconnect logic
-- Manual `visibilitychange` handler
-- The `headless` prop on `ConversationWebSocketProvider` (Centrifugo handles
-  background subscriptions natively)
+At one instance an in-process hub is strictly simpler and faster (no network hop
+to a broker). Adopting Centrifugo today would mean deleting a working, tested,
+domain-integrated hub and re-expressing its logic (HMAC auth, telemetry
+filtering, org scoping, reconnect replay, rate limiting) as JWT claims + publish
+calls — a large rewrite for zero capability gain, plus a new service to deploy
+and secure.
 
-### What stays
+### Decision rule
 
-- The event processing logic in `ConversationWebSocketProvider` (what to do
-  with received events — addEvent, setExecutionStatus, etc.)
-- The event store (`use-event-store`)
-- The REST history preloading (`useConversationHistory`)
+- **Stay on `graphql-ws` + the in-process hub while the API runs at one
+  instance.**
+- **Revisit when the API scales to `numInstances > 1`** (or a second service
+  needs to publish into the same realtime stream).
+- **Then, prefer a broker backplane behind the existing hub** (NATS or Redis):
+  keep `Hub.Broadcast…` and additionally publish to a shared subject; each
+  replica relays to its local clients. This preserves all domain logic and adds
+  only cross-instance fan-out — less work and less new surface than replacing
+  the stack.
+- **Choose Centrifugo (sidecar) only if** you also want its off-the-shelf
+  platform features — presence, channel history, an admin UI, broad client SDKs
+  (mobile/desktop) — and are willing to own the domain logic as JWT + publish
+  calls. That is a product decision, not a technical necessity.
 
-### Naming
+### If/when a broker is introduced
 
-- Go module: `internal/realtime/centrifuge/` (Centrifugo server config)
-- JS client: `packages/API_Client/src/vyzorServer/realtime/centrifuge-client.ts`
-- Channel naming: `vyzorix:{domain}:{id}:{event_type}`
-  - `vyzorix:device:{imei}:telemetry`
-  - `vyzorix:device:{imei}:events`
-  - `vyzorix:updates:push:{pushId}`
-  - `vyzorix:inbox:{imei}:status`
-- Connection service: `VyzorixRealtimeService` (wraps Centrifuge, exposes
-  `subscribe(channel)`, `publish(channel, data)`, `getConnectionState()`)
+- Backplane: `internal/realtime/` (NATS/Redis publish-subscribe around the hub).
+- Channels: `vyzorix:{domain}:{id}:{event_type}` (e.g.
+  `vyzorix:device:{imei}:telemetry`).
+- The frontend client (`graphql-ws`) stays; only the hub's fan-out changes.
+
+### What is explicitly NOT done
+
+- No Centrifugo dependency (absent from `go.mod` / `package.json`).
+- No `centrifuge-js`; subscriptions stay typed GraphQL documents.
 
 ---
 
@@ -540,14 +544,16 @@ tests reference the selector, not the raw URL.
 | 1 | Vyzorix Request Deduplicator (#3) | Low | Prevents duplicate API calls | Low |
 | 2 | Vyzorix Query SDK (#1) | Medium | Deletes 40+ manual hooks, auto cache invalidation | Medium |
 | 3 | Vyzorix Schema Definitions (#2) | Medium-high | Eliminates config schema drift | Medium |
-| 4 | Vyzorix Realtime Channel (#4) | Medium | Replaces fragile WS keepalive/reconnect | Medium |
+| 4 | Vyzorix Realtime Channel (#4) | — | No change: keep `graphql-ws` + Go hub until multi-instance | — |
 | 5 | Vyzorix Test Selectors (#6) | Low | Future-proofs test suite | Low |
 | 6 | Vyzorix Data Pipeline (#5) | High | Simplifies WS event handler | High |
 
 Phases 1 and 5 can be done independently and in parallel. Phase 2 depends on
-the OpenAPI spec being stable (which it is after the annotation work). Phase
-4 depends on the Go backend accepting Centrifugo. Phase 6 should only be
-attempted after all others are complete, as it's a paradigm shift.
+the OpenAPI spec being stable (which it is after the annotation work). Phase 4
+is deliberately deferred: the existing `graphql-ws` + in-process Go hub is the
+right design at one instance — revisit only when the API scales past one replica
+(see §4). Phase 6 should only be attempted after all others are complete, as
+it's a paradigm shift.
 
 ---
 
@@ -564,9 +570,14 @@ Already completed:
 - ✅ CUE schema layer + build_schemas.py + CUE drift gate (§2; single source of truth)
 
 Not yet started:
-- ❌ Vyzorix Realtime Channel (#4)
 - ❌ Vyzorix Test Selectors (#6)
 - ❌ Vyzorix Data Pipeline (#5)
+
+Decided — Vyzorix Realtime Channel (#4):
+- ✅ **Keep `graphql-ws` + the in-process Go hub.** No external broker at the
+  current scale (`numInstances: 1`, no Redis/NATS). The old Centrifugo proposal
+  targeted files that don't exist here and solved a fan-out problem we don't have.
+  Revisit only at multi-instance; prefer a NATS/Redis backplane behind the hub.
 
 Completed — Vyzorix Request Deduplicator (#3):
 - ✅ `VyzorixRequestQueue` (rest/_shared/request-queue.ts) dedupes ALL methods via
