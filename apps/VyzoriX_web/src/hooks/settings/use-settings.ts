@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetMeSettings,
   usePatchMeSettings,
@@ -11,36 +10,27 @@ import {
 } from '@/generated-rq/settings/operator-settings';
 
 export function useSettings() {
-  return useGetMeSettings({ query: { queryKey: ['me-settings'] as const } });
+  return useGetMeSettings();
 }
 
 export function useUpdateSettings() {
-  const queryClient = useQueryClient();
-  return usePatchMeSettings({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-settings'] }) },
-  });
+  return usePatchMeSettings();
 }
 
 export function useThresholds() {
-  return useGetMeThresholds({ query: { queryKey: ['me-thresholds'] as const } });
+  return useGetMeThresholds();
 }
 
 export function useUpdateThresholds() {
-  const queryClient = useQueryClient();
-  return usePatchMeThresholds({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-thresholds'] }) },
-  });
+  return usePatchMeThresholds();
 }
 
 export function useNotifications() {
-  return useGetMeNotifications({ query: { queryKey: ['me-notifications'] as const } });
+  return useGetMeNotifications();
 }
 
 export function useUpdateNotifications() {
-  const queryClient = useQueryClient();
-  return usePatchMeNotifications({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-notifications'] }) },
-  });
+  return usePatchMeNotifications();
 }
 
 export function useTestWebhook() {
@@ -48,8 +38,5 @@ export function useTestWebhook() {
 }
 
 export function useRotateWebhookSecret() {
-  const queryClient = useQueryClient();
-  return usePostMeNotificationsWebhookRotate({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me-notifications'] }) },
-  });
+  return usePostMeNotificationsWebhookRotate();
 }

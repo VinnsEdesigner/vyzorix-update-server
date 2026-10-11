@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -29,6 +37,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -77,19 +86,16 @@ export const getAuthClientCredentials = async ( options?: Parameters<typeof cust
 
 
 
-export const getGetAuthClientCredentialsQueryKey = () => {
-    return [
-    `/auth/client-credentials`
-    ] as const;
-    }
+export const getGetAuthClientCredentialsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/client-credentials` });
 
 
-export const getGetAuthClientCredentialsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthClientCredentials>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthClientCredentialsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthClientCredentials>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthClientCredentialsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/client-credentials`, queryOptions });
 
 
 
@@ -99,30 +105,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthClientCredentialsQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthClientCredentials>>>
 export type GetAuthClientCredentialsQueryError = ErrorResponse
 
 
+export function useGetAuthClientCredentials<TData = Awaited<ReturnType<typeof getAuthClientCredentials>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthClientCredentials>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthClientCredentials>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthClientCredentials<TData = Awaited<ReturnType<typeof getAuthClientCredentials>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthClientCredentials>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthClientCredentials>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthClientCredentials<TData = Awaited<ReturnType<typeof getAuthClientCredentials>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List client credentials
  */
 
 export function useGetAuthClientCredentials<TData = Awaited<ReturnType<typeof getAuthClientCredentials>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentials>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthClientCredentialsQueryOptions(options)
 
-  const queryOptions = getGetAuthClientCredentialsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List client credentials
+ */
+export const invalidateGetAuthClientCredentials = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/client-credentials` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -161,7 +202,7 @@ return customAxios<ClientCredential>(getPostAuthClientCredentialsUrl(),
 
 
 export const getPostAuthClientCredentialsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentials>>, TError,{data: CreateClientCredentialRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentials>>, TError,{data: CreateClientCredentialRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentials>>, TError,{data: CreateClientCredentialRequest}, TContext> => {
 
 const mutationKey = ['postAuthClientCredentials'];
@@ -180,12 +221,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthClientCredentials(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthClientCredentials>>, variables: {data: CreateClientCredentialRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthClientCredentialsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthClientCredentialsMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthClientCredentials>>>
     export type PostAuthClientCredentialsMutationBody = CreateClientCredentialRequest
@@ -195,14 +241,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create client credentials
  */
 export const usePostAuthClientCredentials = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentials>>, TError,{data: CreateClientCredentialRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentials>>, TError,{data: CreateClientCredentialRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthClientCredentials>>,
         TError,
         {data: CreateClientCredentialRequest},
         TContext
       > => {
-      return useMutation(getPostAuthClientCredentialsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthClientCredentialsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthClientCredentialsClientIdUrl = (clientId: string,) => {
 
@@ -231,19 +278,16 @@ export const getAuthClientCredentialsClientId = async (clientId: string, options
 
 
 
-export const getGetAuthClientCredentialsClientIdQueryKey = (clientId: string,) => {
-    return [
-    `/auth/client-credentials/${clientId}`
-    ] as const;
-    }
+export const getGetAuthClientCredentialsClientIdQueryKey = (clientId: string,) =>
+    organizationScopedQueryKey({ clientId }, { url: `/auth/client-credentials/${clientId}` });
 
 
-export const getGetAuthClientCredentialsClientIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError = ErrorResponse>(clientId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthClientCredentialsClientIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError = ErrorResponse>(clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthClientCredentialsClientIdQueryKey(clientId);
+  const queryKey =  organizationScopedQueryKey({ clientId }, { url: `/auth/client-credentials/${clientId}`, queryOptions });
 
 
 
@@ -253,30 +297,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthClientCredentialsClientIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>>
 export type GetAuthClientCredentialsClientIdQueryError = ErrorResponse
 
 
+export function useGetAuthClientCredentialsClientId<TData = Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError = ErrorResponse>(
+ clientId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthClientCredentialsClientId<TData = Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError = ErrorResponse>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthClientCredentialsClientId<TData = Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError = ErrorResponse>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get client credential
  */
 
 export function useGetAuthClientCredentialsClientId<TData = Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError = ErrorResponse>(
- clientId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthClientCredentialsClientId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthClientCredentialsClientIdQueryOptions(clientId,options)
 
-  const queryOptions = getGetAuthClientCredentialsClientIdQueryOptions(clientId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get client credential
+ */
+export const invalidateGetAuthClientCredentialsClientId = async (
+ queryClient: QueryClient, clientId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ clientId }, { url: `/auth/client-credentials/${clientId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -309,7 +388,7 @@ export const deleteAuthClientCredentialsClientId = async (clientId: string, opti
 
 
 export const getDeleteAuthClientCredentialsClientIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>, TError,{clientId: string}, TContext> => {
 
 const mutationKey = ['deleteAuthClientCredentialsClientId'];
@@ -328,12 +407,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAuthClientCredentialsClientId(clientId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>, variables: {clientId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthClientCredentialsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAuthClientCredentialsClientIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>>
 
@@ -343,14 +427,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Revoke client credential
  */
 export const useDeleteAuthClientCredentialsClientId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAuthClientCredentialsClientId>>,
         TError,
         {clientId: string},
         TContext
       > => {
-      return useMutation(getDeleteAuthClientCredentialsClientIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAuthClientCredentialsClientIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchAuthClientCredentialsClientIdUrl = (clientId: string,) => {
 
@@ -387,7 +472,7 @@ return customAxios<ClientCredential>(getPatchAuthClientCredentialsClientIdUrl(cl
 
 
 export const getPatchAuthClientCredentialsClientIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>, TError,{clientId: string;data: UpdateClientCredentialRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>, TError,{clientId: string;data: UpdateClientCredentialRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>, TError,{clientId: string;data: UpdateClientCredentialRequest}, TContext> => {
 
 const mutationKey = ['patchAuthClientCredentialsClientId'];
@@ -406,12 +491,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAuthClientCredentialsClientId(clientId,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>, variables: {clientId: string;data: UpdateClientCredentialRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthClientCredentialsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAuthClientCredentialsClientIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>>
     export type PatchAuthClientCredentialsClientIdMutationBody = UpdateClientCredentialRequest
@@ -421,14 +511,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update client credential
  */
 export const usePatchAuthClientCredentialsClientId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>, TError,{clientId: string;data: UpdateClientCredentialRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>, TError,{clientId: string;data: UpdateClientCredentialRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAuthClientCredentialsClientId>>,
         TError,
         {clientId: string;data: UpdateClientCredentialRequest},
         TContext
       > => {
-      return useMutation(getPatchAuthClientCredentialsClientIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAuthClientCredentialsClientIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthClientCredentialsClientIdRotateSecretUrl = (clientId: string,) => {
 
@@ -458,7 +549,7 @@ export const postAuthClientCredentialsClientIdRotateSecret = async (clientId: st
 
 
 export const getPostAuthClientCredentialsClientIdRotateSecretMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>, TError,{clientId: string}, TContext> => {
 
 const mutationKey = ['postAuthClientCredentialsClientIdRotateSecret'];
@@ -477,12 +568,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthClientCredentialsClientIdRotateSecret(clientId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>, variables: {clientId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthClientCredentialsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthClientCredentialsClientIdRotateSecretMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>>
 
@@ -492,12 +588,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Rotate client secret
  */
 export const usePostAuthClientCredentialsClientIdRotateSecret = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthClientCredentialsClientIdRotateSecret>>,
         TError,
         {clientId: string},
         TContext
       > => {
-      return useMutation(getPostAuthClientCredentialsClientIdRotateSecretMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthClientCredentialsClientIdRotateSecretMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

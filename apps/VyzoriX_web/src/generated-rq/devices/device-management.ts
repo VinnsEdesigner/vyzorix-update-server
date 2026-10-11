@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -59,6 +67,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -117,20 +126,17 @@ export const getDashboardDeviceImeiEvents = async (imei: string,
 
 
 export const getGetDashboardDeviceImeiEventsQueryKey = (imei: string,
-    params?: GetDashboardDeviceImeiEventsParams,) => {
-    return [
-    `/dashboard/device/${imei}/events`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardDeviceImeiEventsParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/events` });
 
 
-export const getGetDashboardDeviceImeiEventsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError = ErrorResponse>(imei: string,
-    params?: GetDashboardDeviceImeiEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDeviceImeiEventsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError = ErrorResponse>(imei: string,
+    params?: GetDashboardDeviceImeiEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDeviceImeiEventsQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/events`, queryOptions });
 
 
 
@@ -140,31 +146,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDeviceImeiEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>>
 export type GetDashboardDeviceImeiEventsQueryError = ErrorResponse
 
 
+export function useGetDashboardDeviceImeiEvents<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDashboardDeviceImeiEventsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiEvents<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiEvents<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List device events
  */
 
 export function useGetDashboardDeviceImeiEvents<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDashboardDeviceImeiEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardDeviceImeiEventsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiEvents>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDeviceImeiEventsQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDashboardDeviceImeiEventsQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List device events
+ */
+export const invalidateGetDashboardDeviceImeiEvents = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDashboardDeviceImeiEventsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/events` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -206,20 +251,17 @@ export const getDashboardDeviceImeiLogs = async (imei: string,
 
 
 export const getGetDashboardDeviceImeiLogsQueryKey = (imei: string,
-    params?: GetDashboardDeviceImeiLogsParams,) => {
-    return [
-    `/dashboard/device/${imei}/logs`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardDeviceImeiLogsParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/logs` });
 
 
-export const getGetDashboardDeviceImeiLogsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError = ErrorResponse>(imei: string,
-    params?: GetDashboardDeviceImeiLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDeviceImeiLogsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError = ErrorResponse>(imei: string,
+    params?: GetDashboardDeviceImeiLogsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDeviceImeiLogsQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/logs`, queryOptions });
 
 
 
@@ -229,31 +271,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDeviceImeiLogsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>>
 export type GetDashboardDeviceImeiLogsQueryError = ErrorResponse
 
 
+export function useGetDashboardDeviceImeiLogs<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDashboardDeviceImeiLogsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiLogs<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiLogsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiLogs<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiLogsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List device logs
  */
 
 export function useGetDashboardDeviceImeiLogs<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDashboardDeviceImeiLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardDeviceImeiLogsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiLogs>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDeviceImeiLogsQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDashboardDeviceImeiLogsQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List device logs
+ */
+export const invalidateGetDashboardDeviceImeiLogs = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDashboardDeviceImeiLogsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/logs` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -295,20 +376,17 @@ export const getDashboardDeviceImeiMetrics = async (imei: string,
 
 
 export const getGetDashboardDeviceImeiMetricsQueryKey = (imei: string,
-    params?: GetDashboardDeviceImeiMetricsParams,) => {
-    return [
-    `/dashboard/device/${imei}/metrics`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardDeviceImeiMetricsParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/metrics` });
 
 
-export const getGetDashboardDeviceImeiMetricsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError = ErrorResponse>(imei: string,
-    params?: GetDashboardDeviceImeiMetricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDeviceImeiMetricsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError = ErrorResponse>(imei: string,
+    params?: GetDashboardDeviceImeiMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDeviceImeiMetricsQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/metrics`, queryOptions });
 
 
 
@@ -318,31 +396,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDeviceImeiMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>>
 export type GetDashboardDeviceImeiMetricsQueryError = ErrorResponse
 
 
+export function useGetDashboardDeviceImeiMetrics<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDashboardDeviceImeiMetricsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiMetrics<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiMetrics<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device metrics
  */
 
 export function useGetDashboardDeviceImeiMetrics<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDashboardDeviceImeiMetricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardDeviceImeiMetricsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetrics>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDeviceImeiMetricsQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDashboardDeviceImeiMetricsQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device metrics
+ */
+export const invalidateGetDashboardDeviceImeiMetrics = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDashboardDeviceImeiMetricsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/metrics` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -384,20 +501,17 @@ export const getDashboardDeviceImeiMetricsExport = async (imei: string,
 
 
 export const getGetDashboardDeviceImeiMetricsExportQueryKey = (imei: string,
-    params?: GetDashboardDeviceImeiMetricsExportParams,) => {
-    return [
-    `/dashboard/device/${imei}/metrics/export`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardDeviceImeiMetricsExportParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/metrics/export` });
 
 
-export const getGetDashboardDeviceImeiMetricsExportQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError = ErrorResponse>(imei: string,
-    params?: GetDashboardDeviceImeiMetricsExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDeviceImeiMetricsExportQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError = ErrorResponse>(imei: string,
+    params?: GetDashboardDeviceImeiMetricsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDeviceImeiMetricsExportQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/metrics/export`, queryOptions });
 
 
 
@@ -407,31 +521,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDeviceImeiMetricsExportQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>>
 export type GetDashboardDeviceImeiMetricsExportQueryError = ErrorResponse
 
 
+export function useGetDashboardDeviceImeiMetricsExport<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDashboardDeviceImeiMetricsExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiMetricsExport<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiMetricsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiMetricsExport<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiMetricsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Export device metrics
  */
 
 export function useGetDashboardDeviceImeiMetricsExport<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDashboardDeviceImeiMetricsExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardDeviceImeiMetricsExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiMetricsExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDeviceImeiMetricsExportQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDashboardDeviceImeiMetricsExportQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Export device metrics
+ */
+export const invalidateGetDashboardDeviceImeiMetricsExport = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDashboardDeviceImeiMetricsExportParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/metrics/export` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -473,20 +626,17 @@ export const getDashboardDeviceImeiTelemetry = async (imei: string,
 
 
 export const getGetDashboardDeviceImeiTelemetryQueryKey = (imei: string,
-    params?: GetDashboardDeviceImeiTelemetryParams,) => {
-    return [
-    `/dashboard/device/${imei}/telemetry`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardDeviceImeiTelemetryParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/telemetry` });
 
 
-export const getGetDashboardDeviceImeiTelemetryQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError = ErrorResponse>(imei: string,
-    params?: GetDashboardDeviceImeiTelemetryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDeviceImeiTelemetryQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError = ErrorResponse>(imei: string,
+    params?: GetDashboardDeviceImeiTelemetryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDeviceImeiTelemetryQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/telemetry`, queryOptions });
 
 
 
@@ -496,31 +646,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDeviceImeiTelemetryQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>>
 export type GetDashboardDeviceImeiTelemetryQueryError = ErrorResponse
 
 
+export function useGetDashboardDeviceImeiTelemetry<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDashboardDeviceImeiTelemetryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiTelemetry<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiTelemetryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiTelemetry<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiTelemetryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device telemetry
  */
 
 export function useGetDashboardDeviceImeiTelemetry<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDashboardDeviceImeiTelemetryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardDeviceImeiTelemetryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiTelemetry>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDeviceImeiTelemetryQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDashboardDeviceImeiTelemetryQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device telemetry
+ */
+export const invalidateGetDashboardDeviceImeiTelemetry = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDashboardDeviceImeiTelemetryParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/telemetry` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -559,19 +748,16 @@ export const getDashboardDevices = async (params?: GetDashboardDevicesParams, op
 
 
 
-export const getGetDashboardDevicesQueryKey = (params?: GetDashboardDevicesParams,) => {
-    return [
-    `/dashboard/devices`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetDashboardDevicesQueryKey = (params?: GetDashboardDevicesParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/dashboard/devices` });
 
 
-export const getGetDashboardDevicesQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDevices>>, TError = ErrorResponse>(params?: GetDashboardDevicesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDevicesQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDevices>>, TError = ErrorResponse>(params?: GetDashboardDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDevicesQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/dashboard/devices`, queryOptions });
 
 
 
@@ -581,30 +767,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDevicesQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDevices>>>
 export type GetDashboardDevicesQueryError = ErrorResponse
 
 
+export function useGetDashboardDevices<TData = Awaited<ReturnType<typeof getDashboardDevices>>, TError = ErrorResponse>(
+ params: undefined |  GetDashboardDevicesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDevices>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDevices>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDevices<TData = Awaited<ReturnType<typeof getDashboardDevices>>, TError = ErrorResponse>(
+ params?: GetDashboardDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDevices>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDevices>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDevices<TData = Awaited<ReturnType<typeof getDashboardDevices>>, TError = ErrorResponse>(
+ params?: GetDashboardDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List dashboard devices
  */
 
 export function useGetDashboardDevices<TData = Awaited<ReturnType<typeof getDashboardDevices>>, TError = ErrorResponse>(
- params?: GetDashboardDevicesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetDashboardDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevices>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDevicesQueryOptions(params,options)
 
-  const queryOptions = getGetDashboardDevicesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List dashboard devices
+ */
+export const invalidateGetDashboardDevices = async (
+ queryClient: QueryClient, params?: GetDashboardDevicesParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/dashboard/devices` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -643,19 +864,16 @@ export const getDashboardDevicesOperator = async (params?: GetDashboardDevicesOp
 
 
 
-export const getGetDashboardDevicesOperatorQueryKey = (params?: GetDashboardDevicesOperatorParams,) => {
-    return [
-    `/dashboard/devices/operator`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetDashboardDevicesOperatorQueryKey = (params?: GetDashboardDevicesOperatorParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/dashboard/devices/operator` });
 
 
-export const getGetDashboardDevicesOperatorQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError = ErrorResponse>(params?: GetDashboardDevicesOperatorParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDevicesOperatorQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError = ErrorResponse>(params?: GetDashboardDevicesOperatorParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDevicesOperatorQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/dashboard/devices/operator`, queryOptions });
 
 
 
@@ -665,30 +883,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDevicesOperatorQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDevicesOperator>>>
 export type GetDashboardDevicesOperatorQueryError = ErrorResponse
 
 
+export function useGetDashboardDevicesOperator<TData = Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError = ErrorResponse>(
+ params: undefined |  GetDashboardDevicesOperatorParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDevicesOperator>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDevicesOperator>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDevicesOperator<TData = Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError = ErrorResponse>(
+ params?: GetDashboardDevicesOperatorParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDevicesOperator>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDevicesOperator>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDevicesOperator<TData = Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError = ErrorResponse>(
+ params?: GetDashboardDevicesOperatorParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List devices by operator
  */
 
 export function useGetDashboardDevicesOperator<TData = Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError = ErrorResponse>(
- params?: GetDashboardDevicesOperatorParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetDashboardDevicesOperatorParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDevicesOperator>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDevicesOperatorQueryOptions(params,options)
 
-  const queryOptions = getGetDashboardDevicesOperatorQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List devices by operator
+ */
+export const invalidateGetDashboardDevicesOperator = async (
+ queryClient: QueryClient, params?: GetDashboardDevicesOperatorParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/dashboard/devices/operator` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -727,19 +980,16 @@ export const getDashboardEventsRecent = async (params?: GetDashboardEventsRecent
 
 
 
-export const getGetDashboardEventsRecentQueryKey = (params?: GetDashboardEventsRecentParams,) => {
-    return [
-    `/dashboard/events/recent`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetDashboardEventsRecentQueryKey = (params?: GetDashboardEventsRecentParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/dashboard/events/recent` });
 
 
-export const getGetDashboardEventsRecentQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError = ErrorResponse>(params?: GetDashboardEventsRecentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardEventsRecentQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError = ErrorResponse>(params?: GetDashboardEventsRecentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardEventsRecentQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/dashboard/events/recent`, queryOptions });
 
 
 
@@ -749,30 +999,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardEventsRecentQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardEventsRecent>>>
 export type GetDashboardEventsRecentQueryError = ErrorResponse
 
 
+export function useGetDashboardEventsRecent<TData = Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError = ErrorResponse>(
+ params: undefined |  GetDashboardEventsRecentParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardEventsRecent>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardEventsRecent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardEventsRecent<TData = Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError = ErrorResponse>(
+ params?: GetDashboardEventsRecentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardEventsRecent>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardEventsRecent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardEventsRecent<TData = Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError = ErrorResponse>(
+ params?: GetDashboardEventsRecentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List recent device events
  */
 
 export function useGetDashboardEventsRecent<TData = Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError = ErrorResponse>(
- params?: GetDashboardEventsRecentParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetDashboardEventsRecentParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsRecent>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardEventsRecentQueryOptions(params,options)
 
-  const queryOptions = getGetDashboardEventsRecentQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List recent device events
+ */
+export const invalidateGetDashboardEventsRecent = async (
+ queryClient: QueryClient, params?: GetDashboardEventsRecentParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/dashboard/events/recent` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -814,20 +1099,17 @@ export const getDashboardEventsTypesType = async (type: string,
 
 
 export const getGetDashboardEventsTypesTypeQueryKey = (type: string,
-    params?: GetDashboardEventsTypesTypeParams,) => {
-    return [
-    `/dashboard/events/types/${type}`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardEventsTypesTypeParams,) =>
+    organizationScopedQueryKey({ type,params }, { url: `/dashboard/events/types/${type}` });
 
 
-export const getGetDashboardEventsTypesTypeQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError = ErrorResponse>(type: string,
-    params?: GetDashboardEventsTypesTypeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardEventsTypesTypeQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError = ErrorResponse>(type: string,
+    params?: GetDashboardEventsTypesTypeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardEventsTypesTypeQueryKey(type,params);
+  const queryKey =  organizationScopedQueryKey({ type,params }, { url: `/dashboard/events/types/${type}`, queryOptions });
 
 
 
@@ -837,31 +1119,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: type !== null && type !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: type !== null && type !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardEventsTypesTypeQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardEventsTypesType>>>
 export type GetDashboardEventsTypesTypeQueryError = ErrorResponse
 
 
+export function useGetDashboardEventsTypesType<TData = Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError = ErrorResponse>(
+ type: string,
+    params: undefined |  GetDashboardEventsTypesTypeParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardEventsTypesType>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardEventsTypesType>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardEventsTypesType<TData = Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError = ErrorResponse>(
+ type: string,
+    params?: GetDashboardEventsTypesTypeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardEventsTypesType>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardEventsTypesType>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardEventsTypesType<TData = Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError = ErrorResponse>(
+ type: string,
+    params?: GetDashboardEventsTypesTypeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List device events by type
  */
 
 export function useGetDashboardEventsTypesType<TData = Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError = ErrorResponse>(
  type: string,
-    params?: GetDashboardEventsTypesTypeParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardEventsTypesTypeParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsTypesType>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardEventsTypesTypeQueryOptions(type,params,options)
 
-  const queryOptions = getGetDashboardEventsTypesTypeQueryOptions(type,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List device events by type
+ */
+export const invalidateGetDashboardEventsTypesType = async (
+ queryClient: QueryClient, type: string,
+    params?: GetDashboardEventsTypesTypeParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ type,params }, { url: `/dashboard/events/types/${type}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -893,19 +1214,16 @@ export const getDashboardEventsId = async (id: string, options?: Parameters<type
 
 
 
-export const getGetDashboardEventsIdQueryKey = (id: string,) => {
-    return [
-    `/dashboard/events/${id}`
-    ] as const;
-    }
+export const getGetDashboardEventsIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/dashboard/events/${id}` });
 
 
-export const getGetDashboardEventsIdQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardEventsId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardEventsIdQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardEventsId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardEventsIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/dashboard/events/${id}`, queryOptions });
 
 
 
@@ -915,30 +1233,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardEventsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardEventsId>>>
 export type GetDashboardEventsIdQueryError = ErrorResponse
 
 
+export function useGetDashboardEventsId<TData = Awaited<ReturnType<typeof getDashboardEventsId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardEventsId>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardEventsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardEventsId<TData = Awaited<ReturnType<typeof getDashboardEventsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardEventsId>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardEventsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardEventsId<TData = Awaited<ReturnType<typeof getDashboardEventsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get event by ID
  */
 
 export function useGetDashboardEventsId<TData = Awaited<ReturnType<typeof getDashboardEventsId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardEventsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardEventsIdQueryOptions(id,options)
 
-  const queryOptions = getGetDashboardEventsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get event by ID
+ */
+export const invalidateGetDashboardEventsId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/dashboard/events/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -977,7 +1330,7 @@ return customAxios<DeviceConfirmResult>(getPostDeviceConfirmUrl(),
 
 
 export const getPostDeviceConfirmMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceConfirm>>, TError,{data: DeviceConfirmRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceConfirm>>, TError,{data: DeviceConfirmRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDeviceConfirm>>, TError,{data: DeviceConfirmRequest}, TContext> => {
 
 const mutationKey = ['postDeviceConfirm'];
@@ -996,12 +1349,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDeviceConfirm(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDeviceConfirm>>, variables: {data: DeviceConfirmRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDeviceConfirmMutationResult = NonNullable<Awaited<ReturnType<typeof postDeviceConfirm>>>
     export type PostDeviceConfirmMutationBody = DeviceConfirmRequest
@@ -1011,14 +1373,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Confirm device registration
  */
 export const usePostDeviceConfirm = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceConfirm>>, TError,{data: DeviceConfirmRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceConfirm>>, TError,{data: DeviceConfirmRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDeviceConfirm>>,
         TError,
         {data: DeviceConfirmRequest},
         TContext
       > => {
-      return useMutation(getPostDeviceConfirmMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDeviceConfirmMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDeviceCountUrl = () => {
 
@@ -1047,19 +1410,16 @@ export const getDeviceCount = async ( options?: Parameters<typeof customAxios>[1
 
 
 
-export const getGetDeviceCountQueryKey = () => {
-    return [
-    `/device/count`
-    ] as const;
-    }
+export const getGetDeviceCountQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/device/count` });
 
 
-export const getGetDeviceCountQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceCount>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceCountQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceCount>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceCountQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/device/count`, queryOptions });
 
 
 
@@ -1069,30 +1429,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceCountQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceCount>>>
 export type GetDeviceCountQueryError = ErrorResponse
 
 
+export function useGetDeviceCount<TData = Awaited<ReturnType<typeof getDeviceCount>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceCount>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceCount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceCount<TData = Awaited<ReturnType<typeof getDeviceCount>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceCount>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceCount>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceCount<TData = Awaited<ReturnType<typeof getDeviceCount>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Count devices
  */
 
 export function useGetDeviceCount<TData = Awaited<ReturnType<typeof getDeviceCount>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceCount>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceCountQueryOptions(options)
 
-  const queryOptions = getGetDeviceCountQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Count devices
+ */
+export const invalidateGetDeviceCount = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/device/count` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1124,19 +1519,16 @@ export const getDeviceImei = async (imei: string, options?: Parameters<typeof cu
 
 
 
-export const getGetDeviceImeiQueryKey = (imei: string,) => {
-    return [
-    `/device/${imei}`
-    ] as const;
-    }
+export const getGetDeviceImeiQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/device/${imei}` });
 
 
-export const getGetDeviceImeiQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImei>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceImeiQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImei>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceImeiQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/device/${imei}`, queryOptions });
 
 
 
@@ -1146,30 +1538,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceImeiQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceImei>>>
 export type GetDeviceImeiQueryError = ErrorResponse
 
 
+export function useGetDeviceImei<TData = Awaited<ReturnType<typeof getDeviceImei>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImei>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImei>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImei<TData = Awaited<ReturnType<typeof getDeviceImei>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImei>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImei>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImei<TData = Awaited<ReturnType<typeof getDeviceImei>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device
  */
 
 export function useGetDeviceImei<TData = Awaited<ReturnType<typeof getDeviceImei>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceImeiQueryOptions(imei,options)
 
-  const queryOptions = getGetDeviceImeiQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device
+ */
+export const invalidateGetDeviceImei = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/device/${imei}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1202,7 +1629,7 @@ export const deleteDeviceImei = async (imei: string, options?: Parameters<typeof
 
 
 export const getDeleteDeviceImeiMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDeviceImei>>, TError,{imei: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDeviceImei>>, TError,{imei: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteDeviceImei>>, TError,{imei: string}, TContext> => {
 
 const mutationKey = ['deleteDeviceImei'];
@@ -1221,12 +1648,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteDeviceImei(imei,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteDeviceImei>>, variables: {imei: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteDeviceImeiMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDeviceImei>>>
 
@@ -1236,14 +1672,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete device
  */
 export const useDeleteDeviceImei = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDeviceImei>>, TError,{imei: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDeviceImei>>, TError,{imei: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteDeviceImei>>,
         TError,
         {imei: string},
         TContext
       > => {
-      return useMutation(getDeleteDeviceImeiMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteDeviceImeiMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDeviceImeiConnectionStatusUrl = (imei: string,) => {
 
@@ -1272,19 +1709,16 @@ export const getDeviceImeiConnectionStatus = async (imei: string, options?: Para
 
 
 
-export const getGetDeviceImeiConnectionStatusQueryKey = (imei: string,) => {
-    return [
-    `/device/${imei}/connection-status`
-    ] as const;
-    }
+export const getGetDeviceImeiConnectionStatusQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/device/${imei}/connection-status` });
 
 
-export const getGetDeviceImeiConnectionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceImeiConnectionStatusQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceImeiConnectionStatusQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/device/${imei}/connection-status`, queryOptions });
 
 
 
@@ -1294,30 +1728,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceImeiConnectionStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>>
 export type GetDeviceImeiConnectionStatusQueryError = ErrorResponse
 
 
+export function useGetDeviceImeiConnectionStatus<TData = Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiConnectionStatus<TData = Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiConnectionStatus<TData = Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device connection status
  */
 
 export function useGetDeviceImeiConnectionStatus<TData = Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiConnectionStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceImeiConnectionStatusQueryOptions(imei,options)
 
-  const queryOptions = getGetDeviceImeiConnectionStatusQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device connection status
+ */
+export const invalidateGetDeviceImeiConnectionStatus = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/device/${imei}/connection-status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1350,7 +1819,7 @@ export const postDeviceImeiDisconnect = async (imei: string, options?: Parameter
 
 
 export const getPostDeviceImeiDisconnectMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceImeiDisconnect>>, TError,{imei: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceImeiDisconnect>>, TError,{imei: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDeviceImeiDisconnect>>, TError,{imei: string}, TContext> => {
 
 const mutationKey = ['postDeviceImeiDisconnect'];
@@ -1369,12 +1838,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDeviceImeiDisconnect(imei,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDeviceImeiDisconnect>>, variables: {imei: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDeviceImeiDisconnectMutationResult = NonNullable<Awaited<ReturnType<typeof postDeviceImeiDisconnect>>>
 
@@ -1384,14 +1862,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Disconnect device
  */
 export const usePostDeviceImeiDisconnect = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceImeiDisconnect>>, TError,{imei: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceImeiDisconnect>>, TError,{imei: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDeviceImeiDisconnect>>,
         TError,
         {imei: string},
         TContext
       > => {
-      return useMutation(getPostDeviceImeiDisconnectMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDeviceImeiDisconnectMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchDeviceImeiFcmTokenUrl = (imei: string,) => {
 
@@ -1428,7 +1907,7 @@ return customAxios<SuccessResult>(getPatchDeviceImeiFcmTokenUrl(imei),
 
 
 export const getPatchDeviceImeiFcmTokenMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>, TError,{imei: string;data: DeviceFCMTokenRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>, TError,{imei: string;data: DeviceFCMTokenRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>, TError,{imei: string;data: DeviceFCMTokenRequest}, TContext> => {
 
 const mutationKey = ['patchDeviceImeiFcmToken'];
@@ -1447,12 +1926,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchDeviceImeiFcmToken(imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>, variables: {imei: string;data: DeviceFCMTokenRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchDeviceImeiFcmTokenMutationResult = NonNullable<Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>>
     export type PatchDeviceImeiFcmTokenMutationBody = DeviceFCMTokenRequest
@@ -1462,14 +1950,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update FCM token
  */
 export const usePatchDeviceImeiFcmToken = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>, TError,{imei: string;data: DeviceFCMTokenRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>, TError,{imei: string;data: DeviceFCMTokenRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchDeviceImeiFcmToken>>,
         TError,
         {imei: string;data: DeviceFCMTokenRequest},
         TContext
       > => {
-      return useMutation(getPatchDeviceImeiFcmTokenMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchDeviceImeiFcmTokenMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDevicesUrl = (params?: GetDevicesParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1505,19 +1994,16 @@ export const getDevices = async (params?: GetDevicesParams, options?: Parameters
 
 
 
-export const getGetDevicesQueryKey = (params?: GetDevicesParams,) => {
-    return [
-    `/devices`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetDevicesQueryKey = (params?: GetDevicesParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/devices` });
 
 
-export const getGetDevicesQueryOptions = <TData = Awaited<ReturnType<typeof getDevices>>, TError = ErrorResponse>(params?: GetDevicesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDevicesQueryOptions = <TData = Awaited<ReturnType<typeof getDevices>>, TError = ErrorResponse>(params?: GetDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevicesQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/devices`, queryOptions });
 
 
 
@@ -1527,30 +2013,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDevicesQueryResult = NonNullable<Awaited<ReturnType<typeof getDevices>>>
 export type GetDevicesQueryError = ErrorResponse
 
 
+export function useGetDevices<TData = Awaited<ReturnType<typeof getDevices>>, TError = ErrorResponse>(
+ params: undefined |  GetDevicesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevices>>,
+          TError,
+          Awaited<ReturnType<typeof getDevices>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevices<TData = Awaited<ReturnType<typeof getDevices>>, TError = ErrorResponse>(
+ params?: GetDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevices>>,
+          TError,
+          Awaited<ReturnType<typeof getDevices>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevices<TData = Awaited<ReturnType<typeof getDevices>>, TError = ErrorResponse>(
+ params?: GetDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List devices
  */
 
 export function useGetDevices<TData = Awaited<ReturnType<typeof getDevices>>, TError = ErrorResponse>(
- params?: GetDevicesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetDevicesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevices>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDevicesQueryOptions(params,options)
 
-  const queryOptions = getGetDevicesQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List devices
+ */
+export const invalidateGetDevices = async (
+ queryClient: QueryClient, params?: GetDevicesParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/devices` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1582,19 +2103,16 @@ export const getDevicesImei = async (imei: string, options?: Parameters<typeof c
 
 
 
-export const getGetDevicesImeiQueryKey = (imei: string,) => {
-    return [
-    `/devices/${imei}`
-    ] as const;
-    }
+export const getGetDevicesImeiQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/devices/${imei}` });
 
 
-export const getGetDevicesImeiQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImei>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDevicesImeiQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImei>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevicesImeiQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/devices/${imei}`, queryOptions });
 
 
 
@@ -1604,30 +2122,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDevicesImeiQueryResult = NonNullable<Awaited<ReturnType<typeof getDevicesImei>>>
 export type GetDevicesImeiQueryError = ErrorResponse
 
 
+export function useGetDevicesImei<TData = Awaited<ReturnType<typeof getDevicesImei>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImei>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImei>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImei<TData = Awaited<ReturnType<typeof getDevicesImei>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImei>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImei>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImei<TData = Awaited<ReturnType<typeof getDevicesImei>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device detail
  */
 
 export function useGetDevicesImei<TData = Awaited<ReturnType<typeof getDevicesImei>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDevicesImeiQueryOptions(imei,options)
 
-  const queryOptions = getGetDevicesImeiQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device detail
+ */
+export const invalidateGetDevicesImei = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/devices/${imei}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1669,7 +2222,7 @@ export const deleteDevicesImei = async (imei: string,
 
 
 export const getDeleteDevicesImeiMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImei>>, TError,{imei: string;params?: DeleteDevicesImeiParams}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImei>>, TError,{imei: string;params?: DeleteDevicesImeiParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImei>>, TError,{imei: string;params?: DeleteDevicesImeiParams}, TContext> => {
 
 const mutationKey = ['deleteDevicesImei'];
@@ -1688,12 +2241,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteDevicesImei(imei,params,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteDevicesImei>>, variables: {imei: string;params?: DeleteDevicesImeiParams}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteDevicesImeiMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDevicesImei>>>
 
@@ -1703,14 +2265,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Deregister device
  */
 export const useDeleteDevicesImei = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImei>>, TError,{imei: string;params?: DeleteDevicesImeiParams}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImei>>, TError,{imei: string;params?: DeleteDevicesImeiParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteDevicesImei>>,
         TError,
         {imei: string;params?: DeleteDevicesImeiParams},
         TContext
       > => {
-      return useMutation(getDeleteDevicesImeiMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteDevicesImeiMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDevicesImeiSettingsUrl = (imei: string,) => {
 
@@ -1739,19 +2302,16 @@ export const getDevicesImeiSettings = async (imei: string, options?: Parameters<
 
 
 
-export const getGetDevicesImeiSettingsQueryKey = (imei: string,) => {
-    return [
-    `/devices/${imei}/settings`
-    ] as const;
-    }
+export const getGetDevicesImeiSettingsQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/settings` });
 
 
-export const getGetDevicesImeiSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDevicesImeiSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevicesImeiSettingsQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/settings`, queryOptions });
 
 
 
@@ -1761,30 +2321,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDevicesImeiSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getDevicesImeiSettings>>>
 export type GetDevicesImeiSettingsQueryError = ErrorResponse
 
 
+export function useGetDevicesImeiSettings<TData = Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiSettings>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiSettings>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiSettings<TData = Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiSettings>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiSettings>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiSettings<TData = Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device settings
  */
 
 export function useGetDevicesImeiSettings<TData = Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDevicesImeiSettingsQueryOptions(imei,options)
 
-  const queryOptions = getGetDevicesImeiSettingsQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device settings
+ */
+export const invalidateGetDevicesImeiSettings = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/settings` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1824,7 +2419,7 @@ return customAxios<DeviceSettingsResult>(getPatchDevicesImeiSettingsUrl(imei),
 
 
 export const getPatchDevicesImeiSettingsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettings>>, TError,{imei: string;data: UpdateDeviceSettingsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettings>>, TError,{imei: string;data: UpdateDeviceSettingsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettings>>, TError,{imei: string;data: UpdateDeviceSettingsRequest}, TContext> => {
 
 const mutationKey = ['patchDevicesImeiSettings'];
@@ -1843,12 +2438,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchDevicesImeiSettings(imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchDevicesImeiSettings>>, variables: {imei: string;data: UpdateDeviceSettingsRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchDevicesImeiSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof patchDevicesImeiSettings>>>
     export type PatchDevicesImeiSettingsMutationBody = UpdateDeviceSettingsRequest
@@ -1858,14 +2462,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update device settings
  */
 export const usePatchDevicesImeiSettings = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettings>>, TError,{imei: string;data: UpdateDeviceSettingsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettings>>, TError,{imei: string;data: UpdateDeviceSettingsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchDevicesImeiSettings>>,
         TError,
         {imei: string;data: UpdateDeviceSettingsRequest},
         TContext
       > => {
-      return useMutation(getPatchDevicesImeiSettingsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchDevicesImeiSettingsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDevicesImeiSettingsThresholdsUrl = (imei: string,) => {
 
@@ -1894,19 +2499,16 @@ export const getDevicesImeiSettingsThresholds = async (imei: string, options?: P
 
 
 
-export const getGetDevicesImeiSettingsThresholdsQueryKey = (imei: string,) => {
-    return [
-    `/devices/${imei}/settings/thresholds`
-    ] as const;
-    }
+export const getGetDevicesImeiSettingsThresholdsQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/settings/thresholds` });
 
 
-export const getGetDevicesImeiSettingsThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDevicesImeiSettingsThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevicesImeiSettingsThresholdsQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/settings/thresholds`, queryOptions });
 
 
 
@@ -1916,30 +2518,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDevicesImeiSettingsThresholdsQueryResult = NonNullable<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>>
 export type GetDevicesImeiSettingsThresholdsQueryError = ErrorResponse
 
 
+export function useGetDevicesImeiSettingsThresholds<TData = Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiSettingsThresholds<TData = Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiSettingsThresholds<TData = Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device thresholds
  */
 
 export function useGetDevicesImeiSettingsThresholds<TData = Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiSettingsThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDevicesImeiSettingsThresholdsQueryOptions(imei,options)
 
-  const queryOptions = getGetDevicesImeiSettingsThresholdsQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device thresholds
+ */
+export const invalidateGetDevicesImeiSettingsThresholds = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/settings/thresholds` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1979,7 +2616,7 @@ return customAxios<ThresholdsResult>(getPatchDevicesImeiSettingsThresholdsUrl(im
 
 
 export const getPatchDevicesImeiSettingsThresholdsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>, TError,{imei: string;data: ThresholdUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>, TError,{imei: string;data: ThresholdUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>, TError,{imei: string;data: ThresholdUpdateRequest}, TContext> => {
 
 const mutationKey = ['patchDevicesImeiSettingsThresholds'];
@@ -1998,12 +2635,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchDevicesImeiSettingsThresholds(imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>, variables: {imei: string;data: ThresholdUpdateRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchDevicesImeiSettingsThresholdsMutationResult = NonNullable<Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>>
     export type PatchDevicesImeiSettingsThresholdsMutationBody = ThresholdUpdateRequest
@@ -2013,14 +2659,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update device thresholds
  */
 export const usePatchDevicesImeiSettingsThresholds = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>, TError,{imei: string;data: ThresholdUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>, TError,{imei: string;data: ThresholdUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchDevicesImeiSettingsThresholds>>,
         TError,
         {imei: string;data: ThresholdUpdateRequest},
         TContext
       > => {
-      return useMutation(getPatchDevicesImeiSettingsThresholdsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchDevicesImeiSettingsThresholdsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDevicesImeiStatusUrl = (imei: string,) => {
 
@@ -2049,19 +2696,16 @@ export const getDevicesImeiStatus = async (imei: string, options?: Parameters<ty
 
 
 
-export const getGetDevicesImeiStatusQueryKey = (imei: string,) => {
-    return [
-    `/devices/${imei}/status`
-    ] as const;
-    }
+export const getGetDevicesImeiStatusQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/status` });
 
 
-export const getGetDevicesImeiStatusQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDevicesImeiStatusQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevicesImeiStatusQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/status`, queryOptions });
 
 
 
@@ -2071,30 +2715,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDevicesImeiStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getDevicesImeiStatus>>>
 export type GetDevicesImeiStatusQueryError = ErrorResponse
 
 
+export function useGetDevicesImeiStatus<TData = Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiStatus<TData = Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiStatus<TData = Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device status
  */
 
 export function useGetDevicesImeiStatus<TData = Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDevicesImeiStatusQueryOptions(imei,options)
 
-  const queryOptions = getGetDevicesImeiStatusQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device status
+ */
+export const invalidateGetDevicesImeiStatus = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -2126,19 +2805,16 @@ export const getDevicesImeiTags = async (imei: string, options?: Parameters<type
 
 
 
-export const getGetDevicesImeiTagsQueryKey = (imei: string,) => {
-    return [
-    `/devices/${imei}/tags`
-    ] as const;
-    }
+export const getGetDevicesImeiTagsQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/tags` });
 
 
-export const getGetDevicesImeiTagsQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiTags>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDevicesImeiTagsQueryOptions = <TData = Awaited<ReturnType<typeof getDevicesImeiTags>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDevicesImeiTagsQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/tags`, queryOptions });
 
 
 
@@ -2148,30 +2824,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDevicesImeiTagsQueryResult = NonNullable<Awaited<ReturnType<typeof getDevicesImeiTags>>>
 export type GetDevicesImeiTagsQueryError = ErrorResponse
 
 
+export function useGetDevicesImeiTags<TData = Awaited<ReturnType<typeof getDevicesImeiTags>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiTags>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiTags>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiTags<TData = Awaited<ReturnType<typeof getDevicesImeiTags>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDevicesImeiTags>>,
+          TError,
+          Awaited<ReturnType<typeof getDevicesImeiTags>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDevicesImeiTags<TData = Awaited<ReturnType<typeof getDevicesImeiTags>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device tags
  */
 
 export function useGetDevicesImeiTags<TData = Awaited<ReturnType<typeof getDevicesImeiTags>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDevicesImeiTags>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDevicesImeiTagsQueryOptions(imei,options)
 
-  const queryOptions = getGetDevicesImeiTagsQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device tags
+ */
+export const invalidateGetDevicesImeiTags = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/devices/${imei}/tags` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -2211,7 +2922,7 @@ return customAxios<DeviceTagsResult>(getPutDevicesImeiTagsUrl(imei),
 
 
 export const getPutDevicesImeiTagsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDevicesImeiTags>>, TError,{imei: string;data: SetDeviceTagsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDevicesImeiTags>>, TError,{imei: string;data: SetDeviceTagsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof putDevicesImeiTags>>, TError,{imei: string;data: SetDeviceTagsRequest}, TContext> => {
 
 const mutationKey = ['putDevicesImeiTags'];
@@ -2230,12 +2941,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  putDevicesImeiTags(imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof putDevicesImeiTags>>, variables: {imei: string;data: SetDeviceTagsRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PutDevicesImeiTagsMutationResult = NonNullable<Awaited<ReturnType<typeof putDevicesImeiTags>>>
     export type PutDevicesImeiTagsMutationBody = SetDeviceTagsRequest
@@ -2245,14 +2965,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Set device tags
  */
 export const usePutDevicesImeiTags = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDevicesImeiTags>>, TError,{imei: string;data: SetDeviceTagsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putDevicesImeiTags>>, TError,{imei: string;data: SetDeviceTagsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof putDevicesImeiTags>>,
         TError,
         {imei: string;data: SetDeviceTagsRequest},
         TContext
       > => {
-      return useMutation(getPutDevicesImeiTagsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPutDevicesImeiTagsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostDevicesImeiTagsTagUrl = (imei: string,
     tag: string,) => {
@@ -2284,7 +3005,7 @@ export const postDevicesImeiTagsTag = async (imei: string,
 
 
 export const getPostDevicesImeiTagsTagMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext> => {
 
 const mutationKey = ['postDevicesImeiTagsTag'];
@@ -2303,12 +3024,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDevicesImeiTagsTag(imei,tag,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDevicesImeiTagsTag>>, variables: {imei: string;tag: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDevicesImeiTagsTagMutationResult = NonNullable<Awaited<ReturnType<typeof postDevicesImeiTagsTag>>>
 
@@ -2318,14 +3048,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Add device tag
  */
 export const usePostDevicesImeiTagsTag = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDevicesImeiTagsTag>>,
         TError,
         {imei: string;tag: string},
         TContext
       > => {
-      return useMutation(getPostDevicesImeiTagsTagMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDevicesImeiTagsTagMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getDeleteDevicesImeiTagsTagUrl = (imei: string,
     tag: string,) => {
@@ -2357,7 +3088,7 @@ export const deleteDevicesImeiTagsTag = async (imei: string,
 
 
 export const getDeleteDevicesImeiTagsTagMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext> => {
 
 const mutationKey = ['deleteDevicesImeiTagsTag'];
@@ -2376,12 +3107,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteDevicesImeiTagsTag(imei,tag,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>, variables: {imei: string;tag: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteDevicesImeiTagsTagMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>>
 
@@ -2391,14 +3131,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Remove device tag
  */
 export const useDeleteDevicesImeiTagsTag = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>, TError,{imei: string;tag: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteDevicesImeiTagsTag>>,
         TError,
         {imei: string;tag: string},
         TContext
       > => {
-      return useMutation(getDeleteDevicesImeiTagsTagMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteDevicesImeiTagsTagMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostOrganizationsIdDevicesImeiTransferUrl = (id: string,
     imei: string,) => {
@@ -2437,7 +3178,7 @@ return customAxios<DeviceTransferResult>(getPostOrganizationsIdDevicesImeiTransf
 
 
 export const getPostOrganizationsIdDevicesImeiTransferMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>, TError,{id: string;imei: string;data: DeviceTransferRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>, TError,{id: string;imei: string;data: DeviceTransferRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>, TError,{id: string;imei: string;data: DeviceTransferRequest}, TContext> => {
 
 const mutationKey = ['postOrganizationsIdDevicesImeiTransfer'];
@@ -2456,12 +3197,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postOrganizationsIdDevicesImeiTransfer(id,imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>, variables: {id: string;imei: string;data: DeviceTransferRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardDevicesOperatorQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardEventsRecentQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDeviceCountQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostOrganizationsIdDevicesImeiTransferMutationResult = NonNullable<Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>>
     export type PostOrganizationsIdDevicesImeiTransferMutationBody = DeviceTransferRequest
@@ -2471,12 +3221,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Transfer device
  */
 export const usePostOrganizationsIdDevicesImeiTransfer = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>, TError,{id: string;imei: string;data: DeviceTransferRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>, TError,{id: string;imei: string;data: DeviceTransferRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postOrganizationsIdDevicesImeiTransfer>>,
         TError,
         {id: string;imei: string;data: DeviceTransferRequest},
         TContext
       > => {
-      return useMutation(getPostOrganizationsIdDevicesImeiTransferMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostOrganizationsIdDevicesImeiTransferMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

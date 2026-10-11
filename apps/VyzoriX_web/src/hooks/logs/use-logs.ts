@@ -1,5 +1,9 @@
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { getDashboardDeviceImeiLogs, useGetDashboardDeviceImeiLogs } from '@/generated-rq/devices/device-management';
+import {
+  getDashboardDeviceImeiLogs,
+  useGetDashboardDeviceImeiLogs,
+  getGetDashboardDeviceImeiLogsQueryKey,
+} from '@/generated-rq/devices/device-management';
 import type { LogListResult } from '@vyzorix/api-client';
 import { fetchDeviceLogsViaGraphQL, normalizeDeviceLogList } from './_graphql-fallback';
 
@@ -11,12 +15,13 @@ export interface LogParams {
 
 export function useDeviceLogs(imei: string | undefined, params?: LogParams) {
   const organizationId = useCurrentOrganizationId();
+  const keyParams = { limit: params?.limit, before: params?.before, level: params?.level };
   return useGetDashboardDeviceImeiLogs<LogListResult>(
     imei ?? '',
-    { limit: params?.limit, before: params?.before, level: params?.level },
+    keyParams,
     {
       query: {
-        queryKey: ['logs', imei, { ...params, organizationId }] as const,
+        queryKey: getGetDashboardDeviceImeiLogsQueryKey(imei ?? '', keyParams),
         enabled: imei !== undefined && imei !== '' && organizationId !== null,
         queryFn: async () => {
           try {

@@ -18,7 +18,6 @@ export function useUpdateHistory(params?: HistoryParams) {
     { page: params?.page, limit: params?.limit },
     {
       query: {
-        queryKey: ['updates', 'history', { ...params, organizationId }] as const,
         enabled: organizationId !== null,
         queryFn: async () => {
           try {

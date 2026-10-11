@@ -10,7 +10,6 @@ export function useUpdateStatus() {
   const organizationId = useCurrentOrganizationId();
   return useGetUpdatesStatus<UpdateStatusResponse>({
     query: {
-      queryKey: ['updates', 'status', organizationId ?? ''] as const,
       enabled: organizationId !== null,
       queryFn: async () => {
         try {

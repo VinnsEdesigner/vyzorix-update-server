@@ -4,6 +4,10 @@ import {
   useGetDashboardEventsRecent,
   useGetDashboardEventsTypesType,
   useGetDashboardEventsId,
+  getGetDashboardDeviceImeiEventsQueryKey,
+  getGetDashboardEventsRecentQueryKey,
+  getGetDashboardEventsTypesTypeQueryKey,
+  getGetDashboardEventsIdQueryKey,
 } from '@/generated-rq/devices/device-management';
 
 
@@ -13,13 +17,13 @@ export interface DeviceEventsParams {
 }
 
 export function useDeviceEvents(imei: string | undefined, params?: DeviceEventsParams) {
-  const organizationId = useCurrentOrganizationId();
+  const keyParams = { limit: params?.limit, before: params?.before };
   return useGetDashboardDeviceImeiEvents(
     imei ?? '',
-    { limit: params?.limit, before: params?.before },
+    keyParams,
     {
       query: {
-        queryKey: ['device-events', imei, { ...params, organizationId }] as const,
+        queryKey: getGetDashboardDeviceImeiEventsQueryKey(imei ?? '', keyParams),
         enabled: imei !== undefined && imei !== '',
       },
     },
@@ -32,7 +36,7 @@ export function useRecentEvents(limit?: number) {
     limit ? { limit } : undefined,
     {
       query: {
-        queryKey: ['events', 'recent', limit] as const,
+        queryKey: getGetDashboardEventsRecentQueryKey(limit ? { limit } : undefined),
         enabled: organizationId !== null,
       },
     },
@@ -41,12 +45,13 @@ export function useRecentEvents(limit?: number) {
 
 export function useEventsByType(type: string | undefined, params?: { limit?: number; offset?: number }) {
   const organizationId = useCurrentOrganizationId();
+  const keyParams = { limit: params?.limit, offset: params?.offset };
   return useGetDashboardEventsTypesType(
     type ?? '',
-    { limit: params?.limit, offset: params?.offset },
+    keyParams,
     {
       query: {
-        queryKey: ['events', 'type', type, { ...params, organizationId }] as const,
+        queryKey: getGetDashboardEventsTypesTypeQueryKey(type ?? '', keyParams),
         enabled: type !== undefined && type !== '' && organizationId !== null,
       },
     },
@@ -58,7 +63,7 @@ export function useEvent(id: string | undefined) {
     id ?? '',
     {
       query: {
-        queryKey: ['events', 'entry', id ?? ''] as const,
+        queryKey: getGetDashboardEventsIdQueryKey(id ?? ''),
         enabled: id !== undefined && id !== '',
       },
     },

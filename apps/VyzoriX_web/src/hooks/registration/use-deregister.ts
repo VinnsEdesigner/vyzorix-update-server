@@ -1,8 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deleteDevicesImei } from '@/generated-rq/devices/device-management';
+import {
+  deleteDevicesImei,
+  invalidateGetDevices,
+  invalidateGetDevicesImei,
+} from '@/generated-rq/devices/device-management';
 import type { DeregisterResult } from '@vyzorix/api-client';
 import { deregisterViaGraphQL } from './_graphql-fallback';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 
 export interface DeregisterDeviceVariables {
@@ -29,9 +32,11 @@ export function useDeregisterRegisteredDevice() {
       }
     },
     onSuccess: (_, { imei }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.registrationDevices() });
-      queryClient.invalidateQueries({ queryKey: ['devices'] });
-      queryClient.removeQueries({ queryKey: queryKeys.registrationDevice(imei) });
+      // Delete is called directly (not through the generated mutation hook) so
+      // the GraphQL fallback can run; invalidate the generated device keys
+      // explicitly.
+      void invalidateGetDevices(queryClient);
+      void invalidateGetDevicesImei(queryClient, imei);
     },
   });
 }

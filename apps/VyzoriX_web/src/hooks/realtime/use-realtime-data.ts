@@ -10,13 +10,22 @@ import {
 } from '@vyzorix/api-client';
 import { postDeviceImeiCommand } from '@/generated-rq/commands/device-commands';
 import {
+  getGetTelemetryLatestDeviceIdQueryKey,
+  getGetTelemetryStatsDeviceIdQueryKey,
+} from '@/generated-rq/telemetry/device-telemetry';
+import { getGetDashboardStatsQueryKey } from '@/generated-rq/dashboard/dashboard-stats';
+import {
+  invalidateGetCommandDispatchIdStatus,
+  invalidateGetDeviceImeiCommandsPending,
+} from '@/generated-rq/commands/device-commands';
+import { invalidateGetDashboardEventsRecent } from '@/generated-rq/devices/device-management';
+import {
   OnTelemetryReceivedDocument as TELEMETRY_RECEIVED_SUBSCRIPTION,
   OnOrganizationEventDocument as ORGANIZATION_EVENT_SUBSCRIPTION,
   OnCommandStatusChangedDocument as COMMAND_STATUS_SUBSCRIPTION,
 } from '@vyzorix/api-client/generated-graphql';
 import { useWebSocketStore } from '@/stores';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { queryKeys } from '@/lib/query-keys';
 
 const MAX_TELEMETRY_HISTORY = 100;
 const MAX_EVENTS = 200;
@@ -84,10 +93,10 @@ export function useDeviceTelemetry(
           if (!data) return;
           // Invalidate REST telemetry caches so REST components stay in sync.
           queryClient.invalidateQueries({
-            queryKey: queryKeys.latestTelemetry(organizationId ?? '', data.deviceId),
+            queryKey: getGetTelemetryLatestDeviceIdQueryKey(data.deviceId),
           });
           queryClient.invalidateQueries({
-            queryKey: queryKeys.telemetryStats(organizationId ?? '', data.deviceId),
+            queryKey: getGetTelemetryStatsDeviceIdQueryKey(data.deviceId),
           });
 
           const frame = telemetryFromRaw({
@@ -194,8 +203,8 @@ export function useDashboardEvents(
           if (!data) return;
 
           // Keep REST-backed dashboards in sync.
-          queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats(organizationId ?? '') });
-          queryClient.invalidateQueries({ queryKey: ['events'] });
+          queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
+          void invalidateGetDashboardEventsRecent(queryClient);
 
           const eventType = data.type as WSEventType;
           if (filterTypes && !filterTypes.has(eventType)) return;
@@ -304,8 +313,8 @@ export function useCommandDispatch(
             return next;
           });
 
-          queryClient.invalidateQueries({ queryKey: queryKeys.command(data.dispatchId) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.pendingCommands(data.deviceId) });
+          void invalidateGetCommandDispatchIdStatus(queryClient, data.dispatchId);
+          void invalidateGetDeviceImeiCommandsPending(queryClient, data.deviceId);
 
           // Remove from pending once it reaches a terminal-ish state.
           if (status === 'delivered' || status === 'failed') {

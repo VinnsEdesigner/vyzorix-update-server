@@ -4,6 +4,8 @@ import {
   useGetDeviceImeiInspect,
   getDeviceImeiTimeline,
   useGetDeviceImeiTimeline,
+  getGetDeviceImeiInspectQueryKey,
+  getGetDeviceImeiTimelineQueryKey,
 } from '@/generated-rq/diagnostics/device-diagnostics';
 import type { DeviceInspection, DomainTimelineResult as TimelineResult, TimelineEventType } from '@vyzorix/api-client';
 import { fetchInspectionViaGraphQL, fetchTimelineViaGraphQL, normalizeWireInspection, normalizeWireTimeline } from './_graphql-fallback';
@@ -25,7 +27,7 @@ export function useDeviceInspection(imei: string | undefined) {
     imei ?? '',
     {
       query: {
-        queryKey: ['diagnostics', 'inspection', organizationId ?? '', imei ?? ''] as const,
+        queryKey: getGetDeviceImeiInspectQueryKey(imei ?? ''),
         enabled: organizationId !== null && imei !== undefined && imei !== '',
         staleTime: INSPECTION_STALE_MS,
         queryFn: async () => {
@@ -45,18 +47,19 @@ export function useDeviceInspection(imei: string | undefined) {
 
 export function useDeviceTimeline(imei: string | undefined, params?: TimelineParams) {
   const organizationId = useCurrentOrganizationId();
+  const keyParams = {
+    eventType: params?.eventType,
+    startTime: params?.startTime,
+    endTime: params?.endTime,
+    cursor: params?.cursor,
+    limit: params?.limit,
+  };
   return useGetDeviceImeiTimeline<TimelineResult>(
     imei ?? '',
-    {
-      eventType: params?.eventType,
-      startTime: params?.startTime,
-      endTime: params?.endTime,
-      cursor: params?.cursor,
-      limit: params?.limit,
-    },
+    keyParams,
     {
       query: {
-        queryKey: ['diagnostics', 'timeline', organizationId ?? '', imei ?? '', { ...params }] as const,
+        queryKey: getGetDeviceImeiTimelineQueryKey(imei ?? '', keyParams),
         enabled: organizationId !== null && imei !== undefined && imei !== '',
         queryFn: async () => {
           try {

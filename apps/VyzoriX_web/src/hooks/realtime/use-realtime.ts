@@ -11,7 +11,23 @@ import {
 } from '@vyzorix/api-client/generated-graphql';
 import { useWebSocketStore } from '@/stores';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { queryKeys } from '@/lib/query-keys';
+import {
+  getGetDevicesQueryKey,
+  getGetDeviceImeiQueryKey,
+  getGetDashboardDeviceImeiMetricsQueryKey,
+  invalidateGetDashboardEventsRecent,
+} from '@/generated-rq/devices/device-management';
+import {
+  getGetTelemetryLatestDeviceIdQueryKey,
+  getGetTelemetryStatsDeviceIdQueryKey,
+} from '@/generated-rq/telemetry/device-telemetry';
+import { getGetDashboardStatsQueryKey } from '@/generated-rq/dashboard/dashboard-stats';
+import {
+  getGetCommandDispatchIdStatusQueryKey,
+  getGetDeviceImeiCommandsPendingQueryKey,
+  getGetDashboardDeviceImeiCommandsQueryKey,
+} from '@/generated-rq/commands/device-commands';
+import { getGetOrganizationsIdMembersQueryKey } from '@/generated-rq/members/organization-members';
 
 interface SubscriptionDocument {
   loc?: { source: { body: string } };
@@ -87,9 +103,9 @@ export function useDeviceUpdates(deviceId?: string) {
       },
       {
         next: (data) => {
-          queryClient.invalidateQueries({ queryKey: ['devices'] });
+          queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
           if (data?.imei) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.device(data.imei) });
+            queryClient.invalidateQueries({ queryKey: getGetDeviceImeiQueryKey(data.imei) });
           }
         },
       },
@@ -124,13 +140,13 @@ export function useTelemetryStream(deviceId?: string) {
         next: (data) => {
           if (data?.deviceId) {
             queryClient.invalidateQueries({
-              queryKey: queryKeys.latestTelemetry(organizationId ?? '', data.deviceId),
+              queryKey: getGetTelemetryLatestDeviceIdQueryKey(data.deviceId),
             });
             queryClient.invalidateQueries({
-              queryKey: queryKeys.telemetryStats(organizationId ?? '', data.deviceId),
+              queryKey: getGetTelemetryStatsDeviceIdQueryKey(data.deviceId),
             });
             queryClient.invalidateQueries({
-              queryKey: queryKeys.deviceMetrics(organizationId ?? '', data.deviceId),
+              queryKey: getGetDashboardDeviceImeiMetricsQueryKey(data.deviceId),
             });
           }
         },
@@ -164,11 +180,11 @@ export function useCommandStatusStream(dispatchId?: string) {
       {
         next: (data) => {
           if (data?.dispatchId) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.command(data.dispatchId) });
+            queryClient.invalidateQueries({ queryKey: getGetCommandDispatchIdStatusQueryKey(data.dispatchId) });
           }
           if (data?.deviceId) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.pendingCommands(data.deviceId) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.commands(data.deviceId) });
+            queryClient.invalidateQueries({ queryKey: getGetDeviceImeiCommandsPendingQueryKey(data.deviceId) });
+            queryClient.invalidateQueries({ queryKey: getGetDashboardDeviceImeiCommandsQueryKey(data.deviceId) });
           }
         },
       },
@@ -196,9 +212,9 @@ export function useOrganizationEvents(orgId: string | undefined) {
       },
       {
         next: () => {
-          queryClient.invalidateQueries({ queryKey: ['events'] });
-          queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats(orgId ?? '') });
-          queryClient.invalidateQueries({ queryKey: ['devices'] });
+          void invalidateGetDashboardEventsRecent(queryClient);
+          queryClient.invalidateQueries({ queryKey: getGetDashboardStatsQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetDevicesQueryKey() });
         },
       },
     );
@@ -226,7 +242,7 @@ export function useMemberEvents(orgId: string | undefined) {
       },
       {
         next: () => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.organizationMembers(orgId) });
+          queryClient.invalidateQueries({ queryKey: getGetOrganizationsIdMembersQueryKey(orgId) });
         },
       },
     );

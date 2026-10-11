@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -41,6 +49,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -96,19 +105,16 @@ export const getUpdatesChangelog = async (params?: GetUpdatesChangelogParams, op
 
 
 
-export const getGetUpdatesChangelogQueryKey = (params?: GetUpdatesChangelogParams,) => {
-    return [
-    `/updates/changelog`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetUpdatesChangelogQueryKey = (params?: GetUpdatesChangelogParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/updates/changelog` });
 
 
-export const getGetUpdatesChangelogQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesChangelog>>, TError = ErrorResponse>(params?: GetUpdatesChangelogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesChangelogQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesChangelog>>, TError = ErrorResponse>(params?: GetUpdatesChangelogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesChangelogQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/updates/changelog`, queryOptions });
 
 
 
@@ -118,30 +124,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesChangelogQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesChangelog>>>
 export type GetUpdatesChangelogQueryError = ErrorResponse
 
 
+export function useGetUpdatesChangelog<TData = Awaited<ReturnType<typeof getUpdatesChangelog>>, TError = ErrorResponse>(
+ params: undefined |  GetUpdatesChangelogParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesChangelog>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesChangelog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesChangelog<TData = Awaited<ReturnType<typeof getUpdatesChangelog>>, TError = ErrorResponse>(
+ params?: GetUpdatesChangelogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesChangelog>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesChangelog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesChangelog<TData = Awaited<ReturnType<typeof getUpdatesChangelog>>, TError = ErrorResponse>(
+ params?: GetUpdatesChangelogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get update changelog
  */
 
 export function useGetUpdatesChangelog<TData = Awaited<ReturnType<typeof getUpdatesChangelog>>, TError = ErrorResponse>(
- params?: GetUpdatesChangelogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetUpdatesChangelogParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesChangelog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesChangelogQueryOptions(params,options)
 
-  const queryOptions = getGetUpdatesChangelogQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get update changelog
+ */
+export const invalidateGetUpdatesChangelog = async (
+ queryClient: QueryClient, params?: GetUpdatesChangelogParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/updates/changelog` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -180,7 +221,7 @@ return customAxios<DeviceUpdateStatusResponse>(getPostUpdatesDeviceStatusUrl(),
 
 
 export const getPostUpdatesDeviceStatusMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesDeviceStatus>>, TError,{data: DeviceUpdateStatusRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesDeviceStatus>>, TError,{data: DeviceUpdateStatusRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postUpdatesDeviceStatus>>, TError,{data: DeviceUpdateStatusRequest}, TContext> => {
 
 const mutationKey = ['postUpdatesDeviceStatus'];
@@ -199,12 +240,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postUpdatesDeviceStatus(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postUpdatesDeviceStatus>>, variables: {data: DeviceUpdateStatusRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetUpdatesChangelogQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesExportQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesHistoryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesSyncStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesVersionsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostUpdatesDeviceStatusMutationResult = NonNullable<Awaited<ReturnType<typeof postUpdatesDeviceStatus>>>
     export type PostUpdatesDeviceStatusMutationBody = DeviceUpdateStatusRequest
@@ -214,14 +265,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Report device update status
  */
 export const usePostUpdatesDeviceStatus = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesDeviceStatus>>, TError,{data: DeviceUpdateStatusRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesDeviceStatus>>, TError,{data: DeviceUpdateStatusRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postUpdatesDeviceStatus>>,
         TError,
         {data: DeviceUpdateStatusRequest},
         TContext
       > => {
-      return useMutation(getPostUpdatesDeviceStatusMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostUpdatesDeviceStatusMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetUpdatesExportUrl = (params?: GetUpdatesExportParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -257,19 +309,16 @@ export const getUpdatesExport = async (params?: GetUpdatesExportParams, options?
 
 
 
-export const getGetUpdatesExportQueryKey = (params?: GetUpdatesExportParams,) => {
-    return [
-    `/updates/export`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetUpdatesExportQueryKey = (params?: GetUpdatesExportParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/updates/export` });
 
 
-export const getGetUpdatesExportQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesExport>>, TError = ErrorResponse>(params?: GetUpdatesExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesExportQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesExport>>, TError = ErrorResponse>(params?: GetUpdatesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesExportQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/updates/export`, queryOptions });
 
 
 
@@ -279,30 +328,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesExportQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesExport>>>
 export type GetUpdatesExportQueryError = ErrorResponse
 
 
+export function useGetUpdatesExport<TData = Awaited<ReturnType<typeof getUpdatesExport>>, TError = ErrorResponse>(
+ params: undefined |  GetUpdatesExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesExport>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesExport<TData = Awaited<ReturnType<typeof getUpdatesExport>>, TError = ErrorResponse>(
+ params?: GetUpdatesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesExport>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesExport<TData = Awaited<ReturnType<typeof getUpdatesExport>>, TError = ErrorResponse>(
+ params?: GetUpdatesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Export versions
  */
 
 export function useGetUpdatesExport<TData = Awaited<ReturnType<typeof getUpdatesExport>>, TError = ErrorResponse>(
- params?: GetUpdatesExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetUpdatesExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesExportQueryOptions(params,options)
 
-  const queryOptions = getGetUpdatesExportQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Export versions
+ */
+export const invalidateGetUpdatesExport = async (
+ queryClient: QueryClient, params?: GetUpdatesExportParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/updates/export` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -341,19 +425,16 @@ export const getUpdatesHistory = async (params?: GetUpdatesHistoryParams, option
 
 
 
-export const getGetUpdatesHistoryQueryKey = (params?: GetUpdatesHistoryParams,) => {
-    return [
-    `/updates/history`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetUpdatesHistoryQueryKey = (params?: GetUpdatesHistoryParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/updates/history` });
 
 
-export const getGetUpdatesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesHistory>>, TError = ErrorResponse>(params?: GetUpdatesHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesHistory>>, TError = ErrorResponse>(params?: GetUpdatesHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesHistoryQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/updates/history`, queryOptions });
 
 
 
@@ -363,30 +444,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesHistory>>>
 export type GetUpdatesHistoryQueryError = ErrorResponse
 
 
+export function useGetUpdatesHistory<TData = Awaited<ReturnType<typeof getUpdatesHistory>>, TError = ErrorResponse>(
+ params: undefined |  GetUpdatesHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesHistory<TData = Awaited<ReturnType<typeof getUpdatesHistory>>, TError = ErrorResponse>(
+ params?: GetUpdatesHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesHistory<TData = Awaited<ReturnType<typeof getUpdatesHistory>>, TError = ErrorResponse>(
+ params?: GetUpdatesHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List update push history
  */
 
 export function useGetUpdatesHistory<TData = Awaited<ReturnType<typeof getUpdatesHistory>>, TError = ErrorResponse>(
- params?: GetUpdatesHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetUpdatesHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesHistoryQueryOptions(params,options)
 
-  const queryOptions = getGetUpdatesHistoryQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List update push history
+ */
+export const invalidateGetUpdatesHistory = async (
+ queryClient: QueryClient, params?: GetUpdatesHistoryParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/updates/history` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -418,19 +534,16 @@ export const getUpdatesHistoryPushId = async (pushId: string, options?: Paramete
 
 
 
-export const getGetUpdatesHistoryPushIdQueryKey = (pushId: string,) => {
-    return [
-    `/updates/history/${pushId}`
-    ] as const;
-    }
+export const getGetUpdatesHistoryPushIdQueryKey = (pushId: string,) =>
+    organizationScopedQueryKey({ pushId }, { url: `/updates/history/${pushId}` });
 
 
-export const getGetUpdatesHistoryPushIdQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError = ErrorResponse>(pushId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesHistoryPushIdQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError = ErrorResponse>(pushId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesHistoryPushIdQueryKey(pushId);
+  const queryKey =  organizationScopedQueryKey({ pushId }, { url: `/updates/history/${pushId}`, queryOptions });
 
 
 
@@ -440,30 +553,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: pushId !== null && pushId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: pushId !== null && pushId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesHistoryPushIdQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>>
 export type GetUpdatesHistoryPushIdQueryError = ErrorResponse
 
 
+export function useGetUpdatesHistoryPushId<TData = Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError = ErrorResponse>(
+ pushId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesHistoryPushId>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesHistoryPushId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesHistoryPushId<TData = Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError = ErrorResponse>(
+ pushId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesHistoryPushId>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesHistoryPushId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesHistoryPushId<TData = Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError = ErrorResponse>(
+ pushId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get push detail
  */
 
 export function useGetUpdatesHistoryPushId<TData = Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError = ErrorResponse>(
- pushId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ pushId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesHistoryPushId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesHistoryPushIdQueryOptions(pushId,options)
 
-  const queryOptions = getGetUpdatesHistoryPushIdQueryOptions(pushId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get push detail
+ */
+export const invalidateGetUpdatesHistoryPushId = async (
+ queryClient: QueryClient, pushId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ pushId }, { url: `/updates/history/${pushId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -496,7 +644,7 @@ export const postUpdatesHistoryPushIdCancel = async (pushId: string, options?: P
 
 
 export const getPostUpdatesHistoryPushIdCancelMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>, TError,{pushId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>, TError,{pushId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>, TError,{pushId: string}, TContext> => {
 
 const mutationKey = ['postUpdatesHistoryPushIdCancel'];
@@ -515,12 +663,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postUpdatesHistoryPushIdCancel(pushId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>, variables: {pushId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetUpdatesChangelogQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesExportQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesHistoryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesSyncStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesVersionsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostUpdatesHistoryPushIdCancelMutationResult = NonNullable<Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>>
 
@@ -530,14 +688,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Cancel push
  */
 export const usePostUpdatesHistoryPushIdCancel = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>, TError,{pushId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>, TError,{pushId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postUpdatesHistoryPushIdCancel>>,
         TError,
         {pushId: string},
         TContext
       > => {
-      return useMutation(getPostUpdatesHistoryPushIdCancelMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostUpdatesHistoryPushIdCancelMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostUpdatesPushUrl = () => {
 
@@ -573,7 +732,7 @@ return customAxios<UpdatePushResult>(getPostUpdatesPushUrl(),
 
 
 export const getPostUpdatesPushMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesPush>>, TError,{data: UpdatePushRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesPush>>, TError,{data: UpdatePushRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postUpdatesPush>>, TError,{data: UpdatePushRequest}, TContext> => {
 
 const mutationKey = ['postUpdatesPush'];
@@ -592,12 +751,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postUpdatesPush(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postUpdatesPush>>, variables: {data: UpdatePushRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetUpdatesChangelogQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesExportQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesHistoryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesSyncStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesVersionsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostUpdatesPushMutationResult = NonNullable<Awaited<ReturnType<typeof postUpdatesPush>>>
     export type PostUpdatesPushMutationBody = UpdatePushRequest
@@ -607,14 +776,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Push update to devices
  */
 export const usePostUpdatesPush = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesPush>>, TError,{data: UpdatePushRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesPush>>, TError,{data: UpdatePushRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postUpdatesPush>>,
         TError,
         {data: UpdatePushRequest},
         TContext
       > => {
-      return useMutation(getPostUpdatesPushMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostUpdatesPushMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetUpdatesStatusUrl = () => {
 
@@ -643,19 +813,16 @@ export const getUpdatesStatus = async ( options?: Parameters<typeof customAxios>
 
 
 
-export const getGetUpdatesStatusQueryKey = () => {
-    return [
-    `/updates/status`
-    ] as const;
-    }
+export const getGetUpdatesStatusQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/updates/status` });
 
 
-export const getGetUpdatesStatusQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesStatus>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesStatusQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesStatus>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesStatusQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/updates/status`, queryOptions });
 
 
 
@@ -665,30 +832,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesStatus>>>
 export type GetUpdatesStatusQueryError = ErrorResponse
 
 
+export function useGetUpdatesStatus<TData = Awaited<ReturnType<typeof getUpdatesStatus>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesStatus<TData = Awaited<ReturnType<typeof getUpdatesStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesStatus<TData = Awaited<ReturnType<typeof getUpdatesStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get update sync status
  */
 
 export function useGetUpdatesStatus<TData = Awaited<ReturnType<typeof getUpdatesStatus>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesStatusQueryOptions(options)
 
-  const queryOptions = getGetUpdatesStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get update sync status
+ */
+export const invalidateGetUpdatesStatus = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/updates/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -721,7 +923,7 @@ export const postUpdatesSync = async ( options?: Parameters<typeof customAxios>[
 
 
 export const getPostUpdatesSyncMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesSync>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesSync>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postUpdatesSync>>, TError,void, TContext> => {
 
 const mutationKey = ['postUpdatesSync'];
@@ -740,12 +942,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postUpdatesSync(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postUpdatesSync>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetUpdatesChangelogQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesExportQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesHistoryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesSyncStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetUpdatesVersionsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostUpdatesSyncMutationResult = NonNullable<Awaited<ReturnType<typeof postUpdatesSync>>>
 
@@ -755,14 +967,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Sync versions from GitHub
  */
 export const usePostUpdatesSync = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesSync>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postUpdatesSync>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postUpdatesSync>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostUpdatesSyncMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostUpdatesSyncMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetUpdatesSyncStatusUrl = () => {
 
@@ -791,19 +1004,16 @@ export const getUpdatesSyncStatus = async ( options?: Parameters<typeof customAx
 
 
 
-export const getGetUpdatesSyncStatusQueryKey = () => {
-    return [
-    `/updates/sync/status`
-    ] as const;
-    }
+export const getGetUpdatesSyncStatusQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/updates/sync/status` });
 
 
-export const getGetUpdatesSyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesSyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesSyncStatusQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/updates/sync/status`, queryOptions });
 
 
 
@@ -813,30 +1023,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesSyncStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesSyncStatus>>>
 export type GetUpdatesSyncStatusQueryError = ErrorResponse
 
 
+export function useGetUpdatesSyncStatus<TData = Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesSyncStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesSyncStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesSyncStatus<TData = Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesSyncStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesSyncStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesSyncStatus<TData = Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get sync status
  */
 
 export function useGetUpdatesSyncStatus<TData = Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesSyncStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesSyncStatusQueryOptions(options)
 
-  const queryOptions = getGetUpdatesSyncStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get sync status
+ */
+export const invalidateGetUpdatesSyncStatus = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/updates/sync/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -875,19 +1120,16 @@ export const getUpdatesVersions = async (params?: GetUpdatesVersionsParams, opti
 
 
 
-export const getGetUpdatesVersionsQueryKey = (params?: GetUpdatesVersionsParams,) => {
-    return [
-    `/updates/versions`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetUpdatesVersionsQueryKey = (params?: GetUpdatesVersionsParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/updates/versions` });
 
 
-export const getGetUpdatesVersionsQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesVersions>>, TError = ErrorResponse>(params?: GetUpdatesVersionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesVersionsQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesVersions>>, TError = ErrorResponse>(params?: GetUpdatesVersionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesVersionsQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/updates/versions`, queryOptions });
 
 
 
@@ -897,30 +1139,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesVersionsQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesVersions>>>
 export type GetUpdatesVersionsQueryError = ErrorResponse
 
 
+export function useGetUpdatesVersions<TData = Awaited<ReturnType<typeof getUpdatesVersions>>, TError = ErrorResponse>(
+ params: undefined |  GetUpdatesVersionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesVersions>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesVersions<TData = Awaited<ReturnType<typeof getUpdatesVersions>>, TError = ErrorResponse>(
+ params?: GetUpdatesVersionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesVersions>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesVersions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesVersions<TData = Awaited<ReturnType<typeof getUpdatesVersions>>, TError = ErrorResponse>(
+ params?: GetUpdatesVersionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List update versions
  */
 
 export function useGetUpdatesVersions<TData = Awaited<ReturnType<typeof getUpdatesVersions>>, TError = ErrorResponse>(
- params?: GetUpdatesVersionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetUpdatesVersionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesVersions>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesVersionsQueryOptions(params,options)
 
-  const queryOptions = getGetUpdatesVersionsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List update versions
+ */
+export const invalidateGetUpdatesVersions = async (
+ queryClient: QueryClient, params?: GetUpdatesVersionsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/updates/versions` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -952,19 +1229,16 @@ export const getUpdatesIdStatus = async (id: string, options?: Parameters<typeof
 
 
 
-export const getGetUpdatesIdStatusQueryKey = (id: string,) => {
-    return [
-    `/updates/${id}/status`
-    ] as const;
-    }
+export const getGetUpdatesIdStatusQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/updates/${id}/status` });
 
 
-export const getGetUpdatesIdStatusQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetUpdatesIdStatusQueryOptions = <TData = Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUpdatesIdStatusQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/updates/${id}/status`, queryOptions });
 
 
 
@@ -974,30 +1248,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetUpdatesIdStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getUpdatesIdStatus>>>
 export type GetUpdatesIdStatusQueryError = ErrorResponse
 
 
+export function useGetUpdatesIdStatus<TData = Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesIdStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesIdStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesIdStatus<TData = Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getUpdatesIdStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getUpdatesIdStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetUpdatesIdStatus<TData = Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get update status (alias)
  */
 
 export function useGetUpdatesIdStatus<TData = Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getUpdatesIdStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetUpdatesIdStatusQueryOptions(id,options)
 
-  const queryOptions = getGetUpdatesIdStatusQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get update status (alias)
+ */
+export const invalidateGetUpdatesIdStatus = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/updates/${id}/status` }) }, options);
+
+  return queryClient;
+}
 
 
 

@@ -9,8 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -21,6 +27,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -69,19 +76,16 @@ export const getDashboardStats = async ( options?: Parameters<typeof customAxios
 
 
 
-export const getGetDashboardStatsQueryKey = () => {
-    return [
-    `/dashboard/stats`
-    ] as const;
-    }
+export const getGetDashboardStatsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/dashboard/stats` });
 
 
-export const getGetDashboardStatsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardStatsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardStatsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/dashboard/stats`, queryOptions });
 
 
 
@@ -91,30 +95,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardStats>>>
 export type GetDashboardStatsQueryError = ErrorResponse
 
 
+export function useGetDashboardStats<TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardStats>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardStats<TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardStats>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardStats<TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get dashboard stats
  */
 
 export function useGetDashboardStats<TData = Awaited<ReturnType<typeof getDashboardStats>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardStats>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardStatsQueryOptions(options)
 
-  const queryOptions = getGetDashboardStatsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get dashboard stats
+ */
+export const invalidateGetDashboardStats = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/dashboard/stats` }) }, options);
+
+  return queryClient;
+}
 
 
 

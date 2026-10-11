@@ -18,7 +18,6 @@ export function useVersions(params?: VersionParams) {
     { status: params?.status, page: params?.page, limit: params?.limit },
     {
       query: {
-        queryKey: ['updates', 'versions', { ...params, organizationId }] as const,
         enabled: organizationId !== null,
         queryFn: async () => {
           try {

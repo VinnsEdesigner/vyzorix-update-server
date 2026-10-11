@@ -9,8 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -20,6 +26,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -68,19 +75,16 @@ export const getAdminUpdatesCheck = async ( options?: Parameters<typeof customAx
 
 
 
-export const getGetAdminUpdatesCheckQueryKey = () => {
-    return [
-    `/admin/updates/check`
-    ] as const;
-    }
+export const getGetAdminUpdatesCheckQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/admin/updates/check` });
 
 
-export const getGetAdminUpdatesCheckQueryOptions = <TData = Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminUpdatesCheckQueryOptions = <TData = Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminUpdatesCheckQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/admin/updates/check`, queryOptions });
 
 
 
@@ -90,30 +94,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminUpdatesCheckQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUpdatesCheck>>>
 export type GetAdminUpdatesCheckQueryError = unknown
 
 
+export function useGetAdminUpdatesCheck<TData = Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminUpdatesCheck>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminUpdatesCheck>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminUpdatesCheck<TData = Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminUpdatesCheck>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminUpdatesCheck>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminUpdatesCheck<TData = Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Check for server updates
  */
 
 export function useGetAdminUpdatesCheck<TData = Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminUpdatesCheck>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminUpdatesCheckQueryOptions(options)
 
-  const queryOptions = getGetAdminUpdatesCheckQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Check for server updates
+ */
+export const invalidateGetAdminUpdatesCheck = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/admin/updates/check` }) }, options);
+
+  return queryClient;
+}
 
 
 

@@ -9,8 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -22,6 +28,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -70,19 +77,16 @@ export const getConnections = async ( options?: Parameters<typeof customAxios>[1
 
 
 
-export const getGetConnectionsQueryKey = () => {
-    return [
-    `/connections`
-    ] as const;
-    }
+export const getGetConnectionsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/connections` });
 
 
-export const getGetConnectionsQueryOptions = <TData = Awaited<ReturnType<typeof getConnections>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetConnectionsQueryOptions = <TData = Awaited<ReturnType<typeof getConnections>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetConnectionsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/connections`, queryOptions });
 
 
 
@@ -92,30 +96,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetConnectionsQueryResult = NonNullable<Awaited<ReturnType<typeof getConnections>>>
 export type GetConnectionsQueryError = ErrorResponse
 
 
+export function useGetConnections<TData = Awaited<ReturnType<typeof getConnections>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConnections>>,
+          TError,
+          Awaited<ReturnType<typeof getConnections>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConnections<TData = Awaited<ReturnType<typeof getConnections>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConnections>>,
+          TError,
+          Awaited<ReturnType<typeof getConnections>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConnections<TData = Awaited<ReturnType<typeof getConnections>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List connections
  */
 
 export function useGetConnections<TData = Awaited<ReturnType<typeof getConnections>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnections>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetConnectionsQueryOptions(options)
 
-  const queryOptions = getGetConnectionsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List connections
+ */
+export const invalidateGetConnections = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/connections` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -147,19 +186,16 @@ export const getConnectionsMetrics = async ( options?: Parameters<typeof customA
 
 
 
-export const getGetConnectionsMetricsQueryKey = () => {
-    return [
-    `/connections/metrics`
-    ] as const;
-    }
+export const getGetConnectionsMetricsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/connections/metrics` });
 
 
-export const getGetConnectionsMetricsQueryOptions = <TData = Awaited<ReturnType<typeof getConnectionsMetrics>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetConnectionsMetricsQueryOptions = <TData = Awaited<ReturnType<typeof getConnectionsMetrics>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetConnectionsMetricsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/connections/metrics`, queryOptions });
 
 
 
@@ -169,30 +205,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetConnectionsMetricsQueryResult = NonNullable<Awaited<ReturnType<typeof getConnectionsMetrics>>>
 export type GetConnectionsMetricsQueryError = ErrorResponse
 
 
+export function useGetConnectionsMetrics<TData = Awaited<ReturnType<typeof getConnectionsMetrics>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConnectionsMetrics>>,
+          TError,
+          Awaited<ReturnType<typeof getConnectionsMetrics>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConnectionsMetrics<TData = Awaited<ReturnType<typeof getConnectionsMetrics>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConnectionsMetrics>>,
+          TError,
+          Awaited<ReturnType<typeof getConnectionsMetrics>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConnectionsMetrics<TData = Awaited<ReturnType<typeof getConnectionsMetrics>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get connection metrics
  */
 
 export function useGetConnectionsMetrics<TData = Awaited<ReturnType<typeof getConnectionsMetrics>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConnectionsMetrics>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetConnectionsMetricsQueryOptions(options)
 
-  const queryOptions = getGetConnectionsMetricsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get connection metrics
+ */
+export const invalidateGetConnectionsMetrics = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/connections/metrics` }) }, options);
+
+  return queryClient;
+}
 
 
 

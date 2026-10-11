@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -30,6 +38,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -85,19 +94,16 @@ export const getAuthApiKeys = async (params?: GetAuthApiKeysParams, options?: Pa
 
 
 
-export const getGetAuthApiKeysQueryKey = (params?: GetAuthApiKeysParams,) => {
-    return [
-    `/auth/api-keys`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetAuthApiKeysQueryKey = (params?: GetAuthApiKeysParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/auth/api-keys` });
 
 
-export const getGetAuthApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof getAuthApiKeys>>, TError = ErrorResponse>(params?: GetAuthApiKeysParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof getAuthApiKeys>>, TError = ErrorResponse>(params?: GetAuthApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthApiKeysQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/auth/api-keys`, queryOptions });
 
 
 
@@ -107,30 +113,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthApiKeysQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthApiKeys>>>
 export type GetAuthApiKeysQueryError = ErrorResponse
 
 
+export function useGetAuthApiKeys<TData = Awaited<ReturnType<typeof getAuthApiKeys>>, TError = ErrorResponse>(
+ params: undefined |  GetAuthApiKeysParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthApiKeys>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthApiKeys>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthApiKeys<TData = Awaited<ReturnType<typeof getAuthApiKeys>>, TError = ErrorResponse>(
+ params?: GetAuthApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthApiKeys>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthApiKeys>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthApiKeys<TData = Awaited<ReturnType<typeof getAuthApiKeys>>, TError = ErrorResponse>(
+ params?: GetAuthApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List API keys
  */
 
 export function useGetAuthApiKeys<TData = Awaited<ReturnType<typeof getAuthApiKeys>>, TError = ErrorResponse>(
- params?: GetAuthApiKeysParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetAuthApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeys>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthApiKeysQueryOptions(params,options)
 
-  const queryOptions = getGetAuthApiKeysQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List API keys
+ */
+export const invalidateGetAuthApiKeys = async (
+ queryClient: QueryClient, params?: GetAuthApiKeysParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/auth/api-keys` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -169,7 +210,7 @@ return customAxios<APIKeyWithSecret>(getPostAuthApiKeysUrl(),
 
 
 export const getPostAuthApiKeysMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeys>>, TError,{data: CreateAPIKeyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeys>>, TError,{data: CreateAPIKeyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeys>>, TError,{data: CreateAPIKeyRequest}, TContext> => {
 
 const mutationKey = ['postAuthApiKeys'];
@@ -188,12 +229,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthApiKeys(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthApiKeys>>, variables: {data: CreateAPIKeyRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthApiKeysQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthApiKeysMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthApiKeys>>>
     export type PostAuthApiKeysMutationBody = CreateAPIKeyRequest
@@ -203,14 +249,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create API key
  */
 export const usePostAuthApiKeys = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeys>>, TError,{data: CreateAPIKeyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeys>>, TError,{data: CreateAPIKeyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthApiKeys>>,
         TError,
         {data: CreateAPIKeyRequest},
         TContext
       > => {
-      return useMutation(getPostAuthApiKeysMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthApiKeysMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthApiKeysKeyIdUrl = (keyId: string,) => {
 
@@ -239,19 +286,16 @@ export const getAuthApiKeysKeyId = async (keyId: string, options?: Parameters<ty
 
 
 
-export const getGetAuthApiKeysKeyIdQueryKey = (keyId: string,) => {
-    return [
-    `/auth/api-keys/${keyId}`
-    ] as const;
-    }
+export const getGetAuthApiKeysKeyIdQueryKey = (keyId: string,) =>
+    organizationScopedQueryKey({ keyId }, { url: `/auth/api-keys/${keyId}` });
 
 
-export const getGetAuthApiKeysKeyIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError = ErrorResponse>(keyId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthApiKeysKeyIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError = ErrorResponse>(keyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthApiKeysKeyIdQueryKey(keyId);
+  const queryKey =  organizationScopedQueryKey({ keyId }, { url: `/auth/api-keys/${keyId}`, queryOptions });
 
 
 
@@ -261,30 +305,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: keyId !== null && keyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: keyId !== null && keyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthApiKeysKeyIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>>
 export type GetAuthApiKeysKeyIdQueryError = ErrorResponse
 
 
+export function useGetAuthApiKeysKeyId<TData = Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError = ErrorResponse>(
+ keyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthApiKeysKeyId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthApiKeysKeyId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthApiKeysKeyId<TData = Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError = ErrorResponse>(
+ keyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthApiKeysKeyId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthApiKeysKeyId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthApiKeysKeyId<TData = Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError = ErrorResponse>(
+ keyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get API key
  */
 
 export function useGetAuthApiKeysKeyId<TData = Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError = ErrorResponse>(
- keyId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ keyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthApiKeysKeyId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthApiKeysKeyIdQueryOptions(keyId,options)
 
-  const queryOptions = getGetAuthApiKeysKeyIdQueryOptions(keyId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get API key
+ */
+export const invalidateGetAuthApiKeysKeyId = async (
+ queryClient: QueryClient, keyId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ keyId }, { url: `/auth/api-keys/${keyId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -317,7 +396,7 @@ export const deleteAuthApiKeysKeyId = async (keyId: string, options?: Parameters
 
 
 export const getDeleteAuthApiKeysKeyIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>, TError,{keyId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>, TError,{keyId: string}, TContext> => {
 
 const mutationKey = ['deleteAuthApiKeysKeyId'];
@@ -336,12 +415,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAuthApiKeysKeyId(keyId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>, variables: {keyId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthApiKeysQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAuthApiKeysKeyIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>>
 
@@ -351,14 +435,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Revoke API key
  */
 export const useDeleteAuthApiKeysKeyId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>, TError,{keyId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAuthApiKeysKeyId>>,
         TError,
         {keyId: string},
         TContext
       > => {
-      return useMutation(getDeleteAuthApiKeysKeyIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAuthApiKeysKeyIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchAuthApiKeysKeyIdUrl = (keyId: string,) => {
 
@@ -395,7 +480,7 @@ return customAxios<APIKey>(getPatchAuthApiKeysKeyIdUrl(keyId),
 
 
 export const getPatchAuthApiKeysKeyIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>, TError,{keyId: string;data: UpdateAPIKeyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>, TError,{keyId: string;data: UpdateAPIKeyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>, TError,{keyId: string;data: UpdateAPIKeyRequest}, TContext> => {
 
 const mutationKey = ['patchAuthApiKeysKeyId'];
@@ -414,12 +499,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAuthApiKeysKeyId(keyId,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>, variables: {keyId: string;data: UpdateAPIKeyRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthApiKeysQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAuthApiKeysKeyIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>>
     export type PatchAuthApiKeysKeyIdMutationBody = UpdateAPIKeyRequest
@@ -429,14 +519,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update API key
  */
 export const usePatchAuthApiKeysKeyId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>, TError,{keyId: string;data: UpdateAPIKeyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>, TError,{keyId: string;data: UpdateAPIKeyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAuthApiKeysKeyId>>,
         TError,
         {keyId: string;data: UpdateAPIKeyRequest},
         TContext
       > => {
-      return useMutation(getPatchAuthApiKeysKeyIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAuthApiKeysKeyIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthApiKeysKeyIdRotateUrl = (keyId: string,) => {
 
@@ -466,7 +557,7 @@ export const postAuthApiKeysKeyIdRotate = async (keyId: string, options?: Parame
 
 
 export const getPostAuthApiKeysKeyIdRotateMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>, TError,{keyId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>, TError,{keyId: string}, TContext> => {
 
 const mutationKey = ['postAuthApiKeysKeyIdRotate'];
@@ -485,12 +576,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthApiKeysKeyIdRotate(keyId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>, variables: {keyId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthApiKeysQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthApiKeysKeyIdRotateMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>>
 
@@ -500,12 +596,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Rotate API key
  */
 export const usePostAuthApiKeysKeyIdRotate = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>, TError,{keyId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthApiKeysKeyIdRotate>>,
         TError,
         {keyId: string},
         TContext
       > => {
-      return useMutation(getPostAuthApiKeysKeyIdRotateMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthApiKeysKeyIdRotateMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -29,6 +37,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -84,19 +93,16 @@ export const getAnnotations = async (params?: GetAnnotationsParams, options?: Pa
 
 
 
-export const getGetAnnotationsQueryKey = (params?: GetAnnotationsParams,) => {
-    return [
-    `/annotations`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetAnnotationsQueryKey = (params?: GetAnnotationsParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/annotations` });
 
 
-export const getGetAnnotationsQueryOptions = <TData = Awaited<ReturnType<typeof getAnnotations>>, TError = ErrorResponse>(params?: GetAnnotationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAnnotationsQueryOptions = <TData = Awaited<ReturnType<typeof getAnnotations>>, TError = ErrorResponse>(params?: GetAnnotationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAnnotationsQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/annotations`, queryOptions });
 
 
 
@@ -106,30 +112,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAnnotationsQueryResult = NonNullable<Awaited<ReturnType<typeof getAnnotations>>>
 export type GetAnnotationsQueryError = ErrorResponse
 
 
+export function useGetAnnotations<TData = Awaited<ReturnType<typeof getAnnotations>>, TError = ErrorResponse>(
+ params: undefined |  GetAnnotationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAnnotations>>,
+          TError,
+          Awaited<ReturnType<typeof getAnnotations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAnnotations<TData = Awaited<ReturnType<typeof getAnnotations>>, TError = ErrorResponse>(
+ params?: GetAnnotationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAnnotations>>,
+          TError,
+          Awaited<ReturnType<typeof getAnnotations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAnnotations<TData = Awaited<ReturnType<typeof getAnnotations>>, TError = ErrorResponse>(
+ params?: GetAnnotationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List annotations
  */
 
 export function useGetAnnotations<TData = Awaited<ReturnType<typeof getAnnotations>>, TError = ErrorResponse>(
- params?: GetAnnotationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetAnnotationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAnnotationsQueryOptions(params,options)
 
-  const queryOptions = getGetAnnotationsQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List annotations
+ */
+export const invalidateGetAnnotations = async (
+ queryClient: QueryClient, params?: GetAnnotationsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/annotations` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -168,7 +209,7 @@ return customAxios<Annotation>(getPostAnnotationsUrl(),
 
 
 export const getPostAnnotationsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAnnotations>>, TError,{data: AnnotationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAnnotations>>, TError,{data: AnnotationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAnnotations>>, TError,{data: AnnotationRequest}, TContext> => {
 
 const mutationKey = ['postAnnotations'];
@@ -187,12 +228,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAnnotations(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAnnotations>>, variables: {data: AnnotationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAnnotationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAnnotationsMutationResult = NonNullable<Awaited<ReturnType<typeof postAnnotations>>>
     export type PostAnnotationsMutationBody = AnnotationRequest
@@ -202,14 +248,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create annotation
  */
 export const usePostAnnotations = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAnnotations>>, TError,{data: AnnotationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAnnotations>>, TError,{data: AnnotationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAnnotations>>,
         TError,
         {data: AnnotationRequest},
         TContext
       > => {
-      return useMutation(getPostAnnotationsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAnnotationsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAnnotationsIdUrl = (id: string,) => {
 
@@ -238,19 +285,16 @@ export const getAnnotationsId = async (id: string, options?: Parameters<typeof c
 
 
 
-export const getGetAnnotationsIdQueryKey = (id: string,) => {
-    return [
-    `/annotations/${id}`
-    ] as const;
-    }
+export const getGetAnnotationsIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/annotations/${id}` });
 
 
-export const getGetAnnotationsIdQueryOptions = <TData = Awaited<ReturnType<typeof getAnnotationsId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAnnotationsIdQueryOptions = <TData = Awaited<ReturnType<typeof getAnnotationsId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAnnotationsIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/annotations/${id}`, queryOptions });
 
 
 
@@ -260,30 +304,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAnnotationsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAnnotationsId>>>
 export type GetAnnotationsIdQueryError = ErrorResponse
 
 
+export function useGetAnnotationsId<TData = Awaited<ReturnType<typeof getAnnotationsId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAnnotationsId>>,
+          TError,
+          Awaited<ReturnType<typeof getAnnotationsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAnnotationsId<TData = Awaited<ReturnType<typeof getAnnotationsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAnnotationsId>>,
+          TError,
+          Awaited<ReturnType<typeof getAnnotationsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAnnotationsId<TData = Awaited<ReturnType<typeof getAnnotationsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get annotation
  */
 
 export function useGetAnnotationsId<TData = Awaited<ReturnType<typeof getAnnotationsId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnnotationsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAnnotationsIdQueryOptions(id,options)
 
-  const queryOptions = getGetAnnotationsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get annotation
+ */
+export const invalidateGetAnnotationsId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/annotations/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -316,7 +395,7 @@ export const deleteAnnotationsId = async (id: string, options?: Parameters<typeo
 
 
 export const getDeleteAnnotationsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnotationsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnotationsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAnnotationsId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteAnnotationsId'];
@@ -335,12 +414,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAnnotationsId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAnnotationsId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAnnotationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAnnotationsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAnnotationsId>>>
 
@@ -350,14 +434,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete annotation
  */
 export const useDeleteAnnotationsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnotationsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnnotationsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAnnotationsId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteAnnotationsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAnnotationsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchAnnotationsIdUrl = (id: string,) => {
 
@@ -394,7 +479,7 @@ return customAxios<Annotation>(getPatchAnnotationsIdUrl(id),
 
 
 export const getPatchAnnotationsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAnnotationsId>>, TError,{id: string;data: AnnotationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAnnotationsId>>, TError,{id: string;data: AnnotationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAnnotationsId>>, TError,{id: string;data: AnnotationRequest}, TContext> => {
 
 const mutationKey = ['patchAnnotationsId'];
@@ -413,12 +498,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAnnotationsId(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAnnotationsId>>, variables: {id: string;data: AnnotationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAnnotationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAnnotationsIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAnnotationsId>>>
     export type PatchAnnotationsIdMutationBody = AnnotationRequest
@@ -428,12 +518,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update annotation
  */
 export const usePatchAnnotationsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAnnotationsId>>, TError,{id: string;data: AnnotationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAnnotationsId>>, TError,{id: string;data: AnnotationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAnnotationsId>>,
         TError,
         {id: string;data: AnnotationRequest},
         TContext
       > => {
-      return useMutation(getPatchAnnotationsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAnnotationsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

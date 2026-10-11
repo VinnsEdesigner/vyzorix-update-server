@@ -13,15 +13,15 @@ const MOCK_MEMBERSHIP = {
   organization_id: 'org-test-1',
   organization_name: 'Test Organization',
   role: 'admin',
-  joined_at: '2026-01-01T00:00:00Z',
+  joined_at: 1767225600000,
 };
 
 const MOCK_SESSION = {
   id: 'session-test-1',
   ip_address: '192.168.1.1',
   user_agent: 'Mozilla/5.0 Chrome',
-  created_at: '2026-01-01T00:00:00Z',
-  expires_at: '2026-01-02T00:00:00Z',
+  created_at: 1767225600000,
+  expires_at: 1767312000000,
   is_current: true,
   selected_organization_id: 'org-test-1',
 };
@@ -317,7 +317,7 @@ export function createAuthHandlers() {
           session_id: 'session-test-1',
           ip_address: '192.168.1.1',
           user_agent: 'Mozilla/5.0 Chrome',
-          created_at: '2026-01-01T00:00:00Z',
+          created_at: 1767225600000,
         }],
       });
     }),

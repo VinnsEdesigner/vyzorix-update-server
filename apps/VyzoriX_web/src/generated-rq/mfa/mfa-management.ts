@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -36,6 +44,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -91,7 +100,7 @@ return customAxios<SuccessResult>(getPostAuthMfaDisableUrl(),
 
 
 export const getPostAuthMfaDisableMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaDisable>>, TError,{data: MFADisableRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaDisable>>, TError,{data: MFADisableRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaDisable>>, TError,{data: MFADisableRequest}, TContext> => {
 
 const mutationKey = ['postAuthMfaDisable'];
@@ -110,12 +119,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaDisable(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaDisable>>, variables: {data: MFADisableRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaDisableMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaDisable>>>
     export type PostAuthMfaDisableMutationBody = MFADisableRequest
@@ -125,14 +139,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Disable MFA
  */
 export const usePostAuthMfaDisable = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaDisable>>, TError,{data: MFADisableRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaDisable>>, TError,{data: MFADisableRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaDisable>>,
         TError,
         {data: MFADisableRequest},
         TContext
       > => {
-      return useMutation(getPostAuthMfaDisableMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaDisableMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthMfaEnableUrl = () => {
 
@@ -168,7 +183,7 @@ return customAxios<MFAEnableResult>(getPostAuthMfaEnableUrl(),
 
 
 export const getPostAuthMfaEnableMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnable>>, TError,{data: MFAEnableRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnable>>, TError,{data: MFAEnableRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnable>>, TError,{data: MFAEnableRequest}, TContext> => {
 
 const mutationKey = ['postAuthMfaEnable'];
@@ -187,12 +202,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaEnable(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaEnable>>, variables: {data: MFAEnableRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaEnableMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaEnable>>>
     export type PostAuthMfaEnableMutationBody = MFAEnableRequest
@@ -202,14 +222,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Enable MFA
  */
 export const usePostAuthMfaEnable = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnable>>, TError,{data: MFAEnableRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnable>>, TError,{data: MFAEnableRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaEnable>>,
         TError,
         {data: MFAEnableRequest},
         TContext
       > => {
-      return useMutation(getPostAuthMfaEnableMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaEnableMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthMfaEnrollUrl = () => {
 
@@ -239,7 +260,7 @@ export const postAuthMfaEnroll = async ( options?: Parameters<typeof customAxios
 
 
 export const getPostAuthMfaEnrollMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnroll>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnroll>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnroll>>, TError,void, TContext> => {
 
 const mutationKey = ['postAuthMfaEnroll'];
@@ -258,12 +279,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaEnroll(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaEnroll>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaEnrollMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaEnroll>>>
 
@@ -273,14 +299,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Enroll MFA
  */
 export const usePostAuthMfaEnroll = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnroll>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaEnroll>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaEnroll>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostAuthMfaEnrollMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaEnrollMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthMfaRegenerateBackupCodesUrl = () => {
 
@@ -310,7 +337,7 @@ export const postAuthMfaRegenerateBackupCodes = async ( options?: Parameters<typ
 
 
 export const getPostAuthMfaRegenerateBackupCodesMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>, TError,void, TContext> => {
 
 const mutationKey = ['postAuthMfaRegenerateBackupCodes'];
@@ -329,12 +356,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaRegenerateBackupCodes(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaRegenerateBackupCodesMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>>
 
@@ -344,14 +376,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Regenerate MFA backup codes
  */
 export const usePostAuthMfaRegenerateBackupCodes = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaRegenerateBackupCodes>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostAuthMfaRegenerateBackupCodesMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaRegenerateBackupCodesMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthMfaStatusUrl = () => {
 
@@ -380,19 +413,16 @@ export const getAuthMfaStatus = async ( options?: Parameters<typeof customAxios>
 
 
 
-export const getGetAuthMfaStatusQueryKey = () => {
-    return [
-    `/auth/mfa/status`
-    ] as const;
-    }
+export const getGetAuthMfaStatusQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/mfa/status` });
 
 
-export const getGetAuthMfaStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAuthMfaStatus>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthMfaStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAuthMfaStatus>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthMfaStatusQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/mfa/status`, queryOptions });
 
 
 
@@ -402,30 +432,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthMfaStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthMfaStatus>>>
 export type GetAuthMfaStatusQueryError = ErrorResponse
 
 
+export function useGetAuthMfaStatus<TData = Awaited<ReturnType<typeof getAuthMfaStatus>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthMfaStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthMfaStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthMfaStatus<TData = Awaited<ReturnType<typeof getAuthMfaStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthMfaStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthMfaStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthMfaStatus<TData = Awaited<ReturnType<typeof getAuthMfaStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get MFA status
  */
 
 export function useGetAuthMfaStatus<TData = Awaited<ReturnType<typeof getAuthMfaStatus>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMfaStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthMfaStatusQueryOptions(options)
 
-  const queryOptions = getGetAuthMfaStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get MFA status
+ */
+export const invalidateGetAuthMfaStatus = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/mfa/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -464,7 +529,7 @@ return customAxios<MFAVerifyResult>(getPostAuthMfaVerifyUrl(),
 
 
 export const getPostAuthMfaVerifyMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerify>>, TError,{data: MFAVerifyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerify>>, TError,{data: MFAVerifyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerify>>, TError,{data: MFAVerifyRequest}, TContext> => {
 
 const mutationKey = ['postAuthMfaVerify'];
@@ -483,12 +548,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaVerify(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaVerify>>, variables: {data: MFAVerifyRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaVerifyMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaVerify>>>
     export type PostAuthMfaVerifyMutationBody = MFAVerifyRequest
@@ -498,14 +568,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Verify MFA (login)
  */
 export const usePostAuthMfaVerify = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerify>>, TError,{data: MFAVerifyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerify>>, TError,{data: MFAVerifyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaVerify>>,
         TError,
         {data: MFAVerifyRequest},
         TContext
       > => {
-      return useMutation(getPostAuthMfaVerifyMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaVerifyMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthMfaVerifyBackupUrl = () => {
 
@@ -541,7 +612,7 @@ return customAxios<MFABackupCodeResult>(getPostAuthMfaVerifyBackupUrl(),
 
 
 export const getPostAuthMfaVerifyBackupMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>, TError,{data: MFABackupCodeRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>, TError,{data: MFABackupCodeRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>, TError,{data: MFABackupCodeRequest}, TContext> => {
 
 const mutationKey = ['postAuthMfaVerifyBackup'];
@@ -560,12 +631,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaVerifyBackup(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>, variables: {data: MFABackupCodeRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaVerifyBackupMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>>
     export type PostAuthMfaVerifyBackupMutationBody = MFABackupCodeRequest
@@ -575,14 +651,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Verify MFA backup code
  */
 export const usePostAuthMfaVerifyBackup = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>, TError,{data: MFABackupCodeRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>, TError,{data: MFABackupCodeRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaVerifyBackup>>,
         TError,
         {data: MFABackupCodeRequest},
         TContext
       > => {
-      return useMutation(getPostAuthMfaVerifyBackupMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaVerifyBackupMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthMfaVerifySetupUrl = () => {
 
@@ -618,7 +695,7 @@ return customAxios<SuccessResult>(getPostAuthMfaVerifySetupUrl(),
 
 
 export const getPostAuthMfaVerifySetupMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifySetup>>, TError,{data: MFAVerifySetupRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifySetup>>, TError,{data: MFAVerifySetupRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifySetup>>, TError,{data: MFAVerifySetupRequest}, TContext> => {
 
 const mutationKey = ['postAuthMfaVerifySetup'];
@@ -637,12 +714,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthMfaVerifySetup(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthMfaVerifySetup>>, variables: {data: MFAVerifySetupRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthMfaStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthMfaVerifySetupMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthMfaVerifySetup>>>
     export type PostAuthMfaVerifySetupMutationBody = MFAVerifySetupRequest
@@ -652,12 +734,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Verify MFA setup
  */
 export const usePostAuthMfaVerifySetup = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifySetup>>, TError,{data: MFAVerifySetupRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthMfaVerifySetup>>, TError,{data: MFAVerifySetupRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthMfaVerifySetup>>,
         TError,
         {data: MFAVerifySetupRequest},
         TContext
       > => {
-      return useMutation(getPostAuthMfaVerifySetupMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthMfaVerifySetupMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

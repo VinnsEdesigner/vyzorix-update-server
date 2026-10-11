@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -37,6 +45,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -92,7 +101,7 @@ return customAxios<OperatorSettingsResultLegacy>(getPatchAuthMeUrl(),
 
 
 export const getPatchAuthMeMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthMe>>, TError,{data: UpdateNameRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthMe>>, TError,{data: UpdateNameRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAuthMe>>, TError,{data: UpdateNameRequest}, TContext> => {
 
 const mutationKey = ['patchAuthMe'];
@@ -111,12 +120,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAuthMe(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAuthMe>>, variables: {data: UpdateNameRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAuthMeMutationResult = NonNullable<Awaited<ReturnType<typeof patchAuthMe>>>
     export type PatchAuthMeMutationBody = UpdateNameRequest
@@ -126,14 +143,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update operator name
  */
 export const usePatchAuthMe = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthMe>>, TError,{data: UpdateNameRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthMe>>, TError,{data: UpdateNameRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAuthMe>>,
         TError,
         {data: UpdateNameRequest},
         TContext
       > => {
-      return useMutation(getPatchAuthMeMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAuthMeMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetMeNotificationsUrl = () => {
 
@@ -162,19 +180,16 @@ export const getMeNotifications = async ( options?: Parameters<typeof customAxio
 
 
 
-export const getGetMeNotificationsQueryKey = () => {
-    return [
-    `/me/notifications`
-    ] as const;
-    }
+export const getGetMeNotificationsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/me/notifications` });
 
 
-export const getGetMeNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof getMeNotifications>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetMeNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof getMeNotifications>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMeNotificationsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/me/notifications`, queryOptions });
 
 
 
@@ -184,30 +199,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetMeNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof getMeNotifications>>>
 export type GetMeNotificationsQueryError = ErrorResponse
 
 
+export function useGetMeNotifications<TData = Awaited<ReturnType<typeof getMeNotifications>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof getMeNotifications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeNotifications<TData = Awaited<ReturnType<typeof getMeNotifications>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeNotifications>>,
+          TError,
+          Awaited<ReturnType<typeof getMeNotifications>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeNotifications<TData = Awaited<ReturnType<typeof getMeNotifications>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get notification settings
  */
 
 export function useGetMeNotifications<TData = Awaited<ReturnType<typeof getMeNotifications>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeNotifications>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetMeNotificationsQueryOptions(options)
 
-  const queryOptions = getGetMeNotificationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get notification settings
+ */
+export const invalidateGetMeNotifications = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/me/notifications` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -246,7 +296,7 @@ return customAxios<NotificationSettings>(getPatchMeNotificationsUrl(),
 
 
 export const getPatchMeNotificationsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeNotifications>>, TError,{data: NotificationUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeNotifications>>, TError,{data: NotificationUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchMeNotifications>>, TError,{data: NotificationUpdateRequest}, TContext> => {
 
 const mutationKey = ['patchMeNotifications'];
@@ -265,12 +315,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchMeNotifications(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchMeNotifications>>, variables: {data: NotificationUpdateRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchMeNotificationsMutationResult = NonNullable<Awaited<ReturnType<typeof patchMeNotifications>>>
     export type PatchMeNotificationsMutationBody = NotificationUpdateRequest
@@ -280,14 +338,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update notification settings
  */
 export const usePatchMeNotifications = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeNotifications>>, TError,{data: NotificationUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeNotifications>>, TError,{data: NotificationUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchMeNotifications>>,
         TError,
         {data: NotificationUpdateRequest},
         TContext
       > => {
-      return useMutation(getPatchMeNotificationsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchMeNotificationsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostMeNotificationsWebhookRotateUrl = () => {
 
@@ -317,7 +376,7 @@ export const postMeNotificationsWebhookRotate = async ( options?: Parameters<typ
 
 
 export const getPostMeNotificationsWebhookRotateMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>, TError,void, TContext> => {
 
 const mutationKey = ['postMeNotificationsWebhookRotate'];
@@ -336,12 +395,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postMeNotificationsWebhookRotate(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostMeNotificationsWebhookRotateMutationResult = NonNullable<Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>>
 
@@ -351,14 +418,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Rotate webhook secret
  */
 export const usePostMeNotificationsWebhookRotate = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postMeNotificationsWebhookRotate>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostMeNotificationsWebhookRotateMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostMeNotificationsWebhookRotateMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostMeNotificationsWebhookTestUrl = () => {
 
@@ -394,7 +462,7 @@ return customAxios<WebhookTestResult>(getPostMeNotificationsWebhookTestUrl(),
 
 
 export const getPostMeNotificationsWebhookTestMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>, TError,{data: WebhookTestRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>, TError,{data: WebhookTestRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>, TError,{data: WebhookTestRequest}, TContext> => {
 
 const mutationKey = ['postMeNotificationsWebhookTest'];
@@ -413,12 +481,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postMeNotificationsWebhookTest(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>, variables: {data: WebhookTestRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostMeNotificationsWebhookTestMutationResult = NonNullable<Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>>
     export type PostMeNotificationsWebhookTestMutationBody = WebhookTestRequest
@@ -428,14 +504,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Test webhook
  */
 export const usePostMeNotificationsWebhookTest = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>, TError,{data: WebhookTestRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>, TError,{data: WebhookTestRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postMeNotificationsWebhookTest>>,
         TError,
         {data: WebhookTestRequest},
         TContext
       > => {
-      return useMutation(getPostMeNotificationsWebhookTestMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostMeNotificationsWebhookTestMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetMePreferencesUrl = () => {
 
@@ -464,19 +541,16 @@ export const getMePreferences = async ( options?: Parameters<typeof customAxios>
 
 
 
-export const getGetMePreferencesQueryKey = () => {
-    return [
-    `/me/preferences`
-    ] as const;
-    }
+export const getGetMePreferencesQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/me/preferences` });
 
 
-export const getGetMePreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getMePreferences>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetMePreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getMePreferences>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMePreferencesQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/me/preferences`, queryOptions });
 
 
 
@@ -486,30 +560,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetMePreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getMePreferences>>>
 export type GetMePreferencesQueryError = ErrorResponse
 
 
+export function useGetMePreferences<TData = Awaited<ReturnType<typeof getMePreferences>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMePreferences>>,
+          TError,
+          Awaited<ReturnType<typeof getMePreferences>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMePreferences<TData = Awaited<ReturnType<typeof getMePreferences>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMePreferences>>,
+          TError,
+          Awaited<ReturnType<typeof getMePreferences>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMePreferences<TData = Awaited<ReturnType<typeof getMePreferences>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get operator preferences
  */
 
 export function useGetMePreferences<TData = Awaited<ReturnType<typeof getMePreferences>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMePreferences>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetMePreferencesQueryOptions(options)
 
-  const queryOptions = getGetMePreferencesQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get operator preferences
+ */
+export const invalidateGetMePreferences = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/me/preferences` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -548,7 +657,7 @@ return customAxios<PreferencesResult>(getPatchMePreferencesUrl(),
 
 
 export const getPatchMePreferencesMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMePreferences>>, TError,{data: PreferencesResult}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMePreferences>>, TError,{data: PreferencesResult}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchMePreferences>>, TError,{data: PreferencesResult}, TContext> => {
 
 const mutationKey = ['patchMePreferences'];
@@ -567,12 +676,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchMePreferences(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchMePreferences>>, variables: {data: PreferencesResult}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchMePreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof patchMePreferences>>>
     export type PatchMePreferencesMutationBody = PreferencesResult
@@ -582,14 +699,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update operator preferences
  */
 export const usePatchMePreferences = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMePreferences>>, TError,{data: PreferencesResult}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMePreferences>>, TError,{data: PreferencesResult}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchMePreferences>>,
         TError,
         {data: PreferencesResult},
         TContext
       > => {
-      return useMutation(getPatchMePreferencesMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchMePreferencesMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetMeSettingsUrl = () => {
 
@@ -618,19 +736,16 @@ export const getMeSettings = async ( options?: Parameters<typeof customAxios>[1]
 
 
 
-export const getGetMeSettingsQueryKey = () => {
-    return [
-    `/me/settings`
-    ] as const;
-    }
+export const getGetMeSettingsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/me/settings` });
 
 
-export const getGetMeSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMeSettings>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetMeSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMeSettings>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMeSettingsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/me/settings`, queryOptions });
 
 
 
@@ -640,30 +755,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetMeSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMeSettings>>>
 export type GetMeSettingsQueryError = ErrorResponse
 
 
+export function useGetMeSettings<TData = Awaited<ReturnType<typeof getMeSettings>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeSettings>>,
+          TError,
+          Awaited<ReturnType<typeof getMeSettings>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeSettings<TData = Awaited<ReturnType<typeof getMeSettings>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeSettings>>,
+          TError,
+          Awaited<ReturnType<typeof getMeSettings>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeSettings<TData = Awaited<ReturnType<typeof getMeSettings>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get operator settings
  */
 
 export function useGetMeSettings<TData = Awaited<ReturnType<typeof getMeSettings>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetMeSettingsQueryOptions(options)
 
-  const queryOptions = getGetMeSettingsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get operator settings
+ */
+export const invalidateGetMeSettings = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/me/settings` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -702,7 +852,7 @@ return customAxios<SettingsResponseResult>(getPatchMeSettingsUrl(),
 
 
 export const getPatchMeSettingsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeSettings>>, TError,{data: UpdateSettingsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeSettings>>, TError,{data: UpdateSettingsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchMeSettings>>, TError,{data: UpdateSettingsRequest}, TContext> => {
 
 const mutationKey = ['patchMeSettings'];
@@ -721,12 +871,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchMeSettings(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchMeSettings>>, variables: {data: UpdateSettingsRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchMeSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof patchMeSettings>>>
     export type PatchMeSettingsMutationBody = UpdateSettingsRequest
@@ -736,14 +894,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update operator settings
  */
 export const usePatchMeSettings = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeSettings>>, TError,{data: UpdateSettingsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeSettings>>, TError,{data: UpdateSettingsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchMeSettings>>,
         TError,
         {data: UpdateSettingsRequest},
         TContext
       > => {
-      return useMutation(getPatchMeSettingsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchMeSettingsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetMeThresholdsUrl = () => {
 
@@ -772,19 +931,16 @@ export const getMeThresholds = async ( options?: Parameters<typeof customAxios>[
 
 
 
-export const getGetMeThresholdsQueryKey = () => {
-    return [
-    `/me/thresholds`
-    ] as const;
-    }
+export const getGetMeThresholdsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/me/thresholds` });
 
 
-export const getGetMeThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof getMeThresholds>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetMeThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof getMeThresholds>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMeThresholdsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/me/thresholds`, queryOptions });
 
 
 
@@ -794,30 +950,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetMeThresholdsQueryResult = NonNullable<Awaited<ReturnType<typeof getMeThresholds>>>
 export type GetMeThresholdsQueryError = ErrorResponse
 
 
+export function useGetMeThresholds<TData = Awaited<ReturnType<typeof getMeThresholds>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof getMeThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeThresholds<TData = Awaited<ReturnType<typeof getMeThresholds>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof getMeThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeThresholds<TData = Awaited<ReturnType<typeof getMeThresholds>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get operator thresholds
  */
 
 export function useGetMeThresholds<TData = Awaited<ReturnType<typeof getMeThresholds>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetMeThresholdsQueryOptions(options)
 
-  const queryOptions = getGetMeThresholdsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get operator thresholds
+ */
+export const invalidateGetMeThresholds = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/me/thresholds` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -856,7 +1047,7 @@ return customAxios<ThresholdsResult>(getPatchMeThresholdsUrl(),
 
 
 export const getPatchMeThresholdsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeThresholds>>, TError,{data: ThresholdUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeThresholds>>, TError,{data: ThresholdUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchMeThresholds>>, TError,{data: ThresholdUpdateRequest}, TContext> => {
 
 const mutationKey = ['patchMeThresholds'];
@@ -875,12 +1066,20 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchMeThresholds(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchMeThresholds>>, variables: {data: ThresholdUpdateRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetMeNotificationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMePreferencesQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeSettingsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeThresholdsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchMeThresholdsMutationResult = NonNullable<Awaited<ReturnType<typeof patchMeThresholds>>>
     export type PatchMeThresholdsMutationBody = ThresholdUpdateRequest
@@ -890,12 +1089,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update operator thresholds
  */
 export const usePatchMeThresholds = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeThresholds>>, TError,{data: ThresholdUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchMeThresholds>>, TError,{data: ThresholdUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchMeThresholds>>,
         TError,
         {data: ThresholdUpdateRequest},
         TContext
       > => {
-      return useMutation(getPatchMeThresholdsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchMeThresholdsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

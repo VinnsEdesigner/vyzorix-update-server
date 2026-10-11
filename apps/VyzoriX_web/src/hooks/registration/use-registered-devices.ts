@@ -15,7 +15,6 @@ export function useRegisteredDevices(params?: UseRegisteredDevicesParams) {
     { page: params?.page, limit: params?.limit },
     {
       query: {
-        queryKey: ['registration', 'devices', { ...params, organizationId }] as const,
         enabled: organizationId !== null,
         queryFn: async () => {
           try {

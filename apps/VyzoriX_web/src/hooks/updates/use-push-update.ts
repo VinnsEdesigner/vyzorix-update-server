@@ -1,8 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { postUpdatesPush } from '@/generated-rq/updates/update-management';
+import {
+  postUpdatesPush,
+  invalidateGetUpdatesHistory,
+  invalidateGetUpdatesStatus,
+  invalidateGetUpdatesVersions,
+  invalidateGetUpdatesChangelog,
+} from '@/generated-rq/updates/update-management';
 import type { UpdatePushRequest, InstallType } from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
 import { useUpdatesStore } from '@/stores/updates-store';
 import { pushUpdateViaGraphQL, normalizeWirePushResult } from './_graphql-fallback';
 
@@ -28,8 +33,12 @@ export function usePushUpdate() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['updates', 'history'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.updatesStatus(organizationId ?? '') });
+      // GraphQL fallback path bypasses generated auto-invalidation; invalidate
+      // the org-scoped generated keys the `postUpdatesPush` tag declares.
+      void invalidateGetUpdatesHistory(queryClient);
+      void invalidateGetUpdatesStatus(queryClient);
+      void invalidateGetUpdatesVersions(queryClient);
+      void invalidateGetUpdatesChangelog(queryClient);
       useUpdatesStore.getState().resetDraft();
     },
   });

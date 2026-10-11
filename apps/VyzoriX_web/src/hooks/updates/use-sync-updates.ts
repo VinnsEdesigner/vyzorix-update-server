@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
-import { postUpdatesSync } from '@/generated-rq/updates/update-management';
-import { queryKeys } from '@/lib/query-keys';
+import {
+  postUpdatesSync,
+  invalidateGetUpdatesVersions,
+  invalidateGetUpdatesStatus,
+  invalidateGetUpdatesChangelog,
+} from '@/generated-rq/updates/update-management';
 import { syncUpdatesViaGraphQL } from './_graphql-fallback';
 
 export interface SyncResult {
@@ -29,9 +33,10 @@ export function useSyncUpdates() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.updateVersions() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.updatesStatus(organizationId ?? '') });
-      queryClient.invalidateQueries({ queryKey: queryKeys.updateChangelog() });
+      // GraphQL fallback path bypasses generated auto-invalidation.
+      void invalidateGetUpdatesVersions(queryClient);
+      void invalidateGetUpdatesStatus(queryClient);
+      void invalidateGetUpdatesChangelog(queryClient);
     },
   });
 }

@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetNotificationsContactPoints,
   usePostNotificationsContactPoints,
@@ -8,28 +7,19 @@ import {
 } from '@/generated-rq/contact-points/notification-contact-points';
 
 export function useContactPoints() {
-  return useGetNotificationsContactPoints({ query: { queryKey: ['contact-points'] as const, refetchInterval: 60_000 } });
+  return useGetNotificationsContactPoints({ query: { refetchInterval: 60_000 } });
 }
 
 export function useCreateContactPoint() {
-  const queryClient = useQueryClient();
-  return usePostNotificationsContactPoints({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contact-points'] }) },
-  });
+  return usePostNotificationsContactPoints();
 }
 
 export function useUpdateContactPoint() {
-  const queryClient = useQueryClient();
-  return usePatchNotificationsContactPointsId({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contact-points'] }) },
-  });
+  return usePatchNotificationsContactPointsId();
 }
 
 export function useDeleteContactPoint() {
-  const queryClient = useQueryClient();
-  return useDeleteNotificationsContactPointsId({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contact-points'] }) },
-  });
+  return useDeleteNotificationsContactPointsId();
 }
 
 export function useTestContactPoint() {

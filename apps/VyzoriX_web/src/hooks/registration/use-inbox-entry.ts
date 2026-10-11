@@ -8,7 +8,6 @@ export function useInboxEntry(imei: string | undefined) {
     imei ?? '',
     {
       query: {
-        queryKey: ['inbox', imei, organizationId] as const,
         enabled: imei !== undefined && organizationId !== null,
         // REST primary; fall back to GraphQL on REST failure.
         queryFn: async () => {

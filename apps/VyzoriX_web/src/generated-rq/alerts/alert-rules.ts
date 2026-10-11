@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -31,6 +39,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -79,19 +88,16 @@ export const getAlertsRules = async ( options?: Parameters<typeof customAxios>[1
 
 
 
-export const getGetAlertsRulesQueryKey = () => {
-    return [
-    `/alerts/rules`
-    ] as const;
-    }
+export const getGetAlertsRulesQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/alerts/rules` });
 
 
-export const getGetAlertsRulesQueryOptions = <TData = Awaited<ReturnType<typeof getAlertsRules>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAlertsRulesQueryOptions = <TData = Awaited<ReturnType<typeof getAlertsRules>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAlertsRulesQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/alerts/rules`, queryOptions });
 
 
 
@@ -101,30 +107,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAlertsRulesQueryResult = NonNullable<Awaited<ReturnType<typeof getAlertsRules>>>
 export type GetAlertsRulesQueryError = ErrorResponse
 
 
+export function useGetAlertsRules<TData = Awaited<ReturnType<typeof getAlertsRules>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlertsRules>>,
+          TError,
+          Awaited<ReturnType<typeof getAlertsRules>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAlertsRules<TData = Awaited<ReturnType<typeof getAlertsRules>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlertsRules>>,
+          TError,
+          Awaited<ReturnType<typeof getAlertsRules>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAlertsRules<TData = Awaited<ReturnType<typeof getAlertsRules>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List alert rules
  */
 
 export function useGetAlertsRules<TData = Awaited<ReturnType<typeof getAlertsRules>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRules>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAlertsRulesQueryOptions(options)
 
-  const queryOptions = getGetAlertsRulesQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List alert rules
+ */
+export const invalidateGetAlertsRules = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/alerts/rules` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -163,7 +204,7 @@ return customAxios<AlertRule>(getPostAlertsRulesUrl(),
 
 
 export const getPostAlertsRulesMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRules>>, TError,{data: AlertRuleRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRules>>, TError,{data: AlertRuleRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAlertsRules>>, TError,{data: AlertRuleRequest}, TContext> => {
 
 const mutationKey = ['postAlertsRules'];
@@ -182,12 +223,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAlertsRules(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAlertsRules>>, variables: {data: AlertRuleRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAlertsRulesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAlertsRulesMutationResult = NonNullable<Awaited<ReturnType<typeof postAlertsRules>>>
     export type PostAlertsRulesMutationBody = AlertRuleRequest
@@ -197,14 +243,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create alert rule
  */
 export const usePostAlertsRules = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRules>>, TError,{data: AlertRuleRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRules>>, TError,{data: AlertRuleRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAlertsRules>>,
         TError,
         {data: AlertRuleRequest},
         TContext
       > => {
-      return useMutation(getPostAlertsRulesMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAlertsRulesMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAlertsRulesIdUrl = (id: string,) => {
 
@@ -233,19 +280,16 @@ export const getAlertsRulesId = async (id: string, options?: Parameters<typeof c
 
 
 
-export const getGetAlertsRulesIdQueryKey = (id: string,) => {
-    return [
-    `/alerts/rules/${id}`
-    ] as const;
-    }
+export const getGetAlertsRulesIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/alerts/rules/${id}` });
 
 
-export const getGetAlertsRulesIdQueryOptions = <TData = Awaited<ReturnType<typeof getAlertsRulesId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAlertsRulesIdQueryOptions = <TData = Awaited<ReturnType<typeof getAlertsRulesId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAlertsRulesIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/alerts/rules/${id}`, queryOptions });
 
 
 
@@ -255,30 +299,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAlertsRulesIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAlertsRulesId>>>
 export type GetAlertsRulesIdQueryError = ErrorResponse
 
 
+export function useGetAlertsRulesId<TData = Awaited<ReturnType<typeof getAlertsRulesId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlertsRulesId>>,
+          TError,
+          Awaited<ReturnType<typeof getAlertsRulesId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAlertsRulesId<TData = Awaited<ReturnType<typeof getAlertsRulesId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlertsRulesId>>,
+          TError,
+          Awaited<ReturnType<typeof getAlertsRulesId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAlertsRulesId<TData = Awaited<ReturnType<typeof getAlertsRulesId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get alert rule
  */
 
 export function useGetAlertsRulesId<TData = Awaited<ReturnType<typeof getAlertsRulesId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAlertsRulesIdQueryOptions(id,options)
 
-  const queryOptions = getGetAlertsRulesIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get alert rule
+ */
+export const invalidateGetAlertsRulesId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/alerts/rules/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -311,7 +390,7 @@ export const deleteAlertsRulesId = async (id: string, options?: Parameters<typeo
 
 
 export const getDeleteAlertsRulesIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAlertsRulesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAlertsRulesId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAlertsRulesId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteAlertsRulesId'];
@@ -330,12 +409,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAlertsRulesId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAlertsRulesId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAlertsRulesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAlertsRulesIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAlertsRulesId>>>
 
@@ -345,14 +429,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete alert rule
  */
 export const useDeleteAlertsRulesId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAlertsRulesId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAlertsRulesId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAlertsRulesId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteAlertsRulesIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAlertsRulesIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchAlertsRulesIdUrl = (id: string,) => {
 
@@ -389,7 +474,7 @@ return customAxios<AlertRule>(getPatchAlertsRulesIdUrl(id),
 
 
 export const getPatchAlertsRulesIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAlertsRulesId>>, TError,{id: string;data: AlertRuleRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAlertsRulesId>>, TError,{id: string;data: AlertRuleRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAlertsRulesId>>, TError,{id: string;data: AlertRuleRequest}, TContext> => {
 
 const mutationKey = ['patchAlertsRulesId'];
@@ -408,12 +493,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAlertsRulesId(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAlertsRulesId>>, variables: {id: string;data: AlertRuleRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAlertsRulesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAlertsRulesIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAlertsRulesId>>>
     export type PatchAlertsRulesIdMutationBody = AlertRuleRequest
@@ -423,14 +513,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update alert rule
  */
 export const usePatchAlertsRulesId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAlertsRulesId>>, TError,{id: string;data: AlertRuleRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAlertsRulesId>>, TError,{id: string;data: AlertRuleRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAlertsRulesId>>,
         TError,
         {id: string;data: AlertRuleRequest},
         TContext
       > => {
-      return useMutation(getPatchAlertsRulesIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAlertsRulesIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAlertsRulesIdEvaluateUrl = (id: string,) => {
 
@@ -460,7 +551,7 @@ export const postAlertsRulesIdEvaluate = async (id: string, options?: Parameters
 
 
 export const getPostAlertsRulesIdEvaluateMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['postAlertsRulesIdEvaluate'];
@@ -479,12 +570,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAlertsRulesIdEvaluate(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAlertsRulesQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAlertsRulesIdEvaluateMutationResult = NonNullable<Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>>
 
@@ -494,14 +590,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Manually evaluate a rule
  */
 export const usePostAlertsRulesIdEvaluate = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAlertsRulesIdEvaluate>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getPostAlertsRulesIdEvaluateMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAlertsRulesIdEvaluateMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAlertsRulesIdHistoryUrl = (id: string,
     params?: GetAlertsRulesIdHistoryParams,) => {
@@ -540,20 +637,17 @@ export const getAlertsRulesIdHistory = async (id: string,
 
 
 export const getGetAlertsRulesIdHistoryQueryKey = (id: string,
-    params?: GetAlertsRulesIdHistoryParams,) => {
-    return [
-    `/alerts/rules/${id}/history`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetAlertsRulesIdHistoryParams,) =>
+    organizationScopedQueryKey({ id,params }, { url: `/alerts/rules/${id}/history` });
 
 
-export const getGetAlertsRulesIdHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError = ErrorResponse>(id: string,
-    params?: GetAlertsRulesIdHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAlertsRulesIdHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError = ErrorResponse>(id: string,
+    params?: GetAlertsRulesIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAlertsRulesIdHistoryQueryKey(id,params);
+  const queryKey =  organizationScopedQueryKey({ id,params }, { url: `/alerts/rules/${id}/history`, queryOptions });
 
 
 
@@ -563,31 +657,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAlertsRulesIdHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>>
 export type GetAlertsRulesIdHistoryQueryError = ErrorResponse
 
 
+export function useGetAlertsRulesIdHistory<TData = Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError = ErrorResponse>(
+ id: string,
+    params: undefined |  GetAlertsRulesIdHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlertsRulesIdHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getAlertsRulesIdHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAlertsRulesIdHistory<TData = Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError = ErrorResponse>(
+ id: string,
+    params?: GetAlertsRulesIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAlertsRulesIdHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getAlertsRulesIdHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAlertsRulesIdHistory<TData = Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError = ErrorResponse>(
+ id: string,
+    params?: GetAlertsRulesIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Alert history
  */
 
 export function useGetAlertsRulesIdHistory<TData = Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError = ErrorResponse>(
  id: string,
-    params?: GetAlertsRulesIdHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetAlertsRulesIdHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAlertsRulesIdHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAlertsRulesIdHistoryQueryOptions(id,params,options)
 
-  const queryOptions = getGetAlertsRulesIdHistoryQueryOptions(id,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Alert history
+ */
+export const invalidateGetAlertsRulesIdHistory = async (
+ queryClient: QueryClient, id: string,
+    params?: GetAlertsRulesIdHistoryParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id,params }, { url: `/alerts/rules/${id}/history` }) }, options);
+
+  return queryClient;
+}
 
 
 

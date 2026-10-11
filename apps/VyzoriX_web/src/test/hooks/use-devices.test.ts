@@ -9,8 +9,8 @@
  * No vi.mock — the real code path runs end-to-end.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { waitFor } from '@testing-library/react';
-import { renderHookWithQueryClient } from '../helpers/render-hook';
+import { waitFor, act } from '@testing-library/react';
+import { renderHookWithQueryClient, createTestQueryClient } from '../helpers/render-hook';
 import { setupIntegrationTest } from '../helpers/integration-test-setup';
 import { useAuthStore } from '@/stores/auth-store';
 import {
@@ -166,5 +166,21 @@ describe('useDeregisterDevice', () => {
     result.current.mutate({ imei: '111111111111111' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.success).toBe(true);
+  });
+
+  it('auto-invalidates the org-scoped device list without manual wiring', async () => {
+    // Proves VYZORIX_FRONTEND_ARCHITECTURE §1: the generated mutation invalidates
+    // the org-scoped device query key, so the list refetches on success.
+    const queryClient = createTestQueryClient();
+    const list = renderHookWithQueryClient(() => useDevices(), { queryClient });
+    await waitFor(() => expect(list.result.current.isSuccess).toBe(true));
+    const callsBefore = list.result.current.dataUpdatedAt;
+
+    const deregister = renderHookWithQueryClient(() => useDeregisterDevice(), { queryClient });
+    await act(async () => {
+      deregister.result.current.mutate({ imei: '333333333333333' });
+    });
+    await waitFor(() => expect(deregister.result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(list.result.current.dataUpdatedAt).toBeGreaterThan(callsBefore));
   });
 });

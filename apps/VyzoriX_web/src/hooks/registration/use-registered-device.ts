@@ -9,7 +9,6 @@ export function useRegisteredDevice(imei: string | undefined) {
     imei ?? '',
     {
       query: {
-        queryKey: ['registration', 'device', imei] as const,
         enabled: imei !== undefined && imei !== '' && organizationId !== null,
         queryFn: async () => {
           try {

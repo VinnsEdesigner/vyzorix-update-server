@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { getAuthMe, postAuthOrganizationsSelect } from '@/generated-rq/auth/auth-session';
+import { useQueryClient } from '@tanstack/react-query';
+import { getAuthMe, usePostAuthOrganizationsSelect } from '@/generated-rq/auth/auth-session';
 import type { MeResult, OrganizationInfo, SelectOrganizationResult } from '@vyzorix/api-client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -27,14 +27,14 @@ export function useMyOrganizations() {
 }
 
 export function useSelectOrganization() {
-  const queryClient = useQueryClient();
   const setOrganization = useAuthStore((s) => s.setOrganization);
-  return useMutation({
-    mutationFn: (organizationId: string) =>
-      postAuthOrganizationsSelect({ organization_id: organizationId }),
-    onSuccess: (org: SelectOrganizationResult) => {
-      setOrganization(org.organization_id ?? null);
-      queryClient.invalidateQueries({ queryKey: ['me'] });
+  return usePostAuthOrganizationsSelect({
+    mutation: {
+      onSuccess: (org) => {
+        // The generated mutation already invalidates the `getAuthMe` query tag;
+        // this hook only needs its auth-store side effect.
+        setOrganization((org as SelectOrganizationResult).organization_id ?? null);
+      },
     },
   });
 }

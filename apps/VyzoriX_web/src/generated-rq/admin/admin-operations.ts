@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -38,6 +46,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -93,19 +102,16 @@ export const getAdminApiKeys = async (params?: GetAdminApiKeysParams, options?: 
 
 
 
-export const getGetAdminApiKeysQueryKey = (params?: GetAdminApiKeysParams,) => {
-    return [
-    `/admin/api-keys`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetAdminApiKeysQueryKey = (params?: GetAdminApiKeysParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/admin/api-keys` });
 
 
-export const getGetAdminApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeys>>, TError = ErrorResponse>(params?: GetAdminApiKeysParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminApiKeysQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeys>>, TError = ErrorResponse>(params?: GetAdminApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminApiKeysQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/admin/api-keys`, queryOptions });
 
 
 
@@ -115,30 +121,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminApiKeysQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminApiKeys>>>
 export type GetAdminApiKeysQueryError = ErrorResponse
 
 
+export function useGetAdminApiKeys<TData = Awaited<ReturnType<typeof getAdminApiKeys>>, TError = ErrorResponse>(
+ params: undefined |  GetAdminApiKeysParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeys>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeys>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeys<TData = Awaited<ReturnType<typeof getAdminApiKeys>>, TError = ErrorResponse>(
+ params?: GetAdminApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeys>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeys>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeys<TData = Awaited<ReturnType<typeof getAdminApiKeys>>, TError = ErrorResponse>(
+ params?: GetAdminApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List all API keys
  */
 
 export function useGetAdminApiKeys<TData = Awaited<ReturnType<typeof getAdminApiKeys>>, TError = ErrorResponse>(
- params?: GetAdminApiKeysParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetAdminApiKeysParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeys>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminApiKeysQueryOptions(params,options)
 
-  const queryOptions = getGetAdminApiKeysQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List all API keys
+ */
+export const invalidateGetAdminApiKeys = async (
+ queryClient: QueryClient, params?: GetAdminApiKeysParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/admin/api-keys` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -180,20 +221,17 @@ export const getAdminApiKeysOperatorOperatorId = async (operatorId: string,
 
 
 export const getGetAdminApiKeysOperatorOperatorIdQueryKey = (operatorId: string,
-    params?: GetAdminApiKeysOperatorOperatorIdParams,) => {
-    return [
-    `/admin/api-keys/operator/${operatorId}`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetAdminApiKeysOperatorOperatorIdParams,) =>
+    organizationScopedQueryKey({ operatorId,params }, { url: `/admin/api-keys/operator/${operatorId}` });
 
 
-export const getGetAdminApiKeysOperatorOperatorIdQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError = ErrorResponse>(operatorId: string,
-    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminApiKeysOperatorOperatorIdQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError = ErrorResponse>(operatorId: string,
+    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminApiKeysOperatorOperatorIdQueryKey(operatorId,params);
+  const queryKey =  organizationScopedQueryKey({ operatorId,params }, { url: `/admin/api-keys/operator/${operatorId}`, queryOptions });
 
 
 
@@ -203,31 +241,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: operatorId !== null && operatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: operatorId !== null && operatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminApiKeysOperatorOperatorIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>>
 export type GetAdminApiKeysOperatorOperatorIdQueryError = ErrorResponse
 
 
+export function useGetAdminApiKeysOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError = ErrorResponse>(
+ operatorId: string,
+    params: undefined |  GetAdminApiKeysOperatorOperatorIdParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeysOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError = ErrorResponse>(
+ operatorId: string,
+    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeysOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError = ErrorResponse>(
+ operatorId: string,
+    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List operator API keys
  */
 
 export function useGetAdminApiKeysOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError = ErrorResponse>(
  operatorId: string,
-    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysOperatorOperatorId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminApiKeysOperatorOperatorIdQueryOptions(operatorId,params,options)
 
-  const queryOptions = getGetAdminApiKeysOperatorOperatorIdQueryOptions(operatorId,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List operator API keys
+ */
+export const invalidateGetAdminApiKeysOperatorOperatorId = async (
+ queryClient: QueryClient, operatorId: string,
+    params?: GetAdminApiKeysOperatorOperatorIdParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ operatorId,params }, { url: `/admin/api-keys/operator/${operatorId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -259,19 +336,16 @@ export const getAdminApiKeysStats = async ( options?: Parameters<typeof customAx
 
 
 
-export const getGetAdminApiKeysStatsQueryKey = () => {
-    return [
-    `/admin/api-keys/stats`
-    ] as const;
-    }
+export const getGetAdminApiKeysStatsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/admin/api-keys/stats` });
 
 
-export const getGetAdminApiKeysStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminApiKeysStatsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminApiKeysStatsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/admin/api-keys/stats`, queryOptions });
 
 
 
@@ -281,30 +355,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminApiKeysStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminApiKeysStats>>>
 export type GetAdminApiKeysStatsQueryError = ErrorResponse
 
 
+export function useGetAdminApiKeysStats<TData = Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeysStats>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeysStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeysStats<TData = Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeysStats>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeysStats>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeysStats<TData = Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get global API key stats
  */
 
 export function useGetAdminApiKeysStats<TData = Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStats>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminApiKeysStatsQueryOptions(options)
 
-  const queryOptions = getGetAdminApiKeysStatsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get global API key stats
+ */
+export const invalidateGetAdminApiKeysStats = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/admin/api-keys/stats` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -336,19 +445,16 @@ export const getAdminApiKeysStatsOperatorOperatorId = async (operatorId: string,
 
 
 
-export const getGetAdminApiKeysStatsOperatorOperatorIdQueryKey = (operatorId: string,) => {
-    return [
-    `/admin/api-keys/stats/operator/${operatorId}`
-    ] as const;
-    }
+export const getGetAdminApiKeysStatsOperatorOperatorIdQueryKey = (operatorId: string,) =>
+    organizationScopedQueryKey({ operatorId }, { url: `/admin/api-keys/stats/operator/${operatorId}` });
 
 
-export const getGetAdminApiKeysStatsOperatorOperatorIdQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError = ErrorResponse>(operatorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminApiKeysStatsOperatorOperatorIdQueryOptions = <TData = Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError = ErrorResponse>(operatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminApiKeysStatsOperatorOperatorIdQueryKey(operatorId);
+  const queryKey =  organizationScopedQueryKey({ operatorId }, { url: `/admin/api-keys/stats/operator/${operatorId}`, queryOptions });
 
 
 
@@ -358,30 +464,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: operatorId !== null && operatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: operatorId !== null && operatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminApiKeysStatsOperatorOperatorIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>>
 export type GetAdminApiKeysStatsOperatorOperatorIdQueryError = ErrorResponse
 
 
+export function useGetAdminApiKeysStatsOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError = ErrorResponse>(
+ operatorId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeysStatsOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError = ErrorResponse>(
+ operatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminApiKeysStatsOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError = ErrorResponse>(
+ operatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get operator API key stats
  */
 
 export function useGetAdminApiKeysStatsOperatorOperatorId<TData = Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError = ErrorResponse>(
- operatorId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ operatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminApiKeysStatsOperatorOperatorId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminApiKeysStatsOperatorOperatorIdQueryOptions(operatorId,options)
 
-  const queryOptions = getGetAdminApiKeysStatsOperatorOperatorIdQueryOptions(operatorId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get operator API key stats
+ */
+export const invalidateGetAdminApiKeysStatsOperatorOperatorId = async (
+ queryClient: QueryClient, operatorId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ operatorId }, { url: `/admin/api-keys/stats/operator/${operatorId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -414,7 +555,7 @@ export const deleteAdminApiKeysKeyId = async (keyId: string, options?: Parameter
 
 
 export const getDeleteAdminApiKeysKeyIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>, TError,{keyId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>, TError,{keyId: string}, TContext> => {
 
 const mutationKey = ['deleteAdminApiKeysKeyId'];
@@ -433,12 +574,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAdminApiKeysKeyId(keyId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>, variables: {keyId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAdminApiKeysKeyIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>>
 
@@ -448,14 +598,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Force revoke API key
  */
 export const useDeleteAdminApiKeysKeyId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>, TError,{keyId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>, TError,{keyId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAdminApiKeysKeyId>>,
         TError,
         {keyId: string},
         TContext
       > => {
-      return useMutation(getDeleteAdminApiKeysKeyIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAdminApiKeysKeyIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAdminClientsUrl = () => {
 
@@ -484,19 +635,16 @@ export const getAdminClients = async ( options?: Parameters<typeof customAxios>[
 
 
 
-export const getGetAdminClientsQueryKey = () => {
-    return [
-    `/admin/clients`
-    ] as const;
-    }
+export const getGetAdminClientsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/admin/clients` });
 
 
-export const getGetAdminClientsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminClients>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminClientsQueryOptions = <TData = Awaited<ReturnType<typeof getAdminClients>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminClientsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/admin/clients`, queryOptions });
 
 
 
@@ -506,30 +654,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminClientsQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminClients>>>
 export type GetAdminClientsQueryError = ErrorResponse
 
 
+export function useGetAdminClients<TData = Awaited<ReturnType<typeof getAdminClients>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminClients>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminClients>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminClients<TData = Awaited<ReturnType<typeof getAdminClients>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminClients>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminClients>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminClients<TData = Awaited<ReturnType<typeof getAdminClients>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List admin clients
  */
 
 export function useGetAdminClients<TData = Awaited<ReturnType<typeof getAdminClients>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClients>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminClientsQueryOptions(options)
 
-  const queryOptions = getGetAdminClientsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List admin clients
+ */
+export const invalidateGetAdminClients = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/admin/clients` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -561,19 +744,16 @@ export const getAdminClientsClientId = async (clientId: string, options?: Parame
 
 
 
-export const getGetAdminClientsClientIdQueryKey = (clientId: string,) => {
-    return [
-    `/admin/clients/${clientId}`
-    ] as const;
-    }
+export const getGetAdminClientsClientIdQueryKey = (clientId: string,) =>
+    organizationScopedQueryKey({ clientId }, { url: `/admin/clients/${clientId}` });
 
 
-export const getGetAdminClientsClientIdQueryOptions = <TData = Awaited<ReturnType<typeof getAdminClientsClientId>>, TError = ErrorResponse>(clientId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminClientsClientIdQueryOptions = <TData = Awaited<ReturnType<typeof getAdminClientsClientId>>, TError = ErrorResponse>(clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminClientsClientIdQueryKey(clientId);
+  const queryKey =  organizationScopedQueryKey({ clientId }, { url: `/admin/clients/${clientId}`, queryOptions });
 
 
 
@@ -583,30 +763,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: clientId !== null && clientId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminClientsClientIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminClientsClientId>>>
 export type GetAdminClientsClientIdQueryError = ErrorResponse
 
 
+export function useGetAdminClientsClientId<TData = Awaited<ReturnType<typeof getAdminClientsClientId>>, TError = ErrorResponse>(
+ clientId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminClientsClientId>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminClientsClientId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminClientsClientId<TData = Awaited<ReturnType<typeof getAdminClientsClientId>>, TError = ErrorResponse>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminClientsClientId>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminClientsClientId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminClientsClientId<TData = Awaited<ReturnType<typeof getAdminClientsClientId>>, TError = ErrorResponse>(
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get admin client
  */
 
 export function useGetAdminClientsClientId<TData = Awaited<ReturnType<typeof getAdminClientsClientId>>, TError = ErrorResponse>(
- clientId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ clientId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminClientsClientId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminClientsClientIdQueryOptions(clientId,options)
 
-  const queryOptions = getGetAdminClientsClientIdQueryOptions(clientId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get admin client
+ */
+export const invalidateGetAdminClientsClientId = async (
+ queryClient: QueryClient, clientId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ clientId }, { url: `/admin/clients/${clientId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -639,7 +854,7 @@ export const deleteAdminClientsClientId = async (clientId: string, options?: Par
 
 
 export const getDeleteAdminClientsClientIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminClientsClientId>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminClientsClientId>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAdminClientsClientId>>, TError,{clientId: string}, TContext> => {
 
 const mutationKey = ['deleteAdminClientsClientId'];
@@ -658,12 +873,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAdminClientsClientId(clientId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAdminClientsClientId>>, variables: {clientId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAdminClientsClientIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAdminClientsClientId>>>
 
@@ -673,14 +897,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete admin client
  */
 export const useDeleteAdminClientsClientId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminClientsClientId>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAdminClientsClientId>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAdminClientsClientId>>,
         TError,
         {clientId: string},
         TContext
       > => {
-      return useMutation(getDeleteAdminClientsClientIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAdminClientsClientIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchAdminClientsClientIdUrl = (clientId: string,) => {
 
@@ -717,7 +942,7 @@ return customAxios<AdminClientResult>(getPatchAdminClientsClientIdUrl(clientId),
 
 
 export const getPatchAdminClientsClientIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminClientsClientId>>, TError,{clientId: string;data: UpdateAdminClientRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminClientsClientId>>, TError,{clientId: string;data: UpdateAdminClientRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAdminClientsClientId>>, TError,{clientId: string;data: UpdateAdminClientRequest}, TContext> => {
 
 const mutationKey = ['patchAdminClientsClientId'];
@@ -736,12 +961,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAdminClientsClientId(clientId,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAdminClientsClientId>>, variables: {clientId: string;data: UpdateAdminClientRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAdminClientsClientIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAdminClientsClientId>>>
     export type PatchAdminClientsClientIdMutationBody = UpdateAdminClientRequest
@@ -751,14 +985,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update admin client
  */
 export const usePatchAdminClientsClientId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminClientsClientId>>, TError,{clientId: string;data: UpdateAdminClientRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAdminClientsClientId>>, TError,{clientId: string;data: UpdateAdminClientRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAdminClientsClientId>>,
         TError,
         {clientId: string;data: UpdateAdminClientRequest},
         TContext
       > => {
-      return useMutation(getPatchAdminClientsClientIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAdminClientsClientIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAdminClientsClientIdRotateKeyUrl = (clientId: string,) => {
 
@@ -788,7 +1023,7 @@ export const postAdminClientsClientIdRotateKey = async (clientId: string, option
 
 
 export const getPostAdminClientsClientIdRotateKeyMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>, TError,{clientId: string}, TContext> => {
 
 const mutationKey = ['postAdminClientsClientIdRotateKey'];
@@ -807,12 +1042,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAdminClientsClientIdRotateKey(clientId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>, variables: {clientId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAdminClientsClientIdRotateKeyMutationResult = NonNullable<Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>>
 
@@ -822,14 +1066,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Rotate admin client key
  */
 export const usePostAdminClientsClientIdRotateKey = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>, TError,{clientId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>, TError,{clientId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAdminClientsClientIdRotateKey>>,
         TError,
         {clientId: string},
         TContext
       > => {
-      return useMutation(getPostAdminClientsClientIdRotateKeyMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAdminClientsClientIdRotateKeyMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAdminSupportBundleUrl = () => {
 
@@ -858,19 +1103,16 @@ export const getAdminSupportBundle = async ( options?: Parameters<typeof customA
 
 
 
-export const getGetAdminSupportBundleQueryKey = () => {
-    return [
-    `/admin/support-bundle`
-    ] as const;
-    }
+export const getGetAdminSupportBundleQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/admin/support-bundle` });
 
 
-export const getGetAdminSupportBundleQueryOptions = <TData = Awaited<ReturnType<typeof getAdminSupportBundle>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAdminSupportBundleQueryOptions = <TData = Awaited<ReturnType<typeof getAdminSupportBundle>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAdminSupportBundleQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/admin/support-bundle`, queryOptions });
 
 
 
@@ -880,30 +1122,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAdminSupportBundleQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminSupportBundle>>>
 export type GetAdminSupportBundleQueryError = ErrorResponse
 
 
+export function useGetAdminSupportBundle<TData = Awaited<ReturnType<typeof getAdminSupportBundle>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminSupportBundle>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminSupportBundle>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminSupportBundle<TData = Awaited<ReturnType<typeof getAdminSupportBundle>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAdminSupportBundle>>,
+          TError,
+          Awaited<ReturnType<typeof getAdminSupportBundle>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAdminSupportBundle<TData = Awaited<ReturnType<typeof getAdminSupportBundle>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get support bundle
  */
 
 export function useGetAdminSupportBundle<TData = Awaited<ReturnType<typeof getAdminSupportBundle>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAdminSupportBundle>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAdminSupportBundleQueryOptions(options)
 
-  const queryOptions = getGetAdminSupportBundleQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get support bundle
+ */
+export const invalidateGetAdminSupportBundle = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/admin/support-bundle` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -935,19 +1212,16 @@ export const getAuthAdminOperators = async ( options?: Parameters<typeof customA
 
 
 
-export const getGetAuthAdminOperatorsQueryKey = () => {
-    return [
-    `/auth/admin/operators`
-    ] as const;
-    }
+export const getGetAuthAdminOperatorsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/admin/operators` });
 
 
-export const getGetAuthAdminOperatorsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthAdminOperators>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthAdminOperatorsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthAdminOperators>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthAdminOperatorsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/admin/operators`, queryOptions });
 
 
 
@@ -957,30 +1231,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthAdminOperatorsQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthAdminOperators>>>
 export type GetAuthAdminOperatorsQueryError = ErrorResponse
 
 
+export function useGetAuthAdminOperators<TData = Awaited<ReturnType<typeof getAuthAdminOperators>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthAdminOperators>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthAdminOperators>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthAdminOperators<TData = Awaited<ReturnType<typeof getAuthAdminOperators>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthAdminOperators>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthAdminOperators>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthAdminOperators<TData = Awaited<ReturnType<typeof getAuthAdminOperators>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List operators
  */
 
 export function useGetAuthAdminOperators<TData = Awaited<ReturnType<typeof getAuthAdminOperators>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperators>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthAdminOperatorsQueryOptions(options)
 
-  const queryOptions = getGetAuthAdminOperatorsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List operators
+ */
+export const invalidateGetAuthAdminOperators = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/admin/operators` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1019,7 +1328,7 @@ return customAxios<AdminOperator>(getPostAuthAdminOperatorsUrl(),
 
 
 export const getPostAuthAdminOperatorsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminOperators>>, TError,{data: CreateOperatorRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminOperators>>, TError,{data: CreateOperatorRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminOperators>>, TError,{data: CreateOperatorRequest}, TContext> => {
 
 const mutationKey = ['postAuthAdminOperators'];
@@ -1038,12 +1347,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthAdminOperators(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthAdminOperators>>, variables: {data: CreateOperatorRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthAdminOperatorsMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthAdminOperators>>>
     export type PostAuthAdminOperatorsMutationBody = CreateOperatorRequest
@@ -1053,14 +1371,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create operator
  */
 export const usePostAuthAdminOperators = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminOperators>>, TError,{data: CreateOperatorRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminOperators>>, TError,{data: CreateOperatorRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthAdminOperators>>,
         TError,
         {data: CreateOperatorRequest},
         TContext
       > => {
-      return useMutation(getPostAuthAdminOperatorsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthAdminOperatorsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthAdminOperatorsIdUrl = (id: string,) => {
 
@@ -1089,19 +1408,16 @@ export const getAuthAdminOperatorsId = async (id: string, options?: Parameters<t
 
 
 
-export const getGetAuthAdminOperatorsIdQueryKey = (id: string,) => {
-    return [
-    `/auth/admin/operators/${id}`
-    ] as const;
-    }
+export const getGetAuthAdminOperatorsIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/auth/admin/operators/${id}` });
 
 
-export const getGetAuthAdminOperatorsIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthAdminOperatorsIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthAdminOperatorsIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/auth/admin/operators/${id}`, queryOptions });
 
 
 
@@ -1111,30 +1427,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthAdminOperatorsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>>
 export type GetAuthAdminOperatorsIdQueryError = ErrorResponse
 
 
+export function useGetAuthAdminOperatorsId<TData = Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthAdminOperatorsId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthAdminOperatorsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthAdminOperatorsId<TData = Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthAdminOperatorsId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthAdminOperatorsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthAdminOperatorsId<TData = Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get operator
  */
 
 export function useGetAuthAdminOperatorsId<TData = Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthAdminOperatorsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthAdminOperatorsIdQueryOptions(id,options)
 
-  const queryOptions = getGetAuthAdminOperatorsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get operator
+ */
+export const invalidateGetAuthAdminOperatorsId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/auth/admin/operators/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1167,7 +1518,7 @@ export const deleteAuthAdminOperatorsId = async (id: string, options?: Parameter
 
 
 export const getDeleteAuthAdminOperatorsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteAuthAdminOperatorsId'];
@@ -1186,12 +1537,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAuthAdminOperatorsId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAuthAdminOperatorsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>>
 
@@ -1201,14 +1561,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete operator
  */
 export const useDeleteAuthAdminOperatorsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAuthAdminOperatorsId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteAuthAdminOperatorsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAuthAdminOperatorsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchAuthAdminOperatorsIdUrl = (id: string,) => {
 
@@ -1245,7 +1606,7 @@ return customAxios<AdminOperator>(getPatchAuthAdminOperatorsIdUrl(id),
 
 
 export const getPatchAuthAdminOperatorsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>, TError,{id: string;data: UpdateOperatorRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>, TError,{id: string;data: UpdateOperatorRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>, TError,{id: string;data: UpdateOperatorRequest}, TContext> => {
 
 const mutationKey = ['patchAuthAdminOperatorsId'];
@@ -1264,12 +1625,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchAuthAdminOperatorsId(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>, variables: {id: string;data: UpdateOperatorRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminApiKeysStatsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminClientsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAdminSupportBundleQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthAdminOperatorsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchAuthAdminOperatorsIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>>
     export type PatchAuthAdminOperatorsIdMutationBody = UpdateOperatorRequest
@@ -1279,12 +1649,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update operator
  */
 export const usePatchAuthAdminOperatorsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>, TError,{id: string;data: UpdateOperatorRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>, TError,{id: string;data: UpdateOperatorRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchAuthAdminOperatorsId>>,
         TError,
         {id: string;data: UpdateOperatorRequest},
         TContext
       > => {
-      return useMutation(getPatchAuthAdminOperatorsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchAuthAdminOperatorsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

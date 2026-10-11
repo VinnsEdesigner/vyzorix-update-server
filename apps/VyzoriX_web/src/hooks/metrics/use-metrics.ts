@@ -2,8 +2,9 @@ import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import {
   useGetDashboardDeviceImeiMetrics,
   getDashboardDeviceImeiMetricsExport,
+  getGetDashboardDeviceImeiMetricsQueryKey,
 } from '@/generated-rq/devices/device-management';
-import { useGetDashboardStats } from '@/generated-rq/dashboard/dashboard-stats';
+import { useGetDashboardStats, getGetDashboardStatsQueryKey } from '@/generated-rq/dashboard/dashboard-stats';
 import type { TelemetryFrame } from '@vyzorix/api-client';
 import { useDashboardStore, useMetricsRealtimeStore } from '@/stores';
 
@@ -13,12 +14,13 @@ export interface DeviceMetricsParams {
 
 export function useDeviceMetrics(imei: string | undefined, params?: DeviceMetricsParams) {
   const organizationId = useCurrentOrganizationId();
+  const keyParams = { window: params?.window };
   return useGetDashboardDeviceImeiMetrics(
     imei ?? '',
-    { window: params?.window },
+    keyParams,
     {
       query: {
-        queryKey: ['metrics', organizationId ?? '', imei ?? '', params?.window] as const,
+        queryKey: getGetDashboardDeviceImeiMetricsQueryKey(imei ?? '', keyParams),
         enabled: imei !== undefined && imei !== '' && organizationId !== null,
       },
     },
@@ -33,7 +35,7 @@ export function useDashboardStats() {
 
   const query = useGetDashboardStats({
     query: {
-      queryKey: ['dashboard', 'stats', organizationId ?? ''] as const,
+      queryKey: getGetDashboardStatsQueryKey(),
       enabled: organizationId !== null,
       refetchInterval: 30_000,
     },

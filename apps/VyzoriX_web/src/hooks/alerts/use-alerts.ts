@@ -1,7 +1,7 @@
-// Re-export generated TanStack Query hooks for alerts.
-// GETs use generated useQuery hooks, mutations use generated useMutation
-// hooks — both properly typed and auto-keyed by orval.
-import { useQueryClient } from '@tanstack/react-query';
+// Thin wrappers over the generated TanStack Query hooks for alerts.
+// Cache invalidation is automatic: the generated mutations invalidate the
+// org-scoped keys their `mutationInvalidates` tag declares
+// (VYZORIX_FRONTEND_ARCHITECTURE §1), so no manual invalidateQueries is needed.
 import {
   useGetAlertsRules,
   useGetAlertsRulesIdHistory,
@@ -12,41 +12,29 @@ import {
 } from '@/generated-rq/alerts/alert-rules';
 
 export function useAlertRules() {
-  return useGetAlertsRules({ query: { queryKey: ['alerts', 'rules'] as const, refetchInterval: 30_000 } });
+  return useGetAlertsRules({ query: { refetchInterval: 30_000 } });
 }
 
 export function useAlertHistory(ruleId?: string, limit?: number) {
   return useGetAlertsRulesIdHistory(
     ruleId ?? '',
     { limit },
-    { query: { queryKey: ['alerts', 'history', ruleId] as const, enabled: ruleId !== undefined, refetchInterval: 60_000 } },
+    { query: { enabled: ruleId !== undefined, refetchInterval: 60_000 } },
   );
 }
 
 export function useCreateAlertRule() {
-  const queryClient = useQueryClient();
-  return usePostAlertsRules({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
-  });
+  return usePostAlertsRules();
 }
 
 export function useUpdateAlertRule() {
-  const queryClient = useQueryClient();
-  return usePatchAlertsRulesId({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
-  });
+  return usePatchAlertsRulesId();
 }
 
 export function useDeleteAlertRule() {
-  const queryClient = useQueryClient();
-  return useDeleteAlertsRulesId({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
-  });
+  return useDeleteAlertsRulesId();
 }
 
 export function useEvaluateAlertRule() {
-  const queryClient = useQueryClient();
-  return usePostAlertsRulesIdEvaluate({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }) },
-  });
+  return usePostAlertsRulesIdEvaluate();
 }

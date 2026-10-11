@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -29,6 +37,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -77,19 +86,16 @@ export const getAuthSessions = async ( options?: Parameters<typeof customAxios>[
 
 
 
-export const getGetAuthSessionsQueryKey = () => {
-    return [
-    `/auth/sessions`
-    ] as const;
-    }
+export const getGetAuthSessionsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/sessions` });
 
 
-export const getGetAuthSessionsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSessions>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthSessionsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSessions>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthSessionsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/sessions`, queryOptions });
 
 
 
@@ -99,30 +105,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthSessions>>>
 export type GetAuthSessionsQueryError = ErrorResponse
 
 
+export function useGetAuthSessions<TData = Awaited<ReturnType<typeof getAuthSessions>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthSessions>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthSessions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthSessions<TData = Awaited<ReturnType<typeof getAuthSessions>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthSessions>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthSessions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthSessions<TData = Awaited<ReturnType<typeof getAuthSessions>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List sessions
  */
 
 export function useGetAuthSessions<TData = Awaited<ReturnType<typeof getAuthSessions>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessions>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthSessionsQueryOptions(options)
 
-  const queryOptions = getGetAuthSessionsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List sessions
+ */
+export const invalidateGetAuthSessions = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/sessions` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -155,7 +196,7 @@ export const deleteAuthSessions = async ( options?: Parameters<typeof customAxio
 
 
 export const getDeleteAuthSessionsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessions>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessions>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessions>>, TError,void, TContext> => {
 
 const mutationKey = ['deleteAuthSessions'];
@@ -174,12 +215,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAuthSessions(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAuthSessions>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthSessionsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthSessionsConcurrentQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAuthSessionsMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAuthSessions>>>
 
@@ -189,14 +236,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Revoke other sessions
  */
 export const useDeleteAuthSessions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessions>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessions>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAuthSessions>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getDeleteAuthSessionsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAuthSessionsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthSessionsConcurrentUrl = () => {
 
@@ -225,19 +273,16 @@ export const getAuthSessionsConcurrent = async ( options?: Parameters<typeof cus
 
 
 
-export const getGetAuthSessionsConcurrentQueryKey = () => {
-    return [
-    `/auth/sessions/concurrent`
-    ] as const;
-    }
+export const getGetAuthSessionsConcurrentQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/sessions/concurrent` });
 
 
-export const getGetAuthSessionsConcurrentQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthSessionsConcurrentQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthSessionsConcurrentQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/sessions/concurrent`, queryOptions });
 
 
 
@@ -247,30 +292,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthSessionsConcurrentQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>>
 export type GetAuthSessionsConcurrentQueryError = ErrorResponse
 
 
+export function useGetAuthSessionsConcurrent<TData = Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthSessionsConcurrent>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthSessionsConcurrent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthSessionsConcurrent<TData = Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthSessionsConcurrent>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthSessionsConcurrent>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthSessionsConcurrent<TData = Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Check concurrent sessions
  */
 
 export function useGetAuthSessionsConcurrent<TData = Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsConcurrent>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthSessionsConcurrentQueryOptions(options)
 
-  const queryOptions = getGetAuthSessionsConcurrentQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Check concurrent sessions
+ */
+export const invalidateGetAuthSessionsConcurrent = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/sessions/concurrent` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -303,7 +383,7 @@ export const postAuthSessionsRevokeAll = async ( options?: Parameters<typeof cus
 
 
 export const getPostAuthSessionsRevokeAllMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>, TError,void, TContext> => {
 
 const mutationKey = ['postAuthSessionsRevokeAll'];
@@ -322,12 +402,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthSessionsRevokeAll(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthSessionsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthSessionsConcurrentQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthSessionsRevokeAllMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>>
 
@@ -337,14 +423,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Revoke all sessions (all devices)
  */
 export const usePostAuthSessionsRevokeAll = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthSessionsRevokeAll>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getPostAuthSessionsRevokeAllMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthSessionsRevokeAllMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthSessionsIdUrl = (id: string,) => {
 
@@ -373,19 +460,16 @@ export const getAuthSessionsId = async (id: string, options?: Parameters<typeof 
 
 
 
-export const getGetAuthSessionsIdQueryKey = (id: string,) => {
-    return [
-    `/auth/sessions/${id}`
-    ] as const;
-    }
+export const getGetAuthSessionsIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/auth/sessions/${id}` });
 
 
-export const getGetAuthSessionsIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSessionsId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthSessionsIdQueryOptions = <TData = Awaited<ReturnType<typeof getAuthSessionsId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthSessionsIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/auth/sessions/${id}`, queryOptions });
 
 
 
@@ -395,30 +479,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthSessionsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthSessionsId>>>
 export type GetAuthSessionsIdQueryError = ErrorResponse
 
 
+export function useGetAuthSessionsId<TData = Awaited<ReturnType<typeof getAuthSessionsId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthSessionsId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthSessionsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthSessionsId<TData = Awaited<ReturnType<typeof getAuthSessionsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthSessionsId>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthSessionsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthSessionsId<TData = Awaited<ReturnType<typeof getAuthSessionsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get session
  */
 
 export function useGetAuthSessionsId<TData = Awaited<ReturnType<typeof getAuthSessionsId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthSessionsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthSessionsIdQueryOptions(id,options)
 
-  const queryOptions = getGetAuthSessionsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get session
+ */
+export const invalidateGetAuthSessionsId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/auth/sessions/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -451,7 +570,7 @@ export const deleteAuthSessionsId = async (id: string, options?: Parameters<type
 
 
 export const getDeleteAuthSessionsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessionsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessionsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessionsId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteAuthSessionsId'];
@@ -470,12 +589,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteAuthSessionsId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteAuthSessionsId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthSessionsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthSessionsConcurrentQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteAuthSessionsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAuthSessionsId>>>
 
@@ -485,12 +610,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Revoke session
  */
 export const useDeleteAuthSessionsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessionsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthSessionsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteAuthSessionsId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteAuthSessionsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteAuthSessionsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

@@ -1,7 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import { cancelUpdateViaGraphQL, normalizeWireCancelResult } from './_graphql-fallback';
-import { postUpdatesHistoryPushIdCancel } from '@/generated-rq/updates/update-management';
+import {
+  postUpdatesHistoryPushIdCancel,
+  invalidateGetUpdatesHistory,
+  invalidateGetUpdatesHistoryPushId,
+} from '@/generated-rq/updates/update-management';
 import type { UpdatePush } from '@vyzorix/api-client';
 
 export function useCancelUpdate() {
@@ -16,9 +20,10 @@ export function useCancelUpdate() {
         return cancelUpdateViaGraphQL(organizationId, pushId);
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['updates-history'] });
-      queryClient.invalidateQueries({ queryKey: ['updates-push-detail'] });
+    onSuccess: (_, { pushId }) => {
+      // GraphQL fallback path bypasses generated auto-invalidation.
+      void invalidateGetUpdatesHistory(queryClient);
+      void invalidateGetUpdatesHistoryPushId(queryClient, pushId);
     },
   });
 }

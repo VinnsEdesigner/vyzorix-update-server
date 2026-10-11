@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -29,6 +37,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -77,19 +86,16 @@ export const getChannelsStatus = async ( options?: Parameters<typeof customAxios
 
 
 
-export const getGetChannelsStatusQueryKey = () => {
-    return [
-    `/channels/status`
-    ] as const;
-    }
+export const getGetChannelsStatusQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/channels/status` });
 
 
-export const getGetChannelsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetChannelsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetChannelsStatusQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/channels/status`, queryOptions });
 
 
 
@@ -99,30 +105,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetChannelsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getChannelsStatus>>>
 export type GetChannelsStatusQueryError = ErrorResponse
 
 
+export function useGetChannelsStatus<TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChannelsStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getChannelsStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChannelsStatus<TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChannelsStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getChannelsStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChannelsStatus<TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Channel status
  */
 
 export function useGetChannelsStatus<TData = Awaited<ReturnType<typeof getChannelsStatus>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChannelsStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetChannelsStatusQueryOptions(options)
 
-  const queryOptions = getGetChannelsStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Channel status
+ */
+export const invalidateGetChannelsStatus = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/channels/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -161,7 +202,7 @@ return customAxios<ChannelSubscribeResult>(getPostChannelsSubscribeUrl(),
 
 
 export const getPostChannelsSubscribeMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsSubscribe>>, TError,{data: ChannelSubscribeRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsSubscribe>>, TError,{data: ChannelSubscribeRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postChannelsSubscribe>>, TError,{data: ChannelSubscribeRequest}, TContext> => {
 
 const mutationKey = ['postChannelsSubscribe'];
@@ -180,12 +221,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postChannelsSubscribe(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postChannelsSubscribe>>, variables: {data: ChannelSubscribeRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetChannelsStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostChannelsSubscribeMutationResult = NonNullable<Awaited<ReturnType<typeof postChannelsSubscribe>>>
     export type PostChannelsSubscribeMutationBody = ChannelSubscribeRequest
@@ -195,14 +241,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Subscribe to channel
  */
 export const usePostChannelsSubscribe = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsSubscribe>>, TError,{data: ChannelSubscribeRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsSubscribe>>, TError,{data: ChannelSubscribeRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postChannelsSubscribe>>,
         TError,
         {data: ChannelSubscribeRequest},
         TContext
       > => {
-      return useMutation(getPostChannelsSubscribeMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostChannelsSubscribeMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostChannelsUnsubscribeUrl = (params: PostChannelsUnsubscribeParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -239,7 +286,7 @@ export const postChannelsUnsubscribe = async (params: PostChannelsUnsubscribePar
 
 
 export const getPostChannelsUnsubscribeMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsUnsubscribe>>, TError,{params: PostChannelsUnsubscribeParams}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsUnsubscribe>>, TError,{params: PostChannelsUnsubscribeParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postChannelsUnsubscribe>>, TError,{params: PostChannelsUnsubscribeParams}, TContext> => {
 
 const mutationKey = ['postChannelsUnsubscribe'];
@@ -258,12 +305,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postChannelsUnsubscribe(params,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postChannelsUnsubscribe>>, variables: {params: PostChannelsUnsubscribeParams}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetChannelsStatusQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostChannelsUnsubscribeMutationResult = NonNullable<Awaited<ReturnType<typeof postChannelsUnsubscribe>>>
 
@@ -273,12 +325,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Unsubscribe from channel
  */
 export const usePostChannelsUnsubscribe = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsUnsubscribe>>, TError,{params: PostChannelsUnsubscribeParams}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postChannelsUnsubscribe>>, TError,{params: PostChannelsUnsubscribeParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postChannelsUnsubscribe>>,
         TError,
         {params: PostChannelsUnsubscribeParams},
         TContext
       > => {
-      return useMutation(getPostChannelsUnsubscribeMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostChannelsUnsubscribeMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

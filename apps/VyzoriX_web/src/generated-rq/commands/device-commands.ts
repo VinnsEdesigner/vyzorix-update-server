@@ -10,9 +10,15 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -34,6 +40,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -118,13 +125,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useDeleteCommandDispatchId = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCommandDispatchId>>, TError,{dispatchId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteCommandDispatchId>>,
         TError,
         {dispatchId: string},
         TContext
       > => {
-      return useMutation(getDeleteCommandDispatchIdMutationOptions(options));
+      return useMutation(getDeleteCommandDispatchIdMutationOptions(options), queryClient);
     }
     export const getPostCommandDispatchIdRetryUrl = (dispatchId: string,) => {
 
@@ -189,13 +196,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostCommandDispatchIdRetry = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postCommandDispatchIdRetry>>, TError,{dispatchId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postCommandDispatchIdRetry>>,
         TError,
         {dispatchId: string},
         TContext
       > => {
-      return useMutation(getPostCommandDispatchIdRetryMutationOptions(options));
+      return useMutation(getPostCommandDispatchIdRetryMutationOptions(options), queryClient);
     }
     export const getGetCommandDispatchIdStatusUrl = (dispatchId: string,) => {
 
@@ -224,19 +231,16 @@ export const getCommandDispatchIdStatus = async (dispatchId: string, options?: P
 
 
 
-export const getGetCommandDispatchIdStatusQueryKey = (dispatchId: string,) => {
-    return [
-    `/command/${dispatchId}/status`
-    ] as const;
-    }
+export const getGetCommandDispatchIdStatusQueryKey = (dispatchId: string,) =>
+    organizationScopedQueryKey({ dispatchId }, { url: `/command/${dispatchId}/status` });
 
 
-export const getGetCommandDispatchIdStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError = ErrorResponse>(dispatchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetCommandDispatchIdStatusQueryOptions = <TData = Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError = ErrorResponse>(dispatchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCommandDispatchIdStatusQueryKey(dispatchId);
+  const queryKey =  organizationScopedQueryKey({ dispatchId }, { url: `/command/${dispatchId}/status`, queryOptions });
 
 
 
@@ -246,30 +250,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: dispatchId !== null && dispatchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: dispatchId !== null && dispatchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetCommandDispatchIdStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>>
 export type GetCommandDispatchIdStatusQueryError = ErrorResponse
 
 
+export function useGetCommandDispatchIdStatus<TData = Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError = ErrorResponse>(
+ dispatchId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCommandDispatchIdStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getCommandDispatchIdStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCommandDispatchIdStatus<TData = Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError = ErrorResponse>(
+ dispatchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCommandDispatchIdStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getCommandDispatchIdStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCommandDispatchIdStatus<TData = Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError = ErrorResponse>(
+ dispatchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get command status
  */
 
 export function useGetCommandDispatchIdStatus<TData = Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError = ErrorResponse>(
- dispatchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ dispatchId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCommandDispatchIdStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetCommandDispatchIdStatusQueryOptions(dispatchId,options)
 
-  const queryOptions = getGetCommandDispatchIdStatusQueryOptions(dispatchId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get command status
+ */
+export const invalidateGetCommandDispatchIdStatus = async (
+ queryClient: QueryClient, dispatchId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ dispatchId }, { url: `/command/${dispatchId}/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -311,20 +350,17 @@ export const getDashboardDeviceImeiCommands = async (imei: string,
 
 
 export const getGetDashboardDeviceImeiCommandsQueryKey = (imei: string,
-    params?: GetDashboardDeviceImeiCommandsParams,) => {
-    return [
-    `/dashboard/device/${imei}/commands`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDashboardDeviceImeiCommandsParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/commands` });
 
 
-export const getGetDashboardDeviceImeiCommandsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError = ErrorResponse>(imei: string,
-    params?: GetDashboardDeviceImeiCommandsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDashboardDeviceImeiCommandsQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError = ErrorResponse>(imei: string,
+    params?: GetDashboardDeviceImeiCommandsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDashboardDeviceImeiCommandsQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/commands`, queryOptions });
 
 
 
@@ -334,31 +370,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDashboardDeviceImeiCommandsQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>>
 export type GetDashboardDeviceImeiCommandsQueryError = ErrorResponse
 
 
+export function useGetDashboardDeviceImeiCommands<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDashboardDeviceImeiCommandsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiCommands<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiCommandsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>,
+          TError,
+          Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDashboardDeviceImeiCommands<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDashboardDeviceImeiCommandsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List command history
  */
 
 export function useGetDashboardDeviceImeiCommands<TData = Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDashboardDeviceImeiCommandsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDashboardDeviceImeiCommandsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDashboardDeviceImeiCommands>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDashboardDeviceImeiCommandsQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDashboardDeviceImeiCommandsQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List command history
+ */
+export const invalidateGetDashboardDeviceImeiCommands = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDashboardDeviceImeiCommandsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/dashboard/device/${imei}/commands` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -433,13 +508,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostDeviceImeiCommand = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceImeiCommand>>, TError,{imei: string;data: CommandRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDeviceImeiCommand>>,
         TError,
         {imei: string;data: CommandRequest},
         TContext
       > => {
-      return useMutation(getPostDeviceImeiCommandMutationOptions(options));
+      return useMutation(getPostDeviceImeiCommandMutationOptions(options), queryClient);
     }
     export const getGetDeviceImeiCommandsPendingUrl = (imei: string,) => {
 
@@ -468,19 +543,16 @@ export const getDeviceImeiCommandsPending = async (imei: string, options?: Param
 
 
 
-export const getGetDeviceImeiCommandsPendingQueryKey = (imei: string,) => {
-    return [
-    `/device/${imei}/commands/pending`
-    ] as const;
-    }
+export const getGetDeviceImeiCommandsPendingQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/device/${imei}/commands/pending` });
 
 
-export const getGetDeviceImeiCommandsPendingQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceImeiCommandsPendingQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceImeiCommandsPendingQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/device/${imei}/commands/pending`, queryOptions });
 
 
 
@@ -490,30 +562,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceImeiCommandsPendingQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>>
 export type GetDeviceImeiCommandsPendingQueryError = ErrorResponse
 
 
+export function useGetDeviceImeiCommandsPending<TData = Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiCommandsPending<TData = Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiCommandsPending<TData = Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List pending commands
  */
 
 export function useGetDeviceImeiCommandsPending<TData = Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiCommandsPending>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceImeiCommandsPendingQueryOptions(imei,options)
 
-  const queryOptions = getGetDeviceImeiCommandsPendingQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List pending commands
+ */
+export const invalidateGetDeviceImeiCommandsPending = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/device/${imei}/commands/pending` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -588,11 +695,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostDevicesImeiCommandConfirm = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDevicesImeiCommandConfirm>>, TError,{imei: string;data: CommandConfirmRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDevicesImeiCommandConfirm>>,
         TError,
         {imei: string;data: CommandConfirmRequest},
         TContext
       > => {
-      return useMutation(getPostDevicesImeiCommandConfirmMutationOptions(options));
+      return useMutation(getPostDevicesImeiCommandConfirmMutationOptions(options), queryClient);
     }

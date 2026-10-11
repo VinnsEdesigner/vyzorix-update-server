@@ -99,18 +99,22 @@ export function normalizeWireInspection(raw: DeviceInspectionResult): DeviceInsp
   };
 }
 
-/** Maps the REST wire timeline (TimelineEventResult[], ISO timestamps) onto
+/** Maps the REST wire timeline ({events, pagination}, epoch-millis) onto
  * the domain TimelineResult (Date timestamps). */
 export function normalizeWireTimeline(
-  raw: { events?: { id?: string; deviceId?: string; type?: string; timestamp?: string; data?: Record<string, unknown> }[]; hasMore?: boolean; nextCursor?: string },
+  raw: { events?: { id?: string; type?: string; timestamp?: number; data?: Record<string, unknown> }[]; pagination?: { nextCursor?: string; limit?: number; hasMore?: boolean } },
   imei: string,
 ): TimelineResult {
   const events: TimelineEvent[] = (raw.events ?? []).map((e) => ({
     id: e.id ?? '',
-    deviceId: e.deviceId ?? imei,
+    deviceId: imei,
     type: (e.type ?? 'ERROR') as TimelineEventType,
     timestamp: toDate(e.timestamp) ?? new Date(),
     data: e.data ?? {},
   }));
-  return { events, hasMore: raw.hasMore ?? false, nextCursor: raw.nextCursor };
+  return {
+    events,
+    hasMore: raw.pagination?.hasMore ?? false,
+    nextCursor: raw.pagination?.nextCursor,
+  };
 }

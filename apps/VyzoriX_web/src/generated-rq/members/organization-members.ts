@@ -10,9 +10,15 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -28,6 +34,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -76,19 +83,16 @@ export const getOrganizationsIdMembers = async (id: string, options?: Parameters
 
 
 
-export const getGetOrganizationsIdMembersQueryKey = (id: string,) => {
-    return [
-    `/organizations/${id}/members`
-    ] as const;
-    }
+export const getGetOrganizationsIdMembersQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/organizations/${id}/members` });
 
 
-export const getGetOrganizationsIdMembersQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsIdMembersQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsIdMembersQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/organizations/${id}/members`, queryOptions });
 
 
 
@@ -98,30 +102,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsIdMembersQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationsIdMembers>>>
 export type GetOrganizationsIdMembersQueryError = ErrorResponse
 
 
+export function useGetOrganizationsIdMembers<TData = Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdMembers>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdMembers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdMembers<TData = Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdMembers>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdMembers>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdMembers<TData = Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List organization members
  */
 
 export function useGetOrganizationsIdMembers<TData = Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembers>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsIdMembersQueryOptions(id,options)
 
-  const queryOptions = getGetOrganizationsIdMembersQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List organization members
+ */
+export const invalidateGetOrganizationsIdMembers = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/organizations/${id}/members` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -156,20 +195,17 @@ export const getOrganizationsIdMembersMemberId = async (id: string,
 
 
 export const getGetOrganizationsIdMembersMemberIdQueryKey = (id: string,
-    memberId: string,) => {
-    return [
-    `/organizations/${id}/members/${memberId}`
-    ] as const;
-    }
+    memberId: string,) =>
+    organizationScopedQueryKey({ id,memberId }, { url: `/organizations/${id}/members/${memberId}` });
 
 
-export const getGetOrganizationsIdMembersMemberIdQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError = ErrorResponse>(id: string,
-    memberId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsIdMembersMemberIdQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError = ErrorResponse>(id: string,
+    memberId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsIdMembersMemberIdQueryKey(id,memberId);
+  const queryKey =  organizationScopedQueryKey({ id,memberId }, { url: `/organizations/${id}/members/${memberId}`, queryOptions });
 
 
 
@@ -179,31 +215,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && memberId !== null && memberId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && memberId !== null && memberId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsIdMembersMemberIdQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>>
 export type GetOrganizationsIdMembersMemberIdQueryError = ErrorResponse
 
 
+export function useGetOrganizationsIdMembersMemberId<TData = Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError = ErrorResponse>(
+ id: string,
+    memberId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdMembersMemberId<TData = Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError = ErrorResponse>(
+ id: string,
+    memberId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdMembersMemberId<TData = Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError = ErrorResponse>(
+ id: string,
+    memberId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get organization member
  */
 
 export function useGetOrganizationsIdMembersMemberId<TData = Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError = ErrorResponse>(
  id: string,
-    memberId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    memberId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdMembersMemberId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsIdMembersMemberIdQueryOptions(id,memberId,options)
 
-  const queryOptions = getGetOrganizationsIdMembersMemberIdQueryOptions(id,memberId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get organization member
+ */
+export const invalidateGetOrganizationsIdMembersMemberId = async (
+ queryClient: QueryClient, id: string,
+    memberId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id,memberId }, { url: `/organizations/${id}/members/${memberId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -273,13 +348,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useDeleteOrganizationsIdMembersMemberId = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganizationsIdMembersMemberId>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteOrganizationsIdMembersMemberId>>,
         TError,
         {id: string;memberId: string},
         TContext
       > => {
-      return useMutation(getDeleteOrganizationsIdMembersMemberIdMutationOptions(options));
+      return useMutation(getDeleteOrganizationsIdMembersMemberIdMutationOptions(options), queryClient);
     }
     export const getPostOrganizationsIdMembersMemberIdReinstateUrl = (id: string,
     memberId: string,) => {
@@ -346,13 +421,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostOrganizationsIdMembersMemberIdReinstate = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdMembersMemberIdReinstate>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postOrganizationsIdMembersMemberIdReinstate>>,
         TError,
         {id: string;memberId: string},
         TContext
       > => {
-      return useMutation(getPostOrganizationsIdMembersMemberIdReinstateMutationOptions(options));
+      return useMutation(getPostOrganizationsIdMembersMemberIdReinstateMutationOptions(options), queryClient);
     }
     export const getPatchOrganizationsIdMembersMemberIdRoleUrl = (id: string,
     memberId: string,) => {
@@ -426,13 +501,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePatchOrganizationsIdMembersMemberIdRole = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdMembersMemberIdRole>>, TError,{id: string;memberId: string;data: UpdateMemberRoleRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchOrganizationsIdMembersMemberIdRole>>,
         TError,
         {id: string;memberId: string;data: UpdateMemberRoleRequest},
         TContext
       > => {
-      return useMutation(getPatchOrganizationsIdMembersMemberIdRoleMutationOptions(options));
+      return useMutation(getPatchOrganizationsIdMembersMemberIdRoleMutationOptions(options), queryClient);
     }
     export const getPostOrganizationsIdMembersMemberIdSuspendUrl = (id: string,
     memberId: string,) => {
@@ -499,13 +574,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostOrganizationsIdMembersMemberIdSuspend = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdMembersMemberIdSuspend>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postOrganizationsIdMembersMemberIdSuspend>>,
         TError,
         {id: string;memberId: string},
         TContext
       > => {
-      return useMutation(getPostOrganizationsIdMembersMemberIdSuspendMutationOptions(options));
+      return useMutation(getPostOrganizationsIdMembersMemberIdSuspendMutationOptions(options), queryClient);
     }
     export const getPostOrganizationsIdMembersMemberIdTransferUrl = (id: string,
     memberId: string,) => {
@@ -572,11 +647,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostOrganizationsIdMembersMemberIdTransfer = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizationsIdMembersMemberIdTransfer>>, TError,{id: string;memberId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postOrganizationsIdMembersMemberIdTransfer>>,
         TError,
         {id: string;memberId: string},
         TContext
       > => {
-      return useMutation(getPostOrganizationsIdMembersMemberIdTransferMutationOptions(options));
+      return useMutation(getPostOrganizationsIdMembersMemberIdTransferMutationOptions(options), queryClient);
     }

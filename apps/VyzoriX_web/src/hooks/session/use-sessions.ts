@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetAuthSessions,
   useGetAuthSessionsConcurrent,
@@ -8,42 +7,21 @@ import {
 } from '@/generated-rq/sessions/auth-sessions';
 
 export function useSessions() {
-  return useGetAuthSessions({ query: { queryKey: ['sessions'] as const } });
+  return useGetAuthSessions();
 }
 
 export function useConcurrentSessions() {
-  return useGetAuthSessionsConcurrent({ query: { queryKey: ['concurrent-sessions'] as const } });
+  return useGetAuthSessionsConcurrent();
 }
 
 export function useRevokeSession() {
-  const queryClient = useQueryClient();
-  return useDeleteAuthSessionsId({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['sessions'] });
-        queryClient.invalidateQueries({ queryKey: ['concurrent-sessions'] });
-      },
-    },
-  });
+  return useDeleteAuthSessionsId();
 }
 
 export function useRevokeAllSessions() {
-  const queryClient = useQueryClient();
-  return useDeleteAuthSessions({
-    mutation: {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sessions'] }),
-    },
-  });
+  return useDeleteAuthSessions();
 }
 
 export function useRevokeAllDevices() {
-  const queryClient = useQueryClient();
-  return usePostAuthSessionsRevokeAll({
-    mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['sessions'] });
-        queryClient.invalidateQueries({ queryKey: ['concurrent-sessions'] });
-      },
-    },
-  });
+  return usePostAuthSessionsRevokeAll();
 }

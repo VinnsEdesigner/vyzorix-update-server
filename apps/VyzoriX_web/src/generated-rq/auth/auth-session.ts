@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -51,6 +59,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -100,7 +109,7 @@ export const postAuthAdminLockoutUnlockOperatorId = async (operatorId: string, o
 
 
 export const getPostAuthAdminLockoutUnlockOperatorIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>, TError,{operatorId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>, TError,{operatorId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>, TError,{operatorId: string}, TContext> => {
 
 const mutationKey = ['postAuthAdminLockoutUnlockOperatorId'];
@@ -119,12 +128,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthAdminLockoutUnlockOperatorId(operatorId,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>, variables: {operatorId: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthAdminLockoutUnlockOperatorIdMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>>
 
@@ -134,14 +153,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Unlock account
  */
 export const usePostAuthAdminLockoutUnlockOperatorId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>, TError,{operatorId: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>, TError,{operatorId: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthAdminLockoutUnlockOperatorId>>,
         TError,
         {operatorId: string},
         TContext
       > => {
-      return useMutation(getPostAuthAdminLockoutUnlockOperatorIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthAdminLockoutUnlockOperatorIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthCancelVerificationUrl = () => {
 
@@ -177,7 +197,7 @@ return customAxios<SuccessResult>(getPostAuthCancelVerificationUrl(),
 
 
 export const getPostAuthCancelVerificationMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthCancelVerification>>, TError,{data: CancelVerificationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthCancelVerification>>, TError,{data: CancelVerificationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthCancelVerification>>, TError,{data: CancelVerificationRequest}, TContext> => {
 
 const mutationKey = ['postAuthCancelVerification'];
@@ -196,12 +216,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthCancelVerification(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthCancelVerification>>, variables: {data: CancelVerificationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthCancelVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthCancelVerification>>>
     export type PostAuthCancelVerificationMutationBody = CancelVerificationRequest
@@ -211,14 +241,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Cancel verification
  */
 export const usePostAuthCancelVerification = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthCancelVerification>>, TError,{data: CancelVerificationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthCancelVerification>>, TError,{data: CancelVerificationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthCancelVerification>>,
         TError,
         {data: CancelVerificationRequest},
         TContext
       > => {
-      return useMutation(getPostAuthCancelVerificationMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthCancelVerificationMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthForgotPasswordUrl = () => {
 
@@ -254,7 +285,7 @@ return customAxios<MessageResult>(getPostAuthForgotPasswordUrl(),
 
 
 export const getPostAuthForgotPasswordMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthForgotPassword>>, TError,{data: ForgotPasswordRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthForgotPassword>>, TError,{data: ForgotPasswordRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthForgotPassword>>, TError,{data: ForgotPasswordRequest}, TContext> => {
 
 const mutationKey = ['postAuthForgotPassword'];
@@ -273,12 +304,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthForgotPassword(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthForgotPassword>>, variables: {data: ForgotPasswordRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthForgotPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthForgotPassword>>>
     export type PostAuthForgotPasswordMutationBody = ForgotPasswordRequest
@@ -288,14 +329,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Forgot password
  */
 export const usePostAuthForgotPassword = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthForgotPassword>>, TError,{data: ForgotPasswordRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthForgotPassword>>, TError,{data: ForgotPasswordRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthForgotPassword>>,
         TError,
         {data: ForgotPasswordRequest},
         TContext
       > => {
-      return useMutation(getPostAuthForgotPasswordMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthForgotPasswordMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthLockoutStatusUrl = () => {
 
@@ -324,19 +366,16 @@ export const getAuthLockoutStatus = async ( options?: Parameters<typeof customAx
 
 
 
-export const getGetAuthLockoutStatusQueryKey = () => {
-    return [
-    `/auth/lockout/status`
-    ] as const;
-    }
+export const getGetAuthLockoutStatusQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/lockout/status` });
 
 
-export const getGetAuthLockoutStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthLockoutStatusQueryOptions = <TData = Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthLockoutStatusQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/lockout/status`, queryOptions });
 
 
 
@@ -346,30 +385,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthLockoutStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthLockoutStatus>>>
 export type GetAuthLockoutStatusQueryError = ErrorResponse
 
 
+export function useGetAuthLockoutStatus<TData = Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthLockoutStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthLockoutStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthLockoutStatus<TData = Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthLockoutStatus>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthLockoutStatus>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthLockoutStatus<TData = Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get lockout status
  */
 
 export function useGetAuthLockoutStatus<TData = Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthLockoutStatus>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthLockoutStatusQueryOptions(options)
 
-  const queryOptions = getGetAuthLockoutStatusQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get lockout status
+ */
+export const invalidateGetAuthLockoutStatus = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/lockout/status` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -408,7 +482,7 @@ return customAxios<LoginResult>(getPostAuthLoginUrl(),
 
 
 export const getPostAuthLoginMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogin>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogin>>, TError,{data: LoginRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthLogin>>, TError,{data: LoginRequest}, TContext> => {
 
 const mutationKey = ['postAuthLogin'];
@@ -427,12 +501,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthLogin(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthLogin>>, variables: {data: LoginRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthLoginMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthLogin>>>
     export type PostAuthLoginMutationBody = LoginRequest
@@ -442,14 +526,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Operator login
  */
 export const usePostAuthLogin = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogin>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogin>>, TError,{data: LoginRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthLogin>>,
         TError,
         {data: LoginRequest},
         TContext
       > => {
-      return useMutation(getPostAuthLoginMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthLoginMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthLoginTokensUrl = () => {
 
@@ -485,7 +570,7 @@ return customAxios<LoginWithTokensResult>(getPostAuthLoginTokensUrl(),
 
 
 export const getPostAuthLoginTokensMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLoginTokens>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLoginTokens>>, TError,{data: LoginRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthLoginTokens>>, TError,{data: LoginRequest}, TContext> => {
 
 const mutationKey = ['postAuthLoginTokens'];
@@ -504,12 +589,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthLoginTokens(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthLoginTokens>>, variables: {data: LoginRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthLoginTokensMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthLoginTokens>>>
     export type PostAuthLoginTokensMutationBody = LoginRequest
@@ -519,14 +614,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Operator login (token response)
  */
 export const usePostAuthLoginTokens = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLoginTokens>>, TError,{data: LoginRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLoginTokens>>, TError,{data: LoginRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthLoginTokens>>,
         TError,
         {data: LoginRequest},
         TContext
       > => {
-      return useMutation(getPostAuthLoginTokensMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthLoginTokensMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthLogoutUrl = () => {
 
@@ -562,7 +658,7 @@ return customAxios<MessageResult>(getPostAuthLogoutUrl(),
 
 
 export const getPostAuthLogoutMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogout>>, TError,{data?: LogoutRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogout>>, TError,{data?: LogoutRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthLogout>>, TError,{data?: LogoutRequest}, TContext> => {
 
 const mutationKey = ['postAuthLogout'];
@@ -581,12 +677,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthLogout(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthLogout>>, variables: {data?: LogoutRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthLogout>>>
     export type PostAuthLogoutMutationBody = LogoutRequest | undefined
@@ -596,14 +702,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Logout
  */
 export const usePostAuthLogout = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogout>>, TError,{data?: LogoutRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthLogout>>, TError,{data?: LogoutRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthLogout>>,
         TError,
         {data?: LogoutRequest},
         TContext
       > => {
-      return useMutation(getPostAuthLogoutMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthLogoutMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthMeUrl = () => {
 
@@ -632,19 +739,16 @@ export const getAuthMe = async ( options?: Parameters<typeof customAxios>[1]): P
 
 
 
-export const getGetAuthMeQueryKey = () => {
-    return [
-    `/auth/me`
-    ] as const;
-    }
+export const getGetAuthMeQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/me` });
 
 
-export const getGetAuthMeQueryOptions = <TData = Awaited<ReturnType<typeof getAuthMe>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthMeQueryOptions = <TData = Awaited<ReturnType<typeof getAuthMe>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthMeQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/me`, queryOptions });
 
 
 
@@ -654,30 +758,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthMeQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthMe>>>
 export type GetAuthMeQueryError = ErrorResponse
 
 
+export function useGetAuthMe<TData = Awaited<ReturnType<typeof getAuthMe>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthMe>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthMe>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthMe<TData = Awaited<ReturnType<typeof getAuthMe>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthMe>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthMe>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthMe<TData = Awaited<ReturnType<typeof getAuthMe>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get current operator
  */
 
 export function useGetAuthMe<TData = Awaited<ReturnType<typeof getAuthMe>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthMe>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthMeQueryOptions(options)
 
-  const queryOptions = getGetAuthMeQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get current operator
+ */
+export const invalidateGetAuthMe = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/me` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -717,7 +856,7 @@ export const postAuthOauthGithub = async (params?: PostAuthOauthGithubParams, op
 
 
 export const getPostAuthOauthGithubMutationOptions = <TError = string | ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGithub>>, TError,{params?: PostAuthOauthGithubParams}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGithub>>, TError,{params?: PostAuthOauthGithubParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGithub>>, TError,{params?: PostAuthOauthGithubParams}, TContext> => {
 
 const mutationKey = ['postAuthOauthGithub'];
@@ -736,12 +875,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthOauthGithub(params,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthOauthGithub>>, variables: {params?: PostAuthOauthGithubParams}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthOauthGithubMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthOauthGithub>>>
 
@@ -751,14 +900,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary GitHub OAuth login
  */
 export const usePostAuthOauthGithub = <TError = string | ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGithub>>, TError,{params?: PostAuthOauthGithubParams}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGithub>>, TError,{params?: PostAuthOauthGithubParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthOauthGithub>>,
         TError,
         {params?: PostAuthOauthGithubParams},
         TContext
       > => {
-      return useMutation(getPostAuthOauthGithubMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthOauthGithubMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthOauthGoogleUrl = (params?: PostAuthOauthGoogleParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -795,7 +945,7 @@ export const postAuthOauthGoogle = async (params?: PostAuthOauthGoogleParams, op
 
 
 export const getPostAuthOauthGoogleMutationOptions = <TError = string | ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGoogle>>, TError,{params?: PostAuthOauthGoogleParams}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGoogle>>, TError,{params?: PostAuthOauthGoogleParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGoogle>>, TError,{params?: PostAuthOauthGoogleParams}, TContext> => {
 
 const mutationKey = ['postAuthOauthGoogle'];
@@ -814,12 +964,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthOauthGoogle(params,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthOauthGoogle>>, variables: {params?: PostAuthOauthGoogleParams}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthOauthGoogleMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthOauthGoogle>>>
 
@@ -829,14 +989,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Google OAuth login
  */
 export const usePostAuthOauthGoogle = <TError = string | ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGoogle>>, TError,{params?: PostAuthOauthGoogleParams}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOauthGoogle>>, TError,{params?: PostAuthOauthGoogleParams}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthOauthGoogle>>,
         TError,
         {params?: PostAuthOauthGoogleParams},
         TContext
       > => {
-      return useMutation(getPostAuthOauthGoogleMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthOauthGoogleMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthOrganizationsUrl = () => {
 
@@ -861,19 +1022,16 @@ export const getAuthOrganizations = async ( options?: Parameters<typeof customAx
 
 
 
-export const getGetAuthOrganizationsQueryKey = () => {
-    return [
-    `/auth/organizations`
-    ] as const;
-    }
+export const getGetAuthOrganizationsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/auth/organizations` });
 
 
-export const getGetAuthOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthOrganizations>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof getAuthOrganizations>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthOrganizationsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/auth/organizations`, queryOptions });
 
 
 
@@ -883,27 +1041,59 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthOrganizationsQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthOrganizations>>>
 export type GetAuthOrganizationsQueryError = ErrorResponse
 
 
+export function useGetAuthOrganizations<TData = Awaited<ReturnType<typeof getAuthOrganizations>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthOrganizations>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthOrganizations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthOrganizations<TData = Awaited<ReturnType<typeof getAuthOrganizations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthOrganizations>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthOrganizations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthOrganizations<TData = Awaited<ReturnType<typeof getAuthOrganizations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useGetAuthOrganizations<TData = Awaited<ReturnType<typeof getAuthOrganizations>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthOrganizationsQueryOptions(options)
 
-  const queryOptions = getGetAuthOrganizationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+export const invalidateGetAuthOrganizations = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/auth/organizations` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -942,7 +1132,7 @@ return customAxios<SelectOrganizationResult>(getPostAuthOrganizationsSelectUrl()
 
 
 export const getPostAuthOrganizationsSelectMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOrganizationsSelect>>, TError,{data: SelectOrganizationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOrganizationsSelect>>, TError,{data: SelectOrganizationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthOrganizationsSelect>>, TError,{data: SelectOrganizationRequest}, TContext> => {
 
 const mutationKey = ['postAuthOrganizationsSelect'];
@@ -961,12 +1151,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthOrganizationsSelect(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthOrganizationsSelect>>, variables: {data: SelectOrganizationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthOrganizationsSelectMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthOrganizationsSelect>>>
     export type PostAuthOrganizationsSelectMutationBody = SelectOrganizationRequest
@@ -976,14 +1176,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Select organization
  */
 export const usePostAuthOrganizationsSelect = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOrganizationsSelect>>, TError,{data: SelectOrganizationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthOrganizationsSelect>>, TError,{data: SelectOrganizationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthOrganizationsSelect>>,
         TError,
         {data: SelectOrganizationRequest},
         TContext
       > => {
-      return useMutation(getPostAuthOrganizationsSelectMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthOrganizationsSelectMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthPollVerificationUrl = (params: GetAuthPollVerificationParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1019,19 +1220,16 @@ export const getAuthPollVerification = async (params: GetAuthPollVerificationPar
 
 
 
-export const getGetAuthPollVerificationQueryKey = (params?: GetAuthPollVerificationParams,) => {
-    return [
-    `/auth/poll-verification`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetAuthPollVerificationQueryKey = (params?: GetAuthPollVerificationParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/auth/poll-verification` });
 
 
-export const getGetAuthPollVerificationQueryOptions = <TData = Awaited<ReturnType<typeof getAuthPollVerification>>, TError = ErrorResponse>(params: GetAuthPollVerificationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthPollVerificationQueryOptions = <TData = Awaited<ReturnType<typeof getAuthPollVerification>>, TError = ErrorResponse>(params: GetAuthPollVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthPollVerificationQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/auth/poll-verification`, queryOptions });
 
 
 
@@ -1041,30 +1239,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthPollVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthPollVerification>>>
 export type GetAuthPollVerificationQueryError = ErrorResponse
 
 
+export function useGetAuthPollVerification<TData = Awaited<ReturnType<typeof getAuthPollVerification>>, TError = ErrorResponse>(
+ params: GetAuthPollVerificationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthPollVerification>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthPollVerification>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthPollVerification<TData = Awaited<ReturnType<typeof getAuthPollVerification>>, TError = ErrorResponse>(
+ params: GetAuthPollVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthPollVerification>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthPollVerification>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthPollVerification<TData = Awaited<ReturnType<typeof getAuthPollVerification>>, TError = ErrorResponse>(
+ params: GetAuthPollVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Poll verification status
  */
 
 export function useGetAuthPollVerification<TData = Awaited<ReturnType<typeof getAuthPollVerification>>, TError = ErrorResponse>(
- params: GetAuthPollVerificationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params: GetAuthPollVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthPollVerification>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthPollVerificationQueryOptions(params,options)
 
-  const queryOptions = getGetAuthPollVerificationQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Poll verification status
+ */
+export const invalidateGetAuthPollVerification = async (
+ queryClient: QueryClient, params: GetAuthPollVerificationParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/auth/poll-verification` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1103,7 +1336,7 @@ return customAxios<RefreshTokenResult>(getPostAuthRefreshUrl(),
 
 
 export const getPostAuthRefreshMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRefresh>>, TError,{data: RefreshTokenRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRefresh>>, TError,{data: RefreshTokenRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthRefresh>>, TError,{data: RefreshTokenRequest}, TContext> => {
 
 const mutationKey = ['postAuthRefresh'];
@@ -1122,12 +1355,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthRefresh(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthRefresh>>, variables: {data: RefreshTokenRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthRefreshMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthRefresh>>>
     export type PostAuthRefreshMutationBody = RefreshTokenRequest
@@ -1137,14 +1380,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Refresh access token
  */
 export const usePostAuthRefresh = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRefresh>>, TError,{data: RefreshTokenRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRefresh>>, TError,{data: RefreshTokenRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthRefresh>>,
         TError,
         {data: RefreshTokenRequest},
         TContext
       > => {
-      return useMutation(getPostAuthRefreshMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthRefreshMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthRegisterUrl = () => {
 
@@ -1180,7 +1424,7 @@ return customAxios<RegisterResult>(getPostAuthRegisterUrl(),
 
 
 export const getPostAuthRegisterMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,{data: RegisterRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,{data: RegisterRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,{data: RegisterRequest}, TContext> => {
 
 const mutationKey = ['postAuthRegister'];
@@ -1199,12 +1443,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthRegister(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthRegister>>, variables: {data: RegisterRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthRegister>>>
     export type PostAuthRegisterMutationBody = RegisterRequest
@@ -1214,14 +1468,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Register operator
  */
 export const usePostAuthRegister = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,{data: RegisterRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,{data: RegisterRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthRegister>>,
         TError,
         {data: RegisterRequest},
         TContext
       > => {
-      return useMutation(getPostAuthRegisterMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthRegisterMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthResendPasswordResetUrl = () => {
 
@@ -1257,7 +1512,7 @@ return customAxios<SuccessResult>(getPostAuthResendPasswordResetUrl(),
 
 
 export const getPostAuthResendPasswordResetMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendPasswordReset>>, TError,{data: ForgotPasswordRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendPasswordReset>>, TError,{data: ForgotPasswordRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthResendPasswordReset>>, TError,{data: ForgotPasswordRequest}, TContext> => {
 
 const mutationKey = ['postAuthResendPasswordReset'];
@@ -1276,12 +1531,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthResendPasswordReset(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthResendPasswordReset>>, variables: {data: ForgotPasswordRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthResendPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthResendPasswordReset>>>
     export type PostAuthResendPasswordResetMutationBody = ForgotPasswordRequest
@@ -1291,14 +1556,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Resend password reset
  */
 export const usePostAuthResendPasswordReset = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendPasswordReset>>, TError,{data: ForgotPasswordRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendPasswordReset>>, TError,{data: ForgotPasswordRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthResendPasswordReset>>,
         TError,
         {data: ForgotPasswordRequest},
         TContext
       > => {
-      return useMutation(getPostAuthResendPasswordResetMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthResendPasswordResetMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthResendVerificationUrl = (params: GetAuthResendVerificationParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1334,19 +1600,16 @@ export const getAuthResendVerification = async (params: GetAuthResendVerificatio
 
 
 
-export const getGetAuthResendVerificationQueryKey = (params?: GetAuthResendVerificationParams,) => {
-    return [
-    `/auth/resend-verification`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetAuthResendVerificationQueryKey = (params?: GetAuthResendVerificationParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/auth/resend-verification` });
 
 
-export const getGetAuthResendVerificationQueryOptions = <TData = Awaited<ReturnType<typeof getAuthResendVerification>>, TError = ErrorResponse>(params: GetAuthResendVerificationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthResendVerificationQueryOptions = <TData = Awaited<ReturnType<typeof getAuthResendVerification>>, TError = ErrorResponse>(params: GetAuthResendVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthResendVerificationQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/auth/resend-verification`, queryOptions });
 
 
 
@@ -1356,30 +1619,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthResendVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthResendVerification>>>
 export type GetAuthResendVerificationQueryError = ErrorResponse
 
 
+export function useGetAuthResendVerification<TData = Awaited<ReturnType<typeof getAuthResendVerification>>, TError = ErrorResponse>(
+ params: GetAuthResendVerificationParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthResendVerification>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthResendVerification>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthResendVerification<TData = Awaited<ReturnType<typeof getAuthResendVerification>>, TError = ErrorResponse>(
+ params: GetAuthResendVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthResendVerification>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthResendVerification>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthResendVerification<TData = Awaited<ReturnType<typeof getAuthResendVerification>>, TError = ErrorResponse>(
+ params: GetAuthResendVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Resend verification email (GET)
  */
 
 export function useGetAuthResendVerification<TData = Awaited<ReturnType<typeof getAuthResendVerification>>, TError = ErrorResponse>(
- params: GetAuthResendVerificationParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params: GetAuthResendVerificationParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthResendVerificationQueryOptions(params,options)
 
-  const queryOptions = getGetAuthResendVerificationQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Resend verification email (GET)
+ */
+export const invalidateGetAuthResendVerification = async (
+ queryClient: QueryClient, params: GetAuthResendVerificationParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/auth/resend-verification` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1418,7 +1716,7 @@ return customAxios<MessageResult>(getPostAuthResendVerificationUrl(),
 
 
 export const getPostAuthResendVerificationMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendVerification>>, TError,{data: ResendVerificationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendVerification>>, TError,{data: ResendVerificationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthResendVerification>>, TError,{data: ResendVerificationRequest}, TContext> => {
 
 const mutationKey = ['postAuthResendVerification'];
@@ -1437,12 +1735,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthResendVerification(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthResendVerification>>, variables: {data: ResendVerificationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthResendVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthResendVerification>>>
     export type PostAuthResendVerificationMutationBody = ResendVerificationRequest
@@ -1452,14 +1760,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Resend verification email
  */
 export const usePostAuthResendVerification = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendVerification>>, TError,{data: ResendVerificationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResendVerification>>, TError,{data: ResendVerificationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthResendVerification>>,
         TError,
         {data: ResendVerificationRequest},
         TContext
       > => {
-      return useMutation(getPostAuthResendVerificationMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthResendVerificationMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostAuthResetPasswordUrl = () => {
 
@@ -1495,7 +1804,7 @@ return customAxios<SuccessResult>(getPostAuthResetPasswordUrl(),
 
 
 export const getPostAuthResetPasswordMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResetPassword>>, TError,{data: ResetPasswordRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResetPassword>>, TError,{data: ResetPasswordRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthResetPassword>>, TError,{data: ResetPasswordRequest}, TContext> => {
 
 const mutationKey = ['postAuthResetPassword'];
@@ -1514,12 +1823,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthResetPassword(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthResetPassword>>, variables: {data: ResetPasswordRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthResetPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthResetPassword>>>
     export type PostAuthResetPasswordMutationBody = ResetPasswordRequest
@@ -1529,14 +1848,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Reset password
  */
 export const usePostAuthResetPassword = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResetPassword>>, TError,{data: ResetPasswordRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthResetPassword>>, TError,{data: ResetPasswordRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthResetPassword>>,
         TError,
         {data: ResetPasswordRequest},
         TContext
       > => {
-      return useMutation(getPostAuthResetPasswordMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthResetPasswordMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetAuthVerifyEmailUrl = (params: GetAuthVerifyEmailParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -1572,19 +1892,16 @@ export const getAuthVerifyEmail = async (params: GetAuthVerifyEmailParams, optio
 
 
 
-export const getGetAuthVerifyEmailQueryKey = (params?: GetAuthVerifyEmailParams,) => {
-    return [
-    `/auth/verify-email`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetAuthVerifyEmailQueryKey = (params?: GetAuthVerifyEmailParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/auth/verify-email` });
 
 
-export const getGetAuthVerifyEmailQueryOptions = <TData = Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError = ErrorResponse>(params: GetAuthVerifyEmailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetAuthVerifyEmailQueryOptions = <TData = Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError = ErrorResponse>(params: GetAuthVerifyEmailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAuthVerifyEmailQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/auth/verify-email`, queryOptions });
 
 
 
@@ -1594,30 +1911,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetAuthVerifyEmailQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthVerifyEmail>>>
 export type GetAuthVerifyEmailQueryError = ErrorResponse
 
 
+export function useGetAuthVerifyEmail<TData = Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError = ErrorResponse>(
+ params: GetAuthVerifyEmailParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthVerifyEmail>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthVerifyEmail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthVerifyEmail<TData = Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError = ErrorResponse>(
+ params: GetAuthVerifyEmailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAuthVerifyEmail>>,
+          TError,
+          Awaited<ReturnType<typeof getAuthVerifyEmail>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAuthVerifyEmail<TData = Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError = ErrorResponse>(
+ params: GetAuthVerifyEmailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Verify email (GET)
  */
 
 export function useGetAuthVerifyEmail<TData = Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError = ErrorResponse>(
- params: GetAuthVerifyEmailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params: GetAuthVerifyEmailParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthVerifyEmail>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetAuthVerifyEmailQueryOptions(params,options)
 
-  const queryOptions = getGetAuthVerifyEmailQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Verify email (GET)
+ */
+export const invalidateGetAuthVerifyEmail = async (
+ queryClient: QueryClient, params: GetAuthVerifyEmailParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/auth/verify-email` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -1656,7 +2008,7 @@ return customAxios<EmailVerifyResult>(getPostAuthVerifyEmailUrl(),
 
 
 export const getPostAuthVerifyEmailMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthVerifyEmail>>, TError,{data: EmailVerifyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthVerifyEmail>>, TError,{data: EmailVerifyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postAuthVerifyEmail>>, TError,{data: EmailVerifyRequest}, TContext> => {
 
 const mutationKey = ['postAuthVerifyEmail'];
@@ -1675,12 +2027,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postAuthVerifyEmail(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postAuthVerifyEmail>>, variables: {data: EmailVerifyRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetAuthLockoutStatusQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthMeQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthOrganizationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthPollVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthResendVerificationQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetAuthVerifyEmailQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostAuthVerifyEmailMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthVerifyEmail>>>
     export type PostAuthVerifyEmailMutationBody = EmailVerifyRequest
@@ -1690,12 +2052,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Verify email
  */
 export const usePostAuthVerifyEmail = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthVerifyEmail>>, TError,{data: EmailVerifyRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthVerifyEmail>>, TError,{data: EmailVerifyRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postAuthVerifyEmail>>,
         TError,
         {data: EmailVerifyRequest},
         TContext
       > => {
-      return useMutation(getPostAuthVerifyEmailMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostAuthVerifyEmailMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

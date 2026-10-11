@@ -11,6 +11,12 @@ import {
   postDeviceImeiCommand,
   deleteCommandDispatchId,
   postCommandDispatchIdRetry,
+  getGetDashboardDeviceImeiCommandsQueryKey,
+  getGetCommandDispatchIdStatusQueryKey,
+  getGetDeviceImeiCommandsPendingQueryKey,
+  invalidateGetDashboardDeviceImeiCommands,
+  invalidateGetCommandDispatchIdStatus,
+  invalidateGetDeviceImeiCommandsPending,
 } from '@/generated-rq/commands/device-commands';
 import type {
   Command,
@@ -20,7 +26,6 @@ import type {
   CommandStatus,
   PresetCommandType,
 } from '@vyzorix/api-client';
-import { queryKeys } from '@/lib/query-keys';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import { useCommandDispatchStore } from '@/stores';
 import { fetchPendingCommandsViaGraphQL, fetchCommandViaGraphQL, normalizeWireCommand } from './_graphql-fallback';
@@ -44,18 +49,19 @@ interface CommandHistoryParams {
 
 export function useCommandHistory(imei: string | undefined, params?: CommandHistoryParams) {
   const organizationId = useCurrentOrganizationId();
+  const keyParams = {
+    status: params?.status,
+    page: params?.page,
+    limit: params?.limit,
+    startTime: params?.startTime,
+    endTime: params?.endTime,
+  };
   return useGetDashboardDeviceImeiCommands(
     imei ?? '',
-    {
-      status: params?.status,
-      page: params?.page,
-      limit: params?.limit,
-      startTime: params?.startTime,
-      endTime: params?.endTime,
-    },
+    keyParams,
     {
       query: {
-        queryKey: queryKeys.commands(imei ?? '', { ...params, organizationId }),
+        queryKey: getGetDashboardDeviceImeiCommandsQueryKey(imei ?? '', keyParams),
         enabled: imei !== undefined && imei !== '' && organizationId !== null,
       },
     },
@@ -68,7 +74,7 @@ export function useCommand(dispatchId: string | undefined) {
     dispatchId ?? '',
     {
       query: {
-        queryKey: queryKeys.command(dispatchId ?? ''),
+        queryKey: getGetCommandDispatchIdStatusQueryKey(dispatchId ?? ''),
         enabled: dispatchId !== undefined && dispatchId !== '' && organizationId !== null,
         queryFn: async () => {
           try {
@@ -89,7 +95,7 @@ export function usePendingCommands(imei: string | undefined) {
     imei ?? '',
     {
       query: {
-        queryKey: queryKeys.pendingCommands(imei ?? ''),
+        queryKey: getGetDeviceImeiCommandsPendingQueryKey(imei ?? ''),
         enabled: imei !== undefined && imei !== '' && organizationId !== null,
         refetchInterval: 10_000,
         queryFn: async () => {
@@ -132,9 +138,9 @@ export function useSendCommand() {
         params: params ?? {},
         createdAt: Date.now(),
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.commands(imei) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.pendingCommands(imei) });
-      queryClient.setQueryData(queryKeys.command(command.dispatchId ?? '',), command);
+      void invalidateGetDashboardDeviceImeiCommands(queryClient, imei);
+      void invalidateGetDeviceImeiCommandsPending(queryClient, imei);
+      queryClient.setQueryData(getGetCommandDispatchIdStatusQueryKey(command.dispatchId ?? ''), command);
     },
   });
 }
@@ -147,23 +153,23 @@ export function usePollCommandStatus() {
     const imei = useCommandDispatchStore.getState().getPending(dispatchId)?.imei;
     return {
       onStateChange: (_prev: CommandStatus, current: CommandStatus, command: CommandResponse) => {
-        queryClient.setQueryData(queryKeys.command(dispatchId), command);
+        queryClient.setQueryData(getGetCommandDispatchIdStatusQueryKey(dispatchId), command);
         if (TERMINAL_STATUSES.includes(current)) {
           removePending(dispatchId);
           if (imei) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.commands(imei) });
-            queryClient.invalidateQueries({ queryKey: queryKeys.pendingCommands(imei) });
+            void invalidateGetDashboardDeviceImeiCommands(queryClient, imei);
+            void invalidateGetDeviceImeiCommandsPending(queryClient, imei);
           }
         }
       },
       onCompleted: (command: CommandResponse) => {
-        queryClient.setQueryData(queryKeys.command(dispatchId), command);
+        queryClient.setQueryData(getGetCommandDispatchIdStatusQueryKey(dispatchId), command);
       },
       onFailed: (command: CommandResponse) => {
-        queryClient.setQueryData(queryKeys.command(dispatchId), command);
+        queryClient.setQueryData(getGetCommandDispatchIdStatusQueryKey(dispatchId), command);
       },
       onCancelled: (command: CommandResponse) => {
-        queryClient.setQueryData(queryKeys.command(dispatchId), command);
+        queryClient.setQueryData(getGetCommandDispatchIdStatusQueryKey(dispatchId), command);
       },
       ...options,
     };
@@ -177,7 +183,7 @@ export function useCancelCommand() {
     mutationFn: (dispatchId: string) => deleteCommandDispatchId(dispatchId),
     onSuccess: (_, dispatchId) => {
       removePending(dispatchId);
-      queryClient.invalidateQueries({ queryKey: queryKeys.command(dispatchId) });
+      void invalidateGetCommandDispatchIdStatus(queryClient, dispatchId);
     },
   });
 }
@@ -187,8 +193,8 @@ export function useRetryCommand() {
   return useMutation({
     mutationFn: (dispatchId: string) => postCommandDispatchIdRetry(dispatchId),
     onSuccess: (command, dispatchId) => {
-      queryClient.setQueryData(queryKeys.command(dispatchId), command);
-      queryClient.invalidateQueries({ queryKey: queryKeys.commands(command.dispatchId ?? '',) });
+      queryClient.setQueryData(getGetCommandDispatchIdStatusQueryKey(dispatchId), command);
+      void invalidateGetDashboardDeviceImeiCommands(queryClient, command.dispatchId ?? '');
     },
   });
 }

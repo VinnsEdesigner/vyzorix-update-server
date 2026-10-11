@@ -12,7 +12,6 @@ export function useInbox(params?: { status?: InboxStatus | 'all'; page?: number;
     { status: params?.status, page: params?.page, limit: params?.limit },
     {
       query: {
-        queryKey: ['inbox', params, organizationId] as const,
         enabled: organizationId !== null,
         // REST primary; fall back to GraphQL on REST failure.
         queryFn: async () => {

@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentOrganizationId } from '@/hooks/_shared/use-current-context';
 import {
   useGetDevices,
@@ -26,89 +25,66 @@ export function useDevices(params?: DeviceParams) {
   const organizationId = useCurrentOrganizationId();
   return useGetDevices(
     { page: params?.page, limit: params?.limit, search: params?.search },
-    { query: { queryKey: ['devices', params, organizationId] as const, enabled: organizationId !== null } },
+    { query: { enabled: organizationId !== null } },
   );
 }
 
 export function useDevice(imei: string | undefined) {
   const organizationId = useCurrentOrganizationId();
-  return useGetDeviceImei(
-    imei ?? '',
-    { query: { queryKey: ['devices', imei, organizationId] as const, enabled: imei !== undefined && imei !== '' && organizationId !== null } },
-  );
+  return useGetDeviceImei(imei ?? '', {
+    query: { enabled: imei !== undefined && imei !== '' && organizationId !== null },
+  });
 }
 
 export function useDeviceCount() {
   const organizationId = useCurrentOrganizationId();
-  return useGetDeviceCount({ query: { queryKey: ['devices', 'count', organizationId] as const, enabled: organizationId !== null } });
+  return useGetDeviceCount({ query: { enabled: organizationId !== null } });
 }
 
 export function useDeviceSettings(imei: string | undefined) {
-  return useGetDevicesImeiSettings(
-    imei ?? '',
-    { query: { queryKey: ['devices', imei, 'settings'] as const, enabled: imei !== undefined } },
-  );
+  return useGetDevicesImeiSettings(imei ?? '', {
+    query: { enabled: imei !== undefined },
+  });
 }
 
 export function useUpdateDeviceSettings() {
-  const queryClient = useQueryClient();
-  return usePatchDevicesImeiSettings({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
-  });
+  return usePatchDevicesImeiSettings();
 }
 
 export function useDeviceThresholds(imei: string | undefined) {
-  return useGetDevicesImeiSettingsThresholds(
-    imei ?? '',
-    { query: { queryKey: ['devices', imei, 'thresholds'] as const, enabled: imei !== undefined } },
-  );
+  return useGetDevicesImeiSettingsThresholds(imei ?? '', {
+    query: { enabled: imei !== undefined },
+  });
 }
 
 export function useUpdateDeviceThresholds() {
-  const queryClient = useQueryClient();
-  return usePatchDevicesImeiSettingsThresholds({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
-  });
+  return usePatchDevicesImeiSettingsThresholds();
 }
 
 export function useDeviceConnectionStatus(imei: string | undefined) {
-  return useGetDeviceImeiConnectionStatus(
-    imei ?? '',
-    { query: { queryKey: ['devices', imei, 'connection'] as const, enabled: imei !== undefined } },
-  );
+  return useGetDeviceImeiConnectionStatus(imei ?? '', {
+    query: { enabled: imei !== undefined },
+  });
 }
 
 export function useDisconnectDevice() {
-  const queryClient = useQueryClient();
-  return usePostDeviceImeiDisconnect({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
-  });
+  return usePostDeviceImeiDisconnect();
 }
 
 export function useDeviceTags(imei: string | undefined) {
-  return useGetDevicesImeiTags(
-    imei ?? '',
-    { query: { queryKey: ['devices', imei, 'tags'] as const, enabled: imei !== undefined } },
-  );
+  return useGetDevicesImeiTags(imei ?? '', {
+    query: { enabled: imei !== undefined },
+  });
 }
 
 export function useSetDeviceTags() {
-  const queryClient = useQueryClient();
-  return usePutDevicesImeiTags({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
-  });
+  return usePutDevicesImeiTags();
 }
 
 export function useDeregisterDevice() {
-  const queryClient = useQueryClient();
-  return useDeleteDevicesImei({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
-  });
+  return useDeleteDevicesImei();
 }
 
 export function useTransferDevice() {
-  const queryClient = useQueryClient();
-  return usePostOrganizationsIdDevicesImeiTransfer({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['devices'] }) },
-  });
+  return usePostOrganizationsIdDevicesImeiTransfer();
 }

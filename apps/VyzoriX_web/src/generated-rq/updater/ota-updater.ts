@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -30,6 +38,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -78,19 +87,16 @@ export const getApkName = async (name: string, options?: Parameters<typeof custo
 
 
 
-export const getGetApkNameQueryKey = (name: string,) => {
-    return [
-    `/apk/${name}`
-    ] as const;
-    }
+export const getGetApkNameQueryKey = (name: string,) =>
+    organizationScopedQueryKey({ name }, { url: `/apk/${name}` });
 
 
-export const getGetApkNameQueryOptions = <TData = Awaited<ReturnType<typeof getApkName>>, TError = ErrorResponse>(name: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetApkNameQueryOptions = <TData = Awaited<ReturnType<typeof getApkName>>, TError = ErrorResponse>(name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetApkNameQueryKey(name);
+  const queryKey =  organizationScopedQueryKey({ name }, { url: `/apk/${name}`, queryOptions });
 
 
 
@@ -100,30 +106,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: name !== null && name !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: name !== null && name !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetApkNameQueryResult = NonNullable<Awaited<ReturnType<typeof getApkName>>>
 export type GetApkNameQueryError = ErrorResponse
 
 
+export function useGetApkName<TData = Awaited<ReturnType<typeof getApkName>>, TError = ErrorResponse>(
+ name: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApkName>>,
+          TError,
+          Awaited<ReturnType<typeof getApkName>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApkName<TData = Awaited<ReturnType<typeof getApkName>>, TError = ErrorResponse>(
+ name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getApkName>>,
+          TError,
+          Awaited<ReturnType<typeof getApkName>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetApkName<TData = Awaited<ReturnType<typeof getApkName>>, TError = ErrorResponse>(
+ name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Download APK
  */
 
 export function useGetApkName<TData = Awaited<ReturnType<typeof getApkName>>, TError = ErrorResponse>(
- name: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getApkName>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetApkNameQueryOptions(name,options)
 
-  const queryOptions = getGetApkNameQueryOptions(name,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Download APK
+ */
+export const invalidateGetApkName = async (
+ queryClient: QueryClient, name: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ name }, { url: `/apk/${name}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -155,19 +196,16 @@ export const getBinName = async (name: string, options?: Parameters<typeof custo
 
 
 
-export const getGetBinNameQueryKey = (name: string,) => {
-    return [
-    `/bin/${name}`
-    ] as const;
-    }
+export const getGetBinNameQueryKey = (name: string,) =>
+    organizationScopedQueryKey({ name }, { url: `/bin/${name}` });
 
 
-export const getGetBinNameQueryOptions = <TData = Awaited<ReturnType<typeof getBinName>>, TError = ErrorResponse>(name: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetBinNameQueryOptions = <TData = Awaited<ReturnType<typeof getBinName>>, TError = ErrorResponse>(name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetBinNameQueryKey(name);
+  const queryKey =  organizationScopedQueryKey({ name }, { url: `/bin/${name}`, queryOptions });
 
 
 
@@ -177,30 +215,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: name !== null && name !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: name !== null && name !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetBinNameQueryResult = NonNullable<Awaited<ReturnType<typeof getBinName>>>
 export type GetBinNameQueryError = ErrorResponse
 
 
+export function useGetBinName<TData = Awaited<ReturnType<typeof getBinName>>, TError = ErrorResponse>(
+ name: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBinName>>,
+          TError,
+          Awaited<ReturnType<typeof getBinName>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBinName<TData = Awaited<ReturnType<typeof getBinName>>, TError = ErrorResponse>(
+ name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBinName>>,
+          TError,
+          Awaited<ReturnType<typeof getBinName>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBinName<TData = Awaited<ReturnType<typeof getBinName>>, TError = ErrorResponse>(
+ name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Download binary artifact
  */
 
 export function useGetBinName<TData = Awaited<ReturnType<typeof getBinName>>, TError = ErrorResponse>(
- name: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ name: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBinName>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetBinNameQueryOptions(name,options)
 
-  const queryOptions = getGetBinNameQueryOptions(name,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Download binary artifact
+ */
+export const invalidateGetBinName = async (
+ queryClient: QueryClient, name: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ name }, { url: `/bin/${name}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -232,19 +305,16 @@ export const getChangelog = async ( options?: Parameters<typeof customAxios>[1])
 
 
 
-export const getGetChangelogQueryKey = () => {
-    return [
-    `/changelog`
-    ] as const;
-    }
+export const getGetChangelogQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/changelog` });
 
 
-export const getGetChangelogQueryOptions = <TData = Awaited<ReturnType<typeof getChangelog>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetChangelogQueryOptions = <TData = Awaited<ReturnType<typeof getChangelog>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetChangelogQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/changelog`, queryOptions });
 
 
 
@@ -254,30 +324,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetChangelogQueryResult = NonNullable<Awaited<ReturnType<typeof getChangelog>>>
 export type GetChangelogQueryError = ErrorResponse
 
 
+export function useGetChangelog<TData = Awaited<ReturnType<typeof getChangelog>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChangelog>>,
+          TError,
+          Awaited<ReturnType<typeof getChangelog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChangelog<TData = Awaited<ReturnType<typeof getChangelog>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getChangelog>>,
+          TError,
+          Awaited<ReturnType<typeof getChangelog>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetChangelog<TData = Awaited<ReturnType<typeof getChangelog>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary OTA changelog
  */
 
 export function useGetChangelog<TData = Awaited<ReturnType<typeof getChangelog>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getChangelog>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetChangelogQueryOptions(options)
 
-  const queryOptions = getGetChangelogQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary OTA changelog
+ */
+export const invalidateGetChangelog = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/changelog` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -316,19 +421,16 @@ export const getCheckUpdate = async (params?: GetCheckUpdateParams, options?: Pa
 
 
 
-export const getGetCheckUpdateQueryKey = (params?: GetCheckUpdateParams,) => {
-    return [
-    `/check-update`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetCheckUpdateQueryKey = (params?: GetCheckUpdateParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/check-update` });
 
 
-export const getGetCheckUpdateQueryOptions = <TData = Awaited<ReturnType<typeof getCheckUpdate>>, TError = ErrorResponse>(params?: GetCheckUpdateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetCheckUpdateQueryOptions = <TData = Awaited<ReturnType<typeof getCheckUpdate>>, TError = ErrorResponse>(params?: GetCheckUpdateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCheckUpdateQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/check-update`, queryOptions });
 
 
 
@@ -338,30 +440,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetCheckUpdateQueryResult = NonNullable<Awaited<ReturnType<typeof getCheckUpdate>>>
 export type GetCheckUpdateQueryError = ErrorResponse
 
 
+export function useGetCheckUpdate<TData = Awaited<ReturnType<typeof getCheckUpdate>>, TError = ErrorResponse>(
+ params: undefined |  GetCheckUpdateParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCheckUpdate>>,
+          TError,
+          Awaited<ReturnType<typeof getCheckUpdate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCheckUpdate<TData = Awaited<ReturnType<typeof getCheckUpdate>>, TError = ErrorResponse>(
+ params?: GetCheckUpdateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCheckUpdate>>,
+          TError,
+          Awaited<ReturnType<typeof getCheckUpdate>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCheckUpdate<TData = Awaited<ReturnType<typeof getCheckUpdate>>, TError = ErrorResponse>(
+ params?: GetCheckUpdateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Check for update
  */
 
 export function useGetCheckUpdate<TData = Awaited<ReturnType<typeof getCheckUpdate>>, TError = ErrorResponse>(
- params?: GetCheckUpdateParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetCheckUpdateParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCheckUpdate>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetCheckUpdateQueryOptions(params,options)
 
-  const queryOptions = getGetCheckUpdateQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Check for update
+ */
+export const invalidateGetCheckUpdate = async (
+ queryClient: QueryClient, params?: GetCheckUpdateParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/check-update` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -400,7 +537,7 @@ return customAxios<DownloadProgressResult>(getPostDownloadProgressUrl(),
 
 
 export const getPostDownloadProgressMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDownloadProgress>>, TError,{data: DownloadProgressRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDownloadProgress>>, TError,{data: DownloadProgressRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDownloadProgress>>, TError,{data: DownloadProgressRequest}, TContext> => {
 
 const mutationKey = ['postDownloadProgress'];
@@ -419,12 +556,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDownloadProgress(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDownloadProgress>>, variables: {data: DownloadProgressRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetChangelogQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetCheckUpdateQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetVersionQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDownloadProgressMutationResult = NonNullable<Awaited<ReturnType<typeof postDownloadProgress>>>
     export type PostDownloadProgressMutationBody = DownloadProgressRequest
@@ -434,14 +578,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Report download progress
  */
 export const usePostDownloadProgress = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDownloadProgress>>, TError,{data: DownloadProgressRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDownloadProgress>>, TError,{data: DownloadProgressRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDownloadProgress>>,
         TError,
         {data: DownloadProgressRequest},
         TContext
       > => {
-      return useMutation(getPostDownloadProgressMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDownloadProgressMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetVersionUrl = () => {
 
@@ -470,19 +615,16 @@ export const getVersion = async ( options?: Parameters<typeof customAxios>[1]): 
 
 
 
-export const getGetVersionQueryKey = () => {
-    return [
-    `/version`
-    ] as const;
-    }
+export const getGetVersionQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/version` });
 
 
-export const getGetVersionQueryOptions = <TData = Awaited<ReturnType<typeof getVersion>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetVersionQueryOptions = <TData = Awaited<ReturnType<typeof getVersion>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetVersionQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/version`, queryOptions });
 
 
 
@@ -492,30 +634,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetVersionQueryResult = NonNullable<Awaited<ReturnType<typeof getVersion>>>
 export type GetVersionQueryError = ErrorResponse
 
 
+export function useGetVersion<TData = Awaited<ReturnType<typeof getVersion>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVersion>>,
+          TError,
+          Awaited<ReturnType<typeof getVersion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVersion<TData = Awaited<ReturnType<typeof getVersion>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVersion>>,
+          TError,
+          Awaited<ReturnType<typeof getVersion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVersion<TData = Awaited<ReturnType<typeof getVersion>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary OTA version manifest
  */
 
 export function useGetVersion<TData = Awaited<ReturnType<typeof getVersion>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getVersion>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetVersionQueryOptions(options)
 
-  const queryOptions = getGetVersionQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary OTA version manifest
+ */
+export const invalidateGetVersion = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/version` }) }, options);
+
+  return queryClient;
+}
 
 
 

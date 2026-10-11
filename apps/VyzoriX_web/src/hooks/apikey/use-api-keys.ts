@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useGetAuthApiKeys,
   usePostAuthApiKeys,
@@ -14,43 +13,25 @@ export interface ApiKeyParams {
 }
 
 export function useApiKeys(params?: ApiKeyParams) {
-  return useGetAuthApiKeys(
-    { page: params?.page, limit: params?.limit },
-    { query: { queryKey: ['api-keys', params] as const } },
-  );
+  return useGetAuthApiKeys({ page: params?.page, limit: params?.limit });
 }
 
 export function useApiKey(id: string | undefined) {
-  return useGetAuthApiKeysKeyId(
-    id ?? '',
-    { query: { queryKey: ['api-keys', id] as const, enabled: id !== undefined } },
-  );
+  return useGetAuthApiKeysKeyId(id ?? '', { query: { enabled: id !== undefined } });
 }
 
 export function useCreateApiKey() {
-  const queryClient = useQueryClient();
-  return usePostAuthApiKeys({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-keys'] }) },
-  });
+  return usePostAuthApiKeys();
 }
 
 export function useUpdateApiKey() {
-  const queryClient = useQueryClient();
-  return usePatchAuthApiKeysKeyId({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-keys'] }) },
-  });
+  return usePatchAuthApiKeysKeyId();
 }
 
 export function useRevokeApiKey() {
-  const queryClient = useQueryClient();
-  return useDeleteAuthApiKeysKeyId({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-keys'] }) },
-  });
+  return useDeleteAuthApiKeysKeyId();
 }
 
 export function useRotateApiKey() {
-  const queryClient = useQueryClient();
-  return usePostAuthApiKeysKeyIdRotate({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-keys'] }) },
-  });
+  return usePostAuthApiKeysKeyIdRotate();
 }

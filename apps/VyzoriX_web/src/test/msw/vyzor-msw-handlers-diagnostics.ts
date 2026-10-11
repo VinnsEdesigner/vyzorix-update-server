@@ -39,16 +39,14 @@ const inspection: DeviceInspectionResult = {
 const timelineEvents: WireTimelineEventResult[] = [
   {
     id: 'evt-1',
-    deviceId: '123',
     type: 'TELEMETRY',
-    timestamp: new Date(now - 60_000).toISOString(),
+    timestamp: now - 60_000,
     data: { riskScore: 5, bufferLevel: 42 },
   },
   {
     id: 'evt-2',
-    deviceId: '123',
     type: 'CONNECTION_OPEN',
-    timestamp: new Date(now - 3_600_000).toISOString(),
+    timestamp: now - 3_600_000,
     data: { ip: '10.0.0.1' },
   },
 ];
@@ -66,14 +64,11 @@ export function createDiagnosticsHandlers() {
     }),
 
     // GET /v1/device/:imei/timeline — timeline
-    http.get(`${API_BASE}/:imei/timeline`, async ({ params }) => {
+    http.get(`${API_BASE}/:imei/timeline`, async () => {
       await delay(30);
-      const imei = params.imei as string;
-      const events = timelineEvents.map((e) => ({ ...e, deviceId: imei }));
       const result: WireTimelineResult = {
-        events,
-        hasMore: false,
-        nextCursor: undefined,
+        events: timelineEvents,
+        pagination: { limit: 20, hasMore: false },
       };
       return HttpResponse.json(result);
     }),

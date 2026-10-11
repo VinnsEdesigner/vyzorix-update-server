@@ -9,8 +9,14 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -23,6 +29,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -71,19 +78,16 @@ export const getDeviceImeiInspect = async (imei: string, options?: Parameters<ty
 
 
 
-export const getGetDeviceImeiInspectQueryKey = (imei: string,) => {
-    return [
-    `/device/${imei}/inspect`
-    ] as const;
-    }
+export const getGetDeviceImeiInspectQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/device/${imei}/inspect` });
 
 
-export const getGetDeviceImeiInspectQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceImeiInspectQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceImeiInspectQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/device/${imei}/inspect`, queryOptions });
 
 
 
@@ -93,30 +97,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceImeiInspectQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceImeiInspect>>>
 export type GetDeviceImeiInspectQueryError = ErrorResponse
 
 
+export function useGetDeviceImeiInspect<TData = Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiInspect>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiInspect>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiInspect<TData = Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiInspect>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiInspect>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiInspect<TData = Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device inspection
  */
 
 export function useGetDeviceImeiInspect<TData = Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiInspect>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceImeiInspectQueryOptions(imei,options)
 
-  const queryOptions = getGetDeviceImeiInspectQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device inspection
+ */
+export const invalidateGetDeviceImeiInspect = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/device/${imei}/inspect` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -158,20 +197,17 @@ export const getDeviceImeiTimeline = async (imei: string,
 
 
 export const getGetDeviceImeiTimelineQueryKey = (imei: string,
-    params?: GetDeviceImeiTimelineParams,) => {
-    return [
-    `/device/${imei}/timeline`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetDeviceImeiTimelineParams,) =>
+    organizationScopedQueryKey({ imei,params }, { url: `/device/${imei}/timeline` });
 
 
-export const getGetDeviceImeiTimelineQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError = ErrorResponse>(imei: string,
-    params?: GetDeviceImeiTimelineParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceImeiTimelineQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError = ErrorResponse>(imei: string,
+    params?: GetDeviceImeiTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceImeiTimelineQueryKey(imei,params);
+  const queryKey =  organizationScopedQueryKey({ imei,params }, { url: `/device/${imei}/timeline`, queryOptions });
 
 
 
@@ -181,31 +217,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceImeiTimelineQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceImeiTimeline>>>
 export type GetDeviceImeiTimelineQueryError = ErrorResponse
 
 
+export function useGetDeviceImeiTimeline<TData = Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError = ErrorResponse>(
+ imei: string,
+    params: undefined |  GetDeviceImeiTimelineParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiTimeline>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiTimeline>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiTimeline<TData = Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDeviceImeiTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceImeiTimeline>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceImeiTimeline>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceImeiTimeline<TData = Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError = ErrorResponse>(
+ imei: string,
+    params?: GetDeviceImeiTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get device timeline
  */
 
 export function useGetDeviceImeiTimeline<TData = Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError = ErrorResponse>(
  imei: string,
-    params?: GetDeviceImeiTimelineParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetDeviceImeiTimelineParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceImeiTimeline>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceImeiTimelineQueryOptions(imei,params,options)
 
-  const queryOptions = getGetDeviceImeiTimelineQueryOptions(imei,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get device timeline
+ */
+export const invalidateGetDeviceImeiTimeline = async (
+ queryClient: QueryClient, imei: string,
+    params?: GetDeviceImeiTimelineParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei,params }, { url: `/device/${imei}/timeline` }) }, options);
+
+  return queryClient;
+}
 
 
 

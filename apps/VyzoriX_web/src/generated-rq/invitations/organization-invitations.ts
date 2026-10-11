@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -30,6 +38,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -78,19 +87,16 @@ export const getInvitations = async ( options?: Parameters<typeof customAxios>[1
 
 
 
-export const getGetInvitationsQueryKey = () => {
-    return [
-    `/invitations`
-    ] as const;
-    }
+export const getGetInvitationsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/invitations` });
 
 
-export const getGetInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getInvitations>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getInvitations>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetInvitationsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/invitations`, queryOptions });
 
 
 
@@ -100,30 +106,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof getInvitations>>>
 export type GetInvitationsQueryError = ErrorResponse
 
 
+export function useGetInvitations<TData = Awaited<ReturnType<typeof getInvitations>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof getInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetInvitations<TData = Awaited<ReturnType<typeof getInvitations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof getInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetInvitations<TData = Awaited<ReturnType<typeof getInvitations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List sent invitations
  */
 
 export function useGetInvitations<TData = Awaited<ReturnType<typeof getInvitations>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetInvitationsQueryOptions(options)
 
-  const queryOptions = getGetInvitationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List sent invitations
+ */
+export const invalidateGetInvitations = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/invitations` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -162,7 +203,7 @@ return customAxios<Invitation>(getPostInvitationsUrl(),
 
 
 export const getPostInvitationsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInvitations>>, TError,{data: CreateInvitationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInvitations>>, TError,{data: CreateInvitationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postInvitations>>, TError,{data: CreateInvitationRequest}, TContext> => {
 
 const mutationKey = ['postInvitations'];
@@ -181,12 +222,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postInvitations(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postInvitations>>, variables: {data: CreateInvitationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetInvitationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeInvitationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostInvitationsMutationResult = NonNullable<Awaited<ReturnType<typeof postInvitations>>>
     export type PostInvitationsMutationBody = CreateInvitationRequest
@@ -196,14 +243,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create invitation
  */
 export const usePostInvitations = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInvitations>>, TError,{data: CreateInvitationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInvitations>>, TError,{data: CreateInvitationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postInvitations>>,
         TError,
         {data: CreateInvitationRequest},
         TContext
       > => {
-      return useMutation(getPostInvitationsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostInvitationsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getDeleteInvitationsIdUrl = (id: string,) => {
 
@@ -233,7 +281,7 @@ export const deleteInvitationsId = async (id: string, options?: Parameters<typeo
 
 
 export const getDeleteInvitationsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvitationsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvitationsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteInvitationsId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteInvitationsId'];
@@ -252,12 +300,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteInvitationsId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteInvitationsId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetInvitationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeInvitationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteInvitationsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteInvitationsId>>>
 
@@ -267,14 +321,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete invitation
  */
 export const useDeleteInvitationsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvitationsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvitationsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteInvitationsId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteInvitationsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteInvitationsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetInviteTokenUrl = (token: string,) => {
 
@@ -303,19 +358,16 @@ export const getInviteToken = async (token: string, options?: Parameters<typeof 
 
 
 
-export const getGetInviteTokenQueryKey = (token: string,) => {
-    return [
-    `/invite/${token}`
-    ] as const;
-    }
+export const getGetInviteTokenQueryKey = (token: string,) =>
+    organizationScopedQueryKey({ token }, { url: `/invite/${token}` });
 
 
-export const getGetInviteTokenQueryOptions = <TData = Awaited<ReturnType<typeof getInviteToken>>, TError = ErrorResponse>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetInviteTokenQueryOptions = <TData = Awaited<ReturnType<typeof getInviteToken>>, TError = ErrorResponse>(token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetInviteTokenQueryKey(token);
+  const queryKey =  organizationScopedQueryKey({ token }, { url: `/invite/${token}`, queryOptions });
 
 
 
@@ -325,30 +377,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: token !== null && token !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetInviteTokenQueryResult = NonNullable<Awaited<ReturnType<typeof getInviteToken>>>
 export type GetInviteTokenQueryError = ErrorResponse
 
 
+export function useGetInviteToken<TData = Awaited<ReturnType<typeof getInviteToken>>, TError = ErrorResponse>(
+ token: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getInviteToken>>,
+          TError,
+          Awaited<ReturnType<typeof getInviteToken>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetInviteToken<TData = Awaited<ReturnType<typeof getInviteToken>>, TError = ErrorResponse>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getInviteToken>>,
+          TError,
+          Awaited<ReturnType<typeof getInviteToken>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetInviteToken<TData = Awaited<ReturnType<typeof getInviteToken>>, TError = ErrorResponse>(
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get invitation by token
  */
 
 export function useGetInviteToken<TData = Awaited<ReturnType<typeof getInviteToken>>, TError = ErrorResponse>(
- token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ token: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getInviteToken>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetInviteTokenQueryOptions(token,options)
 
-  const queryOptions = getGetInviteTokenQueryOptions(token,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get invitation by token
+ */
+export const invalidateGetInviteToken = async (
+ queryClient: QueryClient, token: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ token }, { url: `/invite/${token}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -381,7 +468,7 @@ export const postInviteTokenAccept = async (token: string, options?: Parameters<
 
 
 export const getPostInviteTokenAcceptMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenAccept>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenAccept>>, TError,{token: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenAccept>>, TError,{token: string}, TContext> => {
 
 const mutationKey = ['postInviteTokenAccept'];
@@ -400,12 +487,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postInviteTokenAccept(token,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postInviteTokenAccept>>, variables: {token: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetInvitationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeInvitationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostInviteTokenAcceptMutationResult = NonNullable<Awaited<ReturnType<typeof postInviteTokenAccept>>>
 
@@ -415,14 +508,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Accept invitation
  */
 export const usePostInviteTokenAccept = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenAccept>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenAccept>>, TError,{token: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postInviteTokenAccept>>,
         TError,
         {token: string},
         TContext
       > => {
-      return useMutation(getPostInviteTokenAcceptMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostInviteTokenAcceptMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostInviteTokenRejectUrl = (token: string,) => {
 
@@ -452,7 +546,7 @@ export const postInviteTokenReject = async (token: string, options?: Parameters<
 
 
 export const getPostInviteTokenRejectMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenReject>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenReject>>, TError,{token: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenReject>>, TError,{token: string}, TContext> => {
 
 const mutationKey = ['postInviteTokenReject'];
@@ -471,12 +565,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postInviteTokenReject(token,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postInviteTokenReject>>, variables: {token: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetInvitationsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetMeInvitationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostInviteTokenRejectMutationResult = NonNullable<Awaited<ReturnType<typeof postInviteTokenReject>>>
 
@@ -486,14 +586,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Reject invitation
  */
 export const usePostInviteTokenReject = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenReject>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postInviteTokenReject>>, TError,{token: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postInviteTokenReject>>,
         TError,
         {token: string},
         TContext
       > => {
-      return useMutation(getPostInviteTokenRejectMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostInviteTokenRejectMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetMeInvitationsUrl = () => {
 
@@ -522,19 +623,16 @@ export const getMeInvitations = async ( options?: Parameters<typeof customAxios>
 
 
 
-export const getGetMeInvitationsQueryKey = () => {
-    return [
-    `/me/invitations`
-    ] as const;
-    }
+export const getGetMeInvitationsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/me/invitations` });
 
 
-export const getGetMeInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getMeInvitations>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetMeInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getMeInvitations>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetMeInvitationsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/me/invitations`, queryOptions });
 
 
 
@@ -544,30 +642,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetMeInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof getMeInvitations>>>
 export type GetMeInvitationsQueryError = ErrorResponse
 
 
+export function useGetMeInvitations<TData = Awaited<ReturnType<typeof getMeInvitations>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof getMeInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeInvitations<TData = Awaited<ReturnType<typeof getMeInvitations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof getMeInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeInvitations<TData = Awaited<ReturnType<typeof getMeInvitations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List pending invitations for current operator
  */
 
 export function useGetMeInvitations<TData = Awaited<ReturnType<typeof getMeInvitations>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetMeInvitationsQueryOptions(options)
 
-  const queryOptions = getGetMeInvitationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List pending invitations for current operator
+ */
+export const invalidateGetMeInvitations = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/me/invitations` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -609,20 +742,17 @@ export const getOrganizationsIdInvitations = async (id: string,
 
 
 export const getGetOrganizationsIdInvitationsQueryKey = (id: string,
-    params?: GetOrganizationsIdInvitationsParams,) => {
-    return [
-    `/organizations/${id}/invitations`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetOrganizationsIdInvitationsParams,) =>
+    organizationScopedQueryKey({ id,params }, { url: `/organizations/${id}/invitations` });
 
 
-export const getGetOrganizationsIdInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError = ErrorResponse>(id: string,
-    params?: GetOrganizationsIdInvitationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsIdInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError = ErrorResponse>(id: string,
+    params?: GetOrganizationsIdInvitationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsIdInvitationsQueryKey(id,params);
+  const queryKey =  organizationScopedQueryKey({ id,params }, { url: `/organizations/${id}/invitations`, queryOptions });
 
 
 
@@ -632,31 +762,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsIdInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>>
 export type GetOrganizationsIdInvitationsQueryError = ErrorResponse
 
 
+export function useGetOrganizationsIdInvitations<TData = Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError = ErrorResponse>(
+ id: string,
+    params: undefined |  GetOrganizationsIdInvitationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdInvitations<TData = Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError = ErrorResponse>(
+ id: string,
+    params?: GetOrganizationsIdInvitationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdInvitations>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdInvitations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdInvitations<TData = Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError = ErrorResponse>(
+ id: string,
+    params?: GetOrganizationsIdInvitationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List organization invitations
  */
 
 export function useGetOrganizationsIdInvitations<TData = Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError = ErrorResponse>(
  id: string,
-    params?: GetOrganizationsIdInvitationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetOrganizationsIdInvitationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdInvitations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsIdInvitationsQueryOptions(id,params,options)
 
-  const queryOptions = getGetOrganizationsIdInvitationsQueryOptions(id,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List organization invitations
+ */
+export const invalidateGetOrganizationsIdInvitations = async (
+ queryClient: QueryClient, id: string,
+    params?: GetOrganizationsIdInvitationsParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id,params }, { url: `/organizations/${id}/invitations` }) }, options);
+
+  return queryClient;
+}
 
 
 

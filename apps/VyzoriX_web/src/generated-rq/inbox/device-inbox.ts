@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -32,6 +40,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -87,19 +96,16 @@ export const getDeviceInbox = async (params?: GetDeviceInboxParams, options?: Pa
 
 
 
-export const getGetDeviceInboxQueryKey = (params?: GetDeviceInboxParams,) => {
-    return [
-    `/device/inbox`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetDeviceInboxQueryKey = (params?: GetDeviceInboxParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/device/inbox` });
 
 
-export const getGetDeviceInboxQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceInbox>>, TError = ErrorResponse>(params?: GetDeviceInboxParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceInboxQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceInbox>>, TError = ErrorResponse>(params?: GetDeviceInboxParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceInboxQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/device/inbox`, queryOptions });
 
 
 
@@ -109,30 +115,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceInboxQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceInbox>>>
 export type GetDeviceInboxQueryError = ErrorResponse
 
 
+export function useGetDeviceInbox<TData = Awaited<ReturnType<typeof getDeviceInbox>>, TError = ErrorResponse>(
+ params: undefined |  GetDeviceInboxParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceInbox>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceInbox>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceInbox<TData = Awaited<ReturnType<typeof getDeviceInbox>>, TError = ErrorResponse>(
+ params?: GetDeviceInboxParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceInbox>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceInbox>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceInbox<TData = Awaited<ReturnType<typeof getDeviceInbox>>, TError = ErrorResponse>(
+ params?: GetDeviceInboxParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List inbox entries
  */
 
 export function useGetDeviceInbox<TData = Awaited<ReturnType<typeof getDeviceInbox>>, TError = ErrorResponse>(
- params?: GetDeviceInboxParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params?: GetDeviceInboxParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInbox>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceInboxQueryOptions(params,options)
 
-  const queryOptions = getGetDeviceInboxQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List inbox entries
+ */
+export const invalidateGetDeviceInbox = async (
+ queryClient: QueryClient, params?: GetDeviceInboxParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/device/inbox` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -171,7 +212,7 @@ return customAxios<InboxEntryResponse>(getPostDeviceInboxUrl(),
 
 
 export const getPostDeviceInboxMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInbox>>, TError,{data: InboxRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInbox>>, TError,{data: InboxRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDeviceInbox>>, TError,{data: InboxRequest}, TContext> => {
 
 const mutationKey = ['postDeviceInbox'];
@@ -190,12 +231,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDeviceInbox(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDeviceInbox>>, variables: {data: InboxRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDeviceInboxQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDeviceInboxMutationResult = NonNullable<Awaited<ReturnType<typeof postDeviceInbox>>>
     export type PostDeviceInboxMutationBody = InboxRequest
@@ -205,14 +251,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create inbox request
  */
 export const usePostDeviceInbox = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInbox>>, TError,{data: InboxRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInbox>>, TError,{data: InboxRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDeviceInbox>>,
         TError,
         {data: InboxRequest},
         TContext
       > => {
-      return useMutation(getPostDeviceInboxMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDeviceInboxMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetDeviceInboxImeiUrl = (imei: string,) => {
 
@@ -241,19 +288,16 @@ export const getDeviceInboxImei = async (imei: string, options?: Parameters<type
 
 
 
-export const getGetDeviceInboxImeiQueryKey = (imei: string,) => {
-    return [
-    `/device/inbox/${imei}`
-    ] as const;
-    }
+export const getGetDeviceInboxImeiQueryKey = (imei: string,) =>
+    organizationScopedQueryKey({ imei }, { url: `/device/inbox/${imei}` });
 
 
-export const getGetDeviceInboxImeiQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceInboxImei>>, TError = ErrorResponse>(imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetDeviceInboxImeiQueryOptions = <TData = Awaited<ReturnType<typeof getDeviceInboxImei>>, TError = ErrorResponse>(imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDeviceInboxImeiQueryKey(imei);
+  const queryKey =  organizationScopedQueryKey({ imei }, { url: `/device/inbox/${imei}`, queryOptions });
 
 
 
@@ -263,30 +307,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: imei !== null && imei !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetDeviceInboxImeiQueryResult = NonNullable<Awaited<ReturnType<typeof getDeviceInboxImei>>>
 export type GetDeviceInboxImeiQueryError = ErrorResponse
 
 
+export function useGetDeviceInboxImei<TData = Awaited<ReturnType<typeof getDeviceInboxImei>>, TError = ErrorResponse>(
+ imei: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceInboxImei>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceInboxImei>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceInboxImei<TData = Awaited<ReturnType<typeof getDeviceInboxImei>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getDeviceInboxImei>>,
+          TError,
+          Awaited<ReturnType<typeof getDeviceInboxImei>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetDeviceInboxImei<TData = Awaited<ReturnType<typeof getDeviceInboxImei>>, TError = ErrorResponse>(
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get inbox entry
  */
 
 export function useGetDeviceInboxImei<TData = Awaited<ReturnType<typeof getDeviceInboxImei>>, TError = ErrorResponse>(
- imei: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ imei: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getDeviceInboxImei>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetDeviceInboxImeiQueryOptions(imei,options)
 
-  const queryOptions = getGetDeviceInboxImeiQueryOptions(imei,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get inbox entry
+ */
+export const invalidateGetDeviceInboxImei = async (
+ queryClient: QueryClient, imei: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ imei }, { url: `/device/inbox/${imei}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -326,7 +405,7 @@ return customAxios<InboxEntryResponse>(getPatchDeviceInboxImeiUrl(imei),
 
 
 export const getPatchDeviceInboxImeiMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceInboxImei>>, TError,{imei: string;data: UpdateInboxEntryRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceInboxImei>>, TError,{imei: string;data: UpdateInboxEntryRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchDeviceInboxImei>>, TError,{imei: string;data: UpdateInboxEntryRequest}, TContext> => {
 
 const mutationKey = ['patchDeviceInboxImei'];
@@ -345,12 +424,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchDeviceInboxImei(imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchDeviceInboxImei>>, variables: {imei: string;data: UpdateInboxEntryRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDeviceInboxQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchDeviceInboxImeiMutationResult = NonNullable<Awaited<ReturnType<typeof patchDeviceInboxImei>>>
     export type PatchDeviceInboxImeiMutationBody = UpdateInboxEntryRequest
@@ -360,14 +444,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update inbox entry
  */
 export const usePatchDeviceInboxImei = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceInboxImei>>, TError,{imei: string;data: UpdateInboxEntryRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchDeviceInboxImei>>, TError,{imei: string;data: UpdateInboxEntryRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchDeviceInboxImei>>,
         TError,
         {imei: string;data: UpdateInboxEntryRequest},
         TContext
       > => {
-      return useMutation(getPatchDeviceInboxImeiMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchDeviceInboxImeiMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostDeviceInboxImeiAckUrl = (imei: string,) => {
 
@@ -404,7 +489,7 @@ return customAxios<InboxAckResult>(getPostDeviceInboxImeiAckUrl(imei),
 
 
 export const getPostDeviceInboxImeiAckMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiAck>>, TError,{imei: string;data: InboxAckRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiAck>>, TError,{imei: string;data: InboxAckRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiAck>>, TError,{imei: string;data: InboxAckRequest}, TContext> => {
 
 const mutationKey = ['postDeviceInboxImeiAck'];
@@ -423,12 +508,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDeviceInboxImeiAck(imei,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDeviceInboxImeiAck>>, variables: {imei: string;data: InboxAckRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDeviceInboxQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDeviceInboxImeiAckMutationResult = NonNullable<Awaited<ReturnType<typeof postDeviceInboxImeiAck>>>
     export type PostDeviceInboxImeiAckMutationBody = InboxAckRequest
@@ -438,14 +528,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Acknowledge inbox entry
  */
 export const usePostDeviceInboxImeiAck = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiAck>>, TError,{imei: string;data: InboxAckRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiAck>>, TError,{imei: string;data: InboxAckRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDeviceInboxImeiAck>>,
         TError,
         {imei: string;data: InboxAckRequest},
         TContext
       > => {
-      return useMutation(getPostDeviceInboxImeiAckMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDeviceInboxImeiAckMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostDeviceInboxImeiResendUrl = (imei: string,) => {
 
@@ -475,7 +566,7 @@ export const postDeviceInboxImeiResend = async (imei: string, options?: Paramete
 
 
 export const getPostDeviceInboxImeiResendMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiResend>>, TError,{imei: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiResend>>, TError,{imei: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiResend>>, TError,{imei: string}, TContext> => {
 
 const mutationKey = ['postDeviceInboxImeiResend'];
@@ -494,12 +585,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postDeviceInboxImeiResend(imei,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postDeviceInboxImeiResend>>, variables: {imei: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetDeviceInboxQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostDeviceInboxImeiResendMutationResult = NonNullable<Awaited<ReturnType<typeof postDeviceInboxImeiResend>>>
 
@@ -509,12 +605,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Resend approval notification
  */
 export const usePostDeviceInboxImeiResend = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiResend>>, TError,{imei: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postDeviceInboxImeiResend>>, TError,{imei: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postDeviceInboxImeiResend>>,
         TError,
         {imei: string},
         TContext
       > => {
-      return useMutation(getPostDeviceInboxImeiResendMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostDeviceInboxImeiResendMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

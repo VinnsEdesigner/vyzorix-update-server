@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -30,6 +38,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -79,7 +88,7 @@ export const deleteTelemetryCleanup = async ( options?: Parameters<typeof custom
 
 
 export const getDeleteTelemetryCleanupMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTelemetryCleanup>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTelemetryCleanup>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteTelemetryCleanup>>, TError,void, TContext> => {
 
 const mutationKey = ['deleteTelemetryCleanup'];
@@ -98,12 +107,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteTelemetryCleanup(requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteTelemetryCleanup>>, variables: void, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetTelemetryHistoryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetTelemetryHistoryExportQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteTelemetryCleanupMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTelemetryCleanup>>>
 
@@ -113,14 +128,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Clean up old telemetry
  */
 export const useDeleteTelemetryCleanup = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTelemetryCleanup>>, TError,void, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTelemetryCleanup>>, TError,void, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteTelemetryCleanup>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getDeleteTelemetryCleanupMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteTelemetryCleanupMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetTelemetryHistoryUrl = (params: GetTelemetryHistoryParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -152,19 +168,16 @@ export const getTelemetryHistory = async (params: GetTelemetryHistoryParams, opt
 
 
 
-export const getGetTelemetryHistoryQueryKey = (params?: GetTelemetryHistoryParams,) => {
-    return [
-    `/telemetry/history`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetTelemetryHistoryQueryKey = (params?: GetTelemetryHistoryParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/telemetry/history` });
 
 
-export const getGetTelemetryHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryHistory>>, TError = ErrorResponse>(params: GetTelemetryHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetTelemetryHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryHistory>>, TError = ErrorResponse>(params: GetTelemetryHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetTelemetryHistoryQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/telemetry/history`, queryOptions });
 
 
 
@@ -174,27 +187,59 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetTelemetryHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getTelemetryHistory>>>
 export type GetTelemetryHistoryQueryError = ErrorResponse
 
 
+export function useGetTelemetryHistory<TData = Awaited<ReturnType<typeof getTelemetryHistory>>, TError = ErrorResponse>(
+ params: GetTelemetryHistoryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryHistory<TData = Awaited<ReturnType<typeof getTelemetryHistory>>, TError = ErrorResponse>(
+ params: GetTelemetryHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryHistory>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryHistory>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryHistory<TData = Awaited<ReturnType<typeof getTelemetryHistory>>, TError = ErrorResponse>(
+ params: GetTelemetryHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useGetTelemetryHistory<TData = Awaited<ReturnType<typeof getTelemetryHistory>>, TError = ErrorResponse>(
- params: GetTelemetryHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params: GetTelemetryHistoryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistory>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetTelemetryHistoryQueryOptions(params,options)
 
-  const queryOptions = getGetTelemetryHistoryQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+export const invalidateGetTelemetryHistory = async (
+ queryClient: QueryClient, params: GetTelemetryHistoryParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/telemetry/history` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -233,19 +278,16 @@ export const getTelemetryHistoryExport = async (params: GetTelemetryHistoryExpor
 
 
 
-export const getGetTelemetryHistoryExportQueryKey = (params?: GetTelemetryHistoryExportParams,) => {
-    return [
-    `/telemetry/history/export`, ...(params ? [params] : [])
-    ] as const;
-    }
+export const getGetTelemetryHistoryExportQueryKey = (params?: GetTelemetryHistoryExportParams,) =>
+    organizationScopedQueryKey({ params }, { url: `/telemetry/history/export` });
 
 
-export const getGetTelemetryHistoryExportQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError = ErrorResponse>(params: GetTelemetryHistoryExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetTelemetryHistoryExportQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError = ErrorResponse>(params: GetTelemetryHistoryExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetTelemetryHistoryExportQueryKey(params);
+  const queryKey =  organizationScopedQueryKey({ params }, { url: `/telemetry/history/export`, queryOptions });
 
 
 
@@ -255,30 +297,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetTelemetryHistoryExportQueryResult = NonNullable<Awaited<ReturnType<typeof getTelemetryHistoryExport>>>
 export type GetTelemetryHistoryExportQueryError = ErrorResponse
 
 
+export function useGetTelemetryHistoryExport<TData = Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError = ErrorResponse>(
+ params: GetTelemetryHistoryExportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryHistoryExport>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryHistoryExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryHistoryExport<TData = Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError = ErrorResponse>(
+ params: GetTelemetryHistoryExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryHistoryExport>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryHistoryExport>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryHistoryExport<TData = Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError = ErrorResponse>(
+ params: GetTelemetryHistoryExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Export telemetry history
  */
 
 export function useGetTelemetryHistoryExport<TData = Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError = ErrorResponse>(
- params: GetTelemetryHistoryExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ params: GetTelemetryHistoryExportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryHistoryExport>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetTelemetryHistoryExportQueryOptions(params,options)
 
-  const queryOptions = getGetTelemetryHistoryExportQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Export telemetry history
+ */
+export const invalidateGetTelemetryHistoryExport = async (
+ queryClient: QueryClient, params: GetTelemetryHistoryExportParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ params }, { url: `/telemetry/history/export` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -310,19 +387,16 @@ export const getTelemetryLatestDeviceId = async (deviceId: string, options?: Par
 
 
 
-export const getGetTelemetryLatestDeviceIdQueryKey = (deviceId: string,) => {
-    return [
-    `/telemetry/latest/${deviceId}`
-    ] as const;
-    }
+export const getGetTelemetryLatestDeviceIdQueryKey = (deviceId: string,) =>
+    organizationScopedQueryKey({ deviceId }, { url: `/telemetry/latest/${deviceId}` });
 
 
-export const getGetTelemetryLatestDeviceIdQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError = ErrorResponse>(deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetTelemetryLatestDeviceIdQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError = ErrorResponse>(deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetTelemetryLatestDeviceIdQueryKey(deviceId);
+  const queryKey =  organizationScopedQueryKey({ deviceId }, { url: `/telemetry/latest/${deviceId}`, queryOptions });
 
 
 
@@ -332,30 +406,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetTelemetryLatestDeviceIdQueryResult = NonNullable<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>>
 export type GetTelemetryLatestDeviceIdQueryError = ErrorResponse
 
 
+export function useGetTelemetryLatestDeviceId<TData = Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError = ErrorResponse>(
+ deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryLatestDeviceId<TData = Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError = ErrorResponse>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryLatestDeviceId<TData = Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError = ErrorResponse>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get latest telemetry
  */
 
 export function useGetTelemetryLatestDeviceId<TData = Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError = ErrorResponse>(
- deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryLatestDeviceId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetTelemetryLatestDeviceIdQueryOptions(deviceId,options)
 
-  const queryOptions = getGetTelemetryLatestDeviceIdQueryOptions(deviceId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get latest telemetry
+ */
+export const invalidateGetTelemetryLatestDeviceId = async (
+ queryClient: QueryClient, deviceId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ deviceId }, { url: `/telemetry/latest/${deviceId}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -387,19 +496,16 @@ export const getTelemetryStatsDeviceId = async (deviceId: string, options?: Para
 
 
 
-export const getGetTelemetryStatsDeviceIdQueryKey = (deviceId: string,) => {
-    return [
-    `/telemetry/stats/${deviceId}`
-    ] as const;
-    }
+export const getGetTelemetryStatsDeviceIdQueryKey = (deviceId: string,) =>
+    organizationScopedQueryKey({ deviceId }, { url: `/telemetry/stats/${deviceId}` });
 
 
-export const getGetTelemetryStatsDeviceIdQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError = ErrorResponse>(deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetTelemetryStatsDeviceIdQueryOptions = <TData = Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError = ErrorResponse>(deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetTelemetryStatsDeviceIdQueryKey(deviceId);
+  const queryKey =  organizationScopedQueryKey({ deviceId }, { url: `/telemetry/stats/${deviceId}`, queryOptions });
 
 
 
@@ -409,30 +515,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: deviceId !== null && deviceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetTelemetryStatsDeviceIdQueryResult = NonNullable<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>>
 export type GetTelemetryStatsDeviceIdQueryError = ErrorResponse
 
 
+export function useGetTelemetryStatsDeviceId<TData = Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError = ErrorResponse>(
+ deviceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryStatsDeviceId<TData = Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError = ErrorResponse>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>,
+          TError,
+          Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTelemetryStatsDeviceId<TData = Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError = ErrorResponse>(
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get telemetry stats
  */
 
 export function useGetTelemetryStatsDeviceId<TData = Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError = ErrorResponse>(
- deviceId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ deviceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTelemetryStatsDeviceId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetTelemetryStatsDeviceIdQueryOptions(deviceId,options)
 
-  const queryOptions = getGetTelemetryStatsDeviceIdQueryOptions(deviceId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get telemetry stats
+ */
+export const invalidateGetTelemetryStatsDeviceId = async (
+ queryClient: QueryClient, deviceId: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ deviceId }, { url: `/telemetry/stats/${deviceId}` }) }, options);
+
+  return queryClient;
+}
 
 
 

@@ -10,9 +10,15 @@ import {
   useQuery
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -28,6 +34,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -86,20 +93,17 @@ export const getConfigVersionsResource = async (resource: string,
 
 
 export const getGetConfigVersionsResourceQueryKey = (resource: string,
-    params?: GetConfigVersionsResourceParams,) => {
-    return [
-    `/config-versions/${resource}`, ...(params ? [params] : [])
-    ] as const;
-    }
+    params?: GetConfigVersionsResourceParams,) =>
+    organizationScopedQueryKey({ resource,params }, { url: `/config-versions/${resource}` });
 
 
-export const getGetConfigVersionsResourceQueryOptions = <TData = Awaited<ReturnType<typeof getConfigVersionsResource>>, TError = ErrorResponse>(resource: string,
-    params?: GetConfigVersionsResourceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetConfigVersionsResourceQueryOptions = <TData = Awaited<ReturnType<typeof getConfigVersionsResource>>, TError = ErrorResponse>(resource: string,
+    params?: GetConfigVersionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetConfigVersionsResourceQueryKey(resource,params);
+  const queryKey =  organizationScopedQueryKey({ resource,params }, { url: `/config-versions/${resource}`, queryOptions });
 
 
 
@@ -109,31 +113,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: resource !== null && resource !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: resource !== null && resource !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetConfigVersionsResourceQueryResult = NonNullable<Awaited<ReturnType<typeof getConfigVersionsResource>>>
 export type GetConfigVersionsResourceQueryError = ErrorResponse
 
 
+export function useGetConfigVersionsResource<TData = Awaited<ReturnType<typeof getConfigVersionsResource>>, TError = ErrorResponse>(
+ resource: string,
+    params: undefined |  GetConfigVersionsResourceParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConfigVersionsResource>>,
+          TError,
+          Awaited<ReturnType<typeof getConfigVersionsResource>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigVersionsResource<TData = Awaited<ReturnType<typeof getConfigVersionsResource>>, TError = ErrorResponse>(
+ resource: string,
+    params?: GetConfigVersionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConfigVersionsResource>>,
+          TError,
+          Awaited<ReturnType<typeof getConfigVersionsResource>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigVersionsResource<TData = Awaited<ReturnType<typeof getConfigVersionsResource>>, TError = ErrorResponse>(
+ resource: string,
+    params?: GetConfigVersionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List config versions
  */
 
 export function useGetConfigVersionsResource<TData = Awaited<ReturnType<typeof getConfigVersionsResource>>, TError = ErrorResponse>(
  resource: string,
-    params?: GetConfigVersionsResourceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    params?: GetConfigVersionsResourceParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResource>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetConfigVersionsResourceQueryOptions(resource,params,options)
 
-  const queryOptions = getGetConfigVersionsResourceQueryOptions(resource,params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List config versions
+ */
+export const invalidateGetConfigVersionsResource = async (
+ queryClient: QueryClient, resource: string,
+    params?: GetConfigVersionsResourceParams, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ resource,params }, { url: `/config-versions/${resource}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -168,20 +211,17 @@ export const getConfigVersionsResourceVersion = async (resource: string,
 
 
 export const getGetConfigVersionsResourceVersionQueryKey = (resource: string,
-    version: number,) => {
-    return [
-    `/config-versions/${resource}/${version}`
-    ] as const;
-    }
+    version: number,) =>
+    organizationScopedQueryKey({ resource,version }, { url: `/config-versions/${resource}/${version}` });
 
 
-export const getGetConfigVersionsResourceVersionQueryOptions = <TData = Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError = ErrorResponse>(resource: string,
-    version: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetConfigVersionsResourceVersionQueryOptions = <TData = Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError = ErrorResponse>(resource: string,
+    version: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetConfigVersionsResourceVersionQueryKey(resource,version);
+  const queryKey =  organizationScopedQueryKey({ resource,version }, { url: `/config-versions/${resource}/${version}`, queryOptions });
 
 
 
@@ -191,31 +231,70 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: resource !== null && resource !== undefined && version !== null && version !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: resource !== null && resource !== undefined && version !== null && version !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetConfigVersionsResourceVersionQueryResult = NonNullable<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>>
 export type GetConfigVersionsResourceVersionQueryError = ErrorResponse
 
 
+export function useGetConfigVersionsResourceVersion<TData = Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError = ErrorResponse>(
+ resource: string,
+    version: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>,
+          TError,
+          Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigVersionsResourceVersion<TData = Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError = ErrorResponse>(
+ resource: string,
+    version: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>,
+          TError,
+          Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetConfigVersionsResourceVersion<TData = Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError = ErrorResponse>(
+ resource: string,
+    version: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get config version
  */
 
 export function useGetConfigVersionsResourceVersion<TData = Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError = ErrorResponse>(
  resource: string,
-    version: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+    version: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getConfigVersionsResourceVersion>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetConfigVersionsResourceVersionQueryOptions(resource,version,options)
 
-  const queryOptions = getGetConfigVersionsResourceVersionQueryOptions(resource,version,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get config version
+ */
+export const invalidateGetConfigVersionsResourceVersion = async (
+ queryClient: QueryClient, resource: string,
+    version: number, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ resource,version }, { url: `/config-versions/${resource}/${version}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -285,11 +364,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const usePostConfigVersionsResourceVersionRestore = <TError = ErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postConfigVersionsResourceVersionRestore>>, TError,{resource: string;version: number}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postConfigVersionsResourceVersionRestore>>,
         TError,
         {resource: string;version: number},
         TContext
       > => {
-      return useMutation(getPostConfigVersionsResourceVersionRestoreMutationOptions(options));
+      return useMutation(getPostConfigVersionsResourceVersionRestoreMutationOptions(options), queryClient);
     }

@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -33,6 +41,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -81,19 +90,16 @@ export const getOrganizations = async ( options?: Parameters<typeof customAxios>
 
 
 
-export const getGetOrganizationsQueryKey = () => {
-    return [
-    `/organizations`
-    ] as const;
-    }
+export const getGetOrganizationsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/organizations` });
 
 
-export const getGetOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizations>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizations>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/organizations`, queryOptions });
 
 
 
@@ -103,30 +109,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizations>>>
 export type GetOrganizationsQueryError = ErrorResponse
 
 
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizations>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizations>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizations>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List organizations
  */
 
 export function useGetOrganizations<TData = Awaited<ReturnType<typeof getOrganizations>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizations>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsQueryOptions(options)
 
-  const queryOptions = getGetOrganizationsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List organizations
+ */
+export const invalidateGetOrganizations = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/organizations` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -165,7 +206,7 @@ return customAxios<Organization>(getPostOrganizationsUrl(),
 
 
 export const getPostOrganizationsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizations>>, TError,{data: CreateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizations>>, TError,{data: CreateOrganizationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postOrganizations>>, TError,{data: CreateOrganizationRequest}, TContext> => {
 
 const mutationKey = ['postOrganizations'];
@@ -184,12 +225,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postOrganizations(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postOrganizations>>, variables: {data: CreateOrganizationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetOrganizationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostOrganizationsMutationResult = NonNullable<Awaited<ReturnType<typeof postOrganizations>>>
     export type PostOrganizationsMutationBody = CreateOrganizationRequest
@@ -199,14 +245,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create organization
  */
 export const usePostOrganizations = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizations>>, TError,{data: CreateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postOrganizations>>, TError,{data: CreateOrganizationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postOrganizations>>,
         TError,
         {data: CreateOrganizationRequest},
         TContext
       > => {
-      return useMutation(getPostOrganizationsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostOrganizationsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetOrganizationsIdUrl = (id: string,) => {
 
@@ -235,19 +282,16 @@ export const getOrganizationsId = async (id: string, options?: Parameters<typeof
 
 
 
-export const getGetOrganizationsIdQueryKey = (id: string,) => {
-    return [
-    `/organizations/${id}`
-    ] as const;
-    }
+export const getGetOrganizationsIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/organizations/${id}` });
 
 
-export const getGetOrganizationsIdQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsIdQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/organizations/${id}`, queryOptions });
 
 
 
@@ -257,30 +301,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationsId>>>
 export type GetOrganizationsIdQueryError = ErrorResponse
 
 
+export function useGetOrganizationsId<TData = Awaited<ReturnType<typeof getOrganizationsId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsId>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsId<TData = Awaited<ReturnType<typeof getOrganizationsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsId>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsId<TData = Awaited<ReturnType<typeof getOrganizationsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get organization
  */
 
 export function useGetOrganizationsId<TData = Awaited<ReturnType<typeof getOrganizationsId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsIdQueryOptions(id,options)
 
-  const queryOptions = getGetOrganizationsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get organization
+ */
+export const invalidateGetOrganizationsId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/organizations/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -313,7 +392,7 @@ export const deleteOrganizationsId = async (id: string, options?: Parameters<typ
 
 
 export const getDeleteOrganizationsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganizationsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganizationsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteOrganizationsId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteOrganizationsId'];
@@ -332,12 +411,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteOrganizationsId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteOrganizationsId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetOrganizationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteOrganizationsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOrganizationsId>>>
 
@@ -347,14 +431,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete organization
  */
 export const useDeleteOrganizationsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganizationsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrganizationsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteOrganizationsId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteOrganizationsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteOrganizationsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchOrganizationsIdUrl = (id: string,) => {
 
@@ -391,7 +476,7 @@ return customAxios<Organization>(getPatchOrganizationsIdUrl(id),
 
 
 export const getPatchOrganizationsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsId>>, TError,{id: string;data: UpdateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsId>>, TError,{id: string;data: UpdateOrganizationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsId>>, TError,{id: string;data: UpdateOrganizationRequest}, TContext> => {
 
 const mutationKey = ['patchOrganizationsId'];
@@ -410,12 +495,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchOrganizationsId(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchOrganizationsId>>, variables: {id: string;data: UpdateOrganizationRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetOrganizationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchOrganizationsIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchOrganizationsId>>>
     export type PatchOrganizationsIdMutationBody = UpdateOrganizationRequest
@@ -425,14 +515,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update organization
  */
 export const usePatchOrganizationsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsId>>, TError,{id: string;data: UpdateOrganizationRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsId>>, TError,{id: string;data: UpdateOrganizationRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchOrganizationsId>>,
         TError,
         {id: string;data: UpdateOrganizationRequest},
         TContext
       > => {
-      return useMutation(getPatchOrganizationsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchOrganizationsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetOrganizationsIdSettingsUrl = (id: string,) => {
 
@@ -461,19 +552,16 @@ export const getOrganizationsIdSettings = async (id: string, options?: Parameter
 
 
 
-export const getGetOrganizationsIdSettingsQueryKey = (id: string,) => {
-    return [
-    `/organizations/${id}/settings`
-    ] as const;
-    }
+export const getGetOrganizationsIdSettingsQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/organizations/${id}/settings` });
 
 
-export const getGetOrganizationsIdSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsIdSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsIdSettingsQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/organizations/${id}/settings`, queryOptions });
 
 
 
@@ -483,30 +571,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsIdSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationsIdSettings>>>
 export type GetOrganizationsIdSettingsQueryError = ErrorResponse
 
 
+export function useGetOrganizationsIdSettings<TData = Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdSettings>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdSettings>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdSettings<TData = Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdSettings>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdSettings>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdSettings<TData = Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get organization settings
  */
 
 export function useGetOrganizationsIdSettings<TData = Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettings>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsIdSettingsQueryOptions(id,options)
 
-  const queryOptions = getGetOrganizationsIdSettingsQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get organization settings
+ */
+export const invalidateGetOrganizationsIdSettings = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/organizations/${id}/settings` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -546,7 +669,7 @@ return customAxios<OrganizationSettingsResult>(getPatchOrganizationsIdSettingsUr
 
 
 export const getPatchOrganizationsIdSettingsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettings>>, TError,{id: string;data: UpdateOrganizationSettingsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettings>>, TError,{id: string;data: UpdateOrganizationSettingsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettings>>, TError,{id: string;data: UpdateOrganizationSettingsRequest}, TContext> => {
 
 const mutationKey = ['patchOrganizationsIdSettings'];
@@ -565,12 +688,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchOrganizationsIdSettings(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchOrganizationsIdSettings>>, variables: {id: string;data: UpdateOrganizationSettingsRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetOrganizationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchOrganizationsIdSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof patchOrganizationsIdSettings>>>
     export type PatchOrganizationsIdSettingsMutationBody = UpdateOrganizationSettingsRequest
@@ -580,14 +708,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update organization settings
  */
 export const usePatchOrganizationsIdSettings = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettings>>, TError,{id: string;data: UpdateOrganizationSettingsRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettings>>, TError,{id: string;data: UpdateOrganizationSettingsRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchOrganizationsIdSettings>>,
         TError,
         {id: string;data: UpdateOrganizationSettingsRequest},
         TContext
       > => {
-      return useMutation(getPatchOrganizationsIdSettingsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchOrganizationsIdSettingsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetOrganizationsIdSettingsThresholdsUrl = (id: string,) => {
 
@@ -616,19 +745,16 @@ export const getOrganizationsIdSettingsThresholds = async (id: string, options?:
 
 
 
-export const getGetOrganizationsIdSettingsThresholdsQueryKey = (id: string,) => {
-    return [
-    `/organizations/${id}/settings/thresholds`
-    ] as const;
-    }
+export const getGetOrganizationsIdSettingsThresholdsQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/organizations/${id}/settings/thresholds` });
 
 
-export const getGetOrganizationsIdSettingsThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetOrganizationsIdSettingsThresholdsQueryOptions = <TData = Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetOrganizationsIdSettingsThresholdsQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/organizations/${id}/settings/thresholds`, queryOptions });
 
 
 
@@ -638,30 +764,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetOrganizationsIdSettingsThresholdsQueryResult = NonNullable<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>>
 export type GetOrganizationsIdSettingsThresholdsQueryError = ErrorResponse
 
 
+export function useGetOrganizationsIdSettingsThresholds<TData = Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdSettingsThresholds<TData = Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>,
+          TError,
+          Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetOrganizationsIdSettingsThresholds<TData = Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get organization thresholds
  */
 
 export function useGetOrganizationsIdSettingsThresholds<TData = Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getOrganizationsIdSettingsThresholds>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetOrganizationsIdSettingsThresholdsQueryOptions(id,options)
 
-  const queryOptions = getGetOrganizationsIdSettingsThresholdsQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get organization thresholds
+ */
+export const invalidateGetOrganizationsIdSettingsThresholds = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/organizations/${id}/settings/thresholds` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -701,7 +862,7 @@ return customAxios<ThresholdsResult>(getPatchOrganizationsIdSettingsThresholdsUr
 
 
 export const getPatchOrganizationsIdSettingsThresholdsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>, TError,{id: string;data: ThresholdUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>, TError,{id: string;data: ThresholdUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>, TError,{id: string;data: ThresholdUpdateRequest}, TContext> => {
 
 const mutationKey = ['patchOrganizationsIdSettingsThresholds'];
@@ -720,12 +881,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchOrganizationsIdSettingsThresholds(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>, variables: {id: string;data: ThresholdUpdateRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetOrganizationsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchOrganizationsIdSettingsThresholdsMutationResult = NonNullable<Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>>
     export type PatchOrganizationsIdSettingsThresholdsMutationBody = ThresholdUpdateRequest
@@ -735,12 +901,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update organization thresholds
  */
 export const usePatchOrganizationsIdSettingsThresholds = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>, TError,{id: string;data: ThresholdUpdateRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>, TError,{id: string;data: ThresholdUpdateRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchOrganizationsIdSettingsThresholds>>,
         TError,
         {id: string;data: ThresholdUpdateRequest},
         TContext
       > => {
-      return useMutation(getPatchOrganizationsIdSettingsThresholdsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchOrganizationsIdSettingsThresholdsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

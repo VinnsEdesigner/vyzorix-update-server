@@ -3,16 +3,18 @@ import type { ChangelogEntry } from '@vyzorix/api-client';
 import {
   getUpdatesChangelog,
   useGetUpdatesChangelog,
+  getGetUpdatesChangelogQueryKey,
 } from '@/generated-rq/updates/update-management';
 import { fetchChangelogViaGraphQL, normalizeWireChangelog } from './_graphql-fallback';
 
 export function useChangelog(version?: string) {
   const organizationId = useCurrentOrganizationId();
+  const params = version ? { version } : undefined;
   return useGetUpdatesChangelog<ChangelogEntry[]>(
-    version ? { version } : undefined,
+    params,
     {
       query: {
-        queryKey: ['updates', 'changelog', version] as const,
+        queryKey: getGetUpdatesChangelogQueryKey(params),
         enabled: organizationId !== null,
         queryFn: async () => {
           try {

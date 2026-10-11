@@ -7,12 +7,20 @@
  */
 import {
   useMutation,
-  useQuery
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  InvalidateOptions,
   MutationFunction,
+  MutationFunctionContext,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
@@ -29,6 +37,7 @@ import type {
 } from '../../../../../packages/API_Client/src/generated/schemas';
 
 import { customAxios } from '../../../../../packages/API_Client/src/generated/rest-bridge';
+import organizationScopedQueryKey from '.././query-key-mutator';
 
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
@@ -77,19 +86,16 @@ export const getNotificationsContactPoints = async ( options?: Parameters<typeof
 
 
 
-export const getGetNotificationsContactPointsQueryKey = () => {
-    return [
-    `/notifications/contact-points`
-    ] as const;
-    }
+export const getGetNotificationsContactPointsQueryKey = () =>
+    organizationScopedQueryKey({  }, { url: `/notifications/contact-points` });
 
 
-export const getGetNotificationsContactPointsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError = ErrorResponse>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetNotificationsContactPointsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError = ErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetNotificationsContactPointsQueryKey();
+  const queryKey =  organizationScopedQueryKey({  }, { url: `/notifications/contact-points`, queryOptions });
 
 
 
@@ -99,30 +105,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetNotificationsContactPointsQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationsContactPoints>>>
 export type GetNotificationsContactPointsQueryError = ErrorResponse
 
 
+export function useGetNotificationsContactPoints<TData = Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError = ErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNotificationsContactPoints>>,
+          TError,
+          Awaited<ReturnType<typeof getNotificationsContactPoints>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNotificationsContactPoints<TData = Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNotificationsContactPoints>>,
+          TError,
+          Awaited<ReturnType<typeof getNotificationsContactPoints>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNotificationsContactPoints<TData = Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError = ErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary List contact points
  */
 
 export function useGetNotificationsContactPoints<TData = Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError = ErrorResponse>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPoints>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetNotificationsContactPointsQueryOptions(options)
 
-  const queryOptions = getGetNotificationsContactPointsQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary List contact points
+ */
+export const invalidateGetNotificationsContactPoints = async (
+ queryClient: QueryClient,  options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({  }, { url: `/notifications/contact-points` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -161,7 +202,7 @@ return customAxios<ContactPoint>(getPostNotificationsContactPointsUrl(),
 
 
 export const getPostNotificationsContactPointsMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPoints>>, TError,{data: ContactPointRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPoints>>, TError,{data: ContactPointRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPoints>>, TError,{data: ContactPointRequest}, TContext> => {
 
 const mutationKey = ['postNotificationsContactPoints'];
@@ -180,12 +221,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postNotificationsContactPoints(data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postNotificationsContactPoints>>, variables: {data: ContactPointRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetNotificationsContactPointsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostNotificationsContactPointsMutationResult = NonNullable<Awaited<ReturnType<typeof postNotificationsContactPoints>>>
     export type PostNotificationsContactPointsMutationBody = ContactPointRequest
@@ -195,14 +241,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Create contact point
  */
 export const usePostNotificationsContactPoints = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPoints>>, TError,{data: ContactPointRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPoints>>, TError,{data: ContactPointRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postNotificationsContactPoints>>,
         TError,
         {data: ContactPointRequest},
         TContext
       > => {
-      return useMutation(getPostNotificationsContactPointsMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostNotificationsContactPointsMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getGetNotificationsContactPointsIdUrl = (id: string,) => {
 
@@ -231,19 +278,16 @@ export const getNotificationsContactPointsId = async (id: string, options?: Para
 
 
 
-export const getGetNotificationsContactPointsIdQueryKey = (id: string,) => {
-    return [
-    `/notifications/contact-points/${id}`
-    ] as const;
-    }
+export const getGetNotificationsContactPointsIdQueryKey = (id: string,) =>
+    organizationScopedQueryKey({ id }, { url: `/notifications/contact-points/${id}` });
 
 
-export const getGetNotificationsContactPointsIdQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError = ErrorResponse>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+export const useGetNotificationsContactPointsIdQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError = ErrorResponse>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetNotificationsContactPointsIdQueryKey(id);
+  const queryKey =  organizationScopedQueryKey({ id }, { url: `/notifications/contact-points/${id}`, queryOptions });
 
 
 
@@ -253,30 +297,65 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
 
 
-   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type GetNotificationsContactPointsIdQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationsContactPointsId>>>
 export type GetNotificationsContactPointsIdQueryError = ErrorResponse
 
 
+export function useGetNotificationsContactPointsId<TData = Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError = ErrorResponse>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNotificationsContactPointsId>>,
+          TError,
+          Awaited<ReturnType<typeof getNotificationsContactPointsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNotificationsContactPointsId<TData = Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getNotificationsContactPointsId>>,
+          TError,
+          Awaited<ReturnType<typeof getNotificationsContactPointsId>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetNotificationsContactPointsId<TData = Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError = ErrorResponse>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get contact point
  */
 
 export function useGetNotificationsContactPointsId<TData = Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError = ErrorResponse>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>, request?: SecondParameter<typeof customAxios>}
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getNotificationsContactPointsId>>, TError, TData>>, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetNotificationsContactPointsIdQueryOptions(id,options)
 
-  const queryOptions = getGetNotificationsContactPointsIdQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
 
+/**
+ * @summary Get contact point
+ */
+export const invalidateGetNotificationsContactPointsId = async (
+ queryClient: QueryClient, id: string, options?: InvalidateOptions
+  ): Promise<QueryClient> => {
+
+  await queryClient.invalidateQueries({ queryKey: organizationScopedQueryKey({ id }, { url: `/notifications/contact-points/${id}` }) }, options);
+
+  return queryClient;
+}
 
 
 
@@ -309,7 +388,7 @@ export const deleteNotificationsContactPointsId = async (id: string, options?: P
 
 
 export const getDeleteNotificationsContactPointsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['deleteNotificationsContactPointsId'];
@@ -328,12 +407,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  deleteNotificationsContactPointsId(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetNotificationsContactPointsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type DeleteNotificationsContactPointsIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>>
 
@@ -343,14 +427,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete contact point
  */
 export const useDeleteNotificationsContactPointsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof deleteNotificationsContactPointsId>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getDeleteNotificationsContactPointsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getDeleteNotificationsContactPointsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPatchNotificationsContactPointsIdUrl = (id: string,) => {
 
@@ -387,7 +472,7 @@ return customAxios<ContactPoint>(getPatchNotificationsContactPointsIdUrl(id),
 
 
 export const getPatchNotificationsContactPointsIdMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchNotificationsContactPointsId>>, TError,{id: string;data: ContactPointRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchNotificationsContactPointsId>>, TError,{id: string;data: ContactPointRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof patchNotificationsContactPointsId>>, TError,{id: string;data: ContactPointRequest}, TContext> => {
 
 const mutationKey = ['patchNotificationsContactPointsId'];
@@ -406,12 +491,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  patchNotificationsContactPointsId(id,data,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof patchNotificationsContactPointsId>>, variables: {id: string;data: ContactPointRequest}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetNotificationsContactPointsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PatchNotificationsContactPointsIdMutationResult = NonNullable<Awaited<ReturnType<typeof patchNotificationsContactPointsId>>>
     export type PatchNotificationsContactPointsIdMutationBody = ContactPointRequest
@@ -421,14 +511,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Update contact point
  */
 export const usePatchNotificationsContactPointsId = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchNotificationsContactPointsId>>, TError,{id: string;data: ContactPointRequest}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof patchNotificationsContactPointsId>>, TError,{id: string;data: ContactPointRequest}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof patchNotificationsContactPointsId>>,
         TError,
         {id: string;data: ContactPointRequest},
         TContext
       > => {
-      return useMutation(getPatchNotificationsContactPointsIdMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPatchNotificationsContactPointsIdMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }
     export const getPostNotificationsContactPointsIdTestUrl = (id: string,) => {
 
@@ -458,7 +549,7 @@ export const postNotificationsContactPointsIdTest = async (id: string, options?:
 
 
 export const getPostNotificationsContactPointsIdTestMutationOptions = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
+    TContext = unknown>(queryClient: QueryClient, options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
 ): UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>, TError,{id: string}, TContext> => {
 
 const mutationKey = ['postNotificationsContactPointsIdTest'];
@@ -477,12 +568,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
           return  postNotificationsContactPointsIdTest(id,requestOptions)
         }
 
+  const onSuccess = (data: Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>, variables: {id: string}, onMutateResult: TContext, context: MutationFunctionContext) => {
+        if (!options?.skipInvalidation) {
+        queryClient.invalidateQueries({ queryKey: getGetNotificationsContactPointsQueryKey() });
+        }
+        mutationOptions?.onSuccess?.(data, variables, onMutateResult, context);
+      };
 
 
 
 
-
-  return  { mutationFn, ...mutationOptions }}
+  return  { ...mutationOptions, mutationFn, onSuccess }}
 
     export type PostNotificationsContactPointsIdTestMutationResult = NonNullable<Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>>
 
@@ -492,12 +588,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Test contact point
  */
 export const usePostNotificationsContactPointsIdTest = <TError = ErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customAxios>}
- ): UseMutationResult<
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>, TError,{id: string}, TContext>, skipInvalidation?: boolean, request?: SecondParameter<typeof customAxios>}
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof postNotificationsContactPointsIdTest>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getPostNotificationsContactPointsIdTestMutationOptions(options));
+      const backupQueryClient = useQueryClient();
+      return useMutation(getPostNotificationsContactPointsIdTestMutationOptions(queryClient ?? backupQueryClient, options), queryClient);
     }

@@ -51,7 +51,7 @@ describe('useLogin', () => {
     const { result } = renderHookWithQueryClient(() => useLogin());
 
     await act(async () => {
-      result.current.mutate({ email: 'test@vyzorix.com', password: 'password123' });
+      result.current.mutate({ data: { email: 'test@vyzorix.com', password: 'password123' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -69,7 +69,7 @@ describe('useLogin', () => {
     const { result } = renderHookWithQueryClient(() => useLogin());
 
     await act(async () => {
-      result.current.mutate({ email: 'test@vyzorix.com', password: 'password123' });
+      result.current.mutate({ data: { email: 'test@vyzorix.com', password: 'password123' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -90,7 +90,7 @@ describe('useLogin', () => {
     const { result } = renderHookWithQueryClient(() => useLogin());
 
     await act(async () => {
-      result.current.mutate({ email: 'bad@vyzorix.com', password: 'wrong' });
+      result.current.mutate({ data: { email: 'bad@vyzorix.com', password: 'wrong' } });
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -106,7 +106,7 @@ describe('useMfaVerify', () => {
     server.use(http.post(`${API_BASE}/login/tokens`, () => rawLoginTokensMfaRequired()));
     const login = renderHookWithQueryClient(() => useLogin());
     await act(async () => {
-      login.result.current.mutate({ email: 'test@vyzorix.com', password: 'password123' });
+      login.result.current.mutate({ data: { email: 'test@vyzorix.com', password: 'password123' } });
     });
     await waitFor(() => expect(login.result.current.isSuccess).toBe(true));
     expect(useAuthStore.getState().mfaChallenge?.operatorId).toBe('operator-1');
@@ -114,15 +114,19 @@ describe('useMfaVerify', () => {
     const { result } = renderHookWithQueryClient(() => useMfaVerify());
 
     await act(async () => {
-      result.current.mutate({ operatorId: 'operator-1', code: '123456' });
+      result.current.mutate({ data: { operator_id: 'operator-1', code: '123456' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // onSuccess hydrates asynchronously: it ingests tokens (partial operator)
+    // and then fetches /me to reconcile organizations. Wait for the reconciled
+    // state so the assertion below and the next test both see a settled store.
+    await waitFor(() => expect(useAuthStore.getState().operator?.organizations).toHaveLength(1));
 
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
     expect(state.accessToken).toBe('mock-access-token-mfa');
     // /me reconciliation populated organizations + selected org.
-    expect(state.operator?.organizations).toHaveLength(1);
     expect(state.operator?.selected_organization?.id).toBe('org-test-1');
     expect(state.mfaChallenge).toBeNull();
     expect(state.status).toBe('authenticated');
@@ -138,7 +142,7 @@ describe('useMfaVerify', () => {
     const { result } = renderHookWithQueryClient(() => useMfaVerify());
 
     await act(async () => {
-      result.current.mutate({ operatorId: 'operator-1', code: '000000' });
+      result.current.mutate({ data: { operator_id: 'operator-1', code: '000000' } });
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -151,7 +155,7 @@ describe('useRegister', () => {
     const { result } = renderHookWithQueryClient(() => useRegister());
 
     await act(async () => {
-      result.current.mutate({ email: 'new@vyzorix.com', password: 'password123', name: 'New User' });
+      result.current.mutate({ data: { email: 'new@vyzorix.com', password: 'password123', name: 'New User' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -171,7 +175,7 @@ describe('useRegister', () => {
     const { result } = renderHookWithQueryClient(() => useRegister());
 
     await act(async () => {
-      result.current.mutate({ email: 'dup@vyzorix.com', password: 'password123', name: 'Dup' });
+      result.current.mutate({ data: { email: 'dup@vyzorix.com', password: 'password123', name: 'Dup' } });
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
@@ -182,14 +186,14 @@ describe('useLogout', () => {
     // Seed an authenticated session.
     const login = renderHookWithQueryClient(() => useLogin());
     await act(async () => {
-      login.result.current.mutate({ email: 'test@vyzorix.com', password: 'password123' });
+      login.result.current.mutate({ data: { email: 'test@vyzorix.com', password: 'password123' } });
     });
     await waitFor(() => expect(login.result.current.isSuccess).toBe(true));
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
 
     const { result } = renderHookWithQueryClient(() => useLogout());
     await act(async () => {
-      result.current.mutate();
+      result.current.mutate({});
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -202,7 +206,7 @@ describe('useLogout', () => {
   it('clears local auth state even when the server logout request fails', async () => {
     const login = renderHookWithQueryClient(() => useLogin());
     await act(async () => {
-      login.result.current.mutate({ email: 'test@vyzorix.com', password: 'password123' });
+      login.result.current.mutate({ data: { email: 'test@vyzorix.com', password: 'password123' } });
     });
     await waitFor(() => expect(login.result.current.isSuccess).toBe(true));
 
@@ -214,9 +218,9 @@ describe('useLogout', () => {
 
     const { result } = renderHookWithQueryClient(() => useLogout());
     await act(async () => {
-      result.current.mutate();
+      result.current.mutate({});
     });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    await waitFor(() => expect(result.current.isError).toBe(true));
 
     // Must still be logged out despite the failed API call.
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
@@ -227,7 +231,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
   it('forgot-password returns success', async () => {
     const { result } = renderHookWithQueryClient(() => useForgotPassword());
     await act(async () => {
-      result.current.mutate({ email: 'test@vyzorix.com' });
+      result.current.mutate({ data: { email: 'test@vyzorix.com' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.message).toBeTruthy();
@@ -236,7 +240,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
   it('reset-password returns success with a valid token', async () => {
     const { result } = renderHookWithQueryClient(() => useResetPassword());
     await act(async () => {
-      result.current.mutate({ token: 'valid-reset-token', newPassword: 'newpass123' });
+      result.current.mutate({ data: { token: 'valid-reset-token', newPassword: 'newpass123' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.message).toBeTruthy();
@@ -250,7 +254,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
     );
     const { result } = renderHookWithQueryClient(() => useResetPassword());
     await act(async () => {
-      result.current.mutate({ token: 'bad', newPassword: 'newpass123' });
+      result.current.mutate({ data: { token: 'bad', newPassword: 'newpass123' } });
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
@@ -258,7 +262,7 @@ describe('useForgotPassword / useResetPassword / useResendPasswordReset', () => 
   it('resend-password-reset returns success', async () => {
     const { result } = renderHookWithQueryClient(() => useResendPasswordReset());
     await act(async () => {
-      result.current.mutate({ email: 'test@vyzorix.com' });
+      result.current.mutate({ data: { email: 'test@vyzorix.com' } });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.message).toBeTruthy();

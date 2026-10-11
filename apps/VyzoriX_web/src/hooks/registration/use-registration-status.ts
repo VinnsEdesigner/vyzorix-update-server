@@ -15,7 +15,6 @@ export function useRegistrationStatus(imei: string | undefined) {
     imei ?? '',
     {
       query: {
-        queryKey: ['registration', 'status', imei] as const,
         enabled: imei !== undefined && imei !== '' && organizationId !== null,
         queryFn: async () => {
           if (!imei) return null as unknown as Awaited<ReturnType<typeof getDeviceInboxImei>>;
