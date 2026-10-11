@@ -410,70 +410,62 @@ and secure.
 
 ---
 
-## 5. Vyzorix Data Pipeline — RxJS Unified Data Layer
+## 5. Vyzorix Data Pipeline — Keep Zustand + TanStack Query (No RxJS)
 
-### Problem
+### Decision
 
-The frontend uses two completely different paradigms for data:
-- REST: TanStack Query (Promises, cache, refetch)
-- WebSocket: imperative `onMessage` handler with `if (isAgentServerEvent(event))`
-  chains (1300+ lines in `conversation-websocket-context.tsx`)
+**Keep the existing data stack: TanStack Query for REST, Zustand stores for
+realtime, and one shared merge primitive at the seam. Do NOT introduce RxJS.**
+The earlier "unify on RxJS Observables" proposal targeted code that does not
+exist in this repository (a 1300-line `conversation-websocket-context.tsx`,
+`OpenHandsEvent`, `isAgentServerEvent`, `useObservable`) — those are OpenHands
+files — and rxjs is not a dependency.
 
-These can't compose. You can't merge a REST history fetch with a WebSocket
-live stream into a single data pipeline. The "REST first, then WS takes over"
-logic is hand-coded with timestamps and dedup.
+### What actually exists (as of this writing)
 
-### Proposal
+The realtime/data layer is ~870 lines total:
 
-Unify on RxJS Observables for both REST and realtime. The REST layer returns
-`Observable<T>` instead of `Promise<T>`. The WebSocket layer emits events
-as an `Observable<VyzorixEvent>`. The UI subscribes to a merged stream that
-combines history + live updates.
+- REST: TanStack Query via the generated react-query hooks (§1).
+- Realtime: `apps/VyzoriX_web/src/stores/websocket-store.ts` (graphql-ws) +
+  `hooks/realtime/*` + `stores/metrics-realtime-store.ts` feeding Zustand
+  stores (`timeline-stream-store`, `log-stream-store`, `diagnostics-store`).
+- The one genuine "two paradigms, one buffer" seam is the device timeline:
+  REST history (`useDeviceTimeline`) and live WS events (`useDiagnosticStream`)
+  both feed `timeline-stream-store`.
 
-```typescript
-// History (REST) + Live (WS) merged into one observable
-const deviceEvents$ = merge(
-  from(fetchDeviceHistory(imei)),     // REST: past events
-  realtimeService.subscribe(`vyzorix:device:${imei}:events`),  // WS: live events
-).pipe(
-  scan((events, event) => [...events, event], [] as VyzorixEvent[]),
-  shareReplay(1),
-);
+### The real fix (shipped)
 
-// UI component
-const events = useObservable(deviceEvents$, []);
-```
+`timeline-stream-store` had a **dedup asymmetry**: `appendBatch` (REST history)
+deduped by event id, but `append` (live WS) did not. The same event arriving via
+both paths — a live event, then a history fetch covering the same window, or
+vice-versa — produced a duplicate row.
 
-### What gets deleted
+Both paths now go through one `mergeNewestFirst(existing, incoming)` helper that
+dedupes by id, prepends newest-first, caps at the ring size, and returns the
+existing array unchanged (no state churn) when nothing is new. Covered by three
+regression tests including both cross-path orderings.
 
-- The `useLayoutEffect` that clears events on conversation switch (RxJS
-  `switchMap` handles this naturally — unsubscribe from old, subscribe to new)
-- The timestamp-based dedup logic (RxJS `distinctUntilChanged` by event ID)
-- The manual "is REST done before WS connects?" gate (RxJS `combineLatest`
-  waits for both)
-- Most of the 1300-line `conversation-websocket-context.tsx`
+### Why not RxJS
 
-### What stays
+- It is a dependency + a whole Observable/`useObservable` layer to unify ~870
+  lines that already work and are typed. The paradigm shift is not justified by
+  the complexity present.
+- RxJS in React adds real footguns: subscription leaks, re-render storms, and
+  SSR friction (this app uses TanStack Start / SSR).
+- The actual problem — REST history + live events landing in one buffer — is
+  solved by a single merge function, not by rewriting the data layer.
 
-- TanStack Query for non-realtime data (settings, org list, etc.) — wrapped
-  via `lastValueFrom()` where RxJS is needed
-- The domain layer (zod schemas, validators)
-- The event store (fed by the RxJS subscription)
+### Revisit trigger
 
-### Naming
+Reconsider a unified observable layer only if a **second** realtime-merge site
+appears (e.g. a second stream that must combine REST history + WS live data with
+non-trivial operators). One seam does not justify a paradigm.
 
-- Package: `packages/API_Client/src/vyzorServer/data/`
-- REST wrapper: `VyzorixDataPipeline.fromRest(url)` → `Observable<T>`
-- WS wrapper: `VyzorixDataPipeline.fromRealtime(channel)` → `Observable<T>`
-- Merged: `VyzorixDataPipeline.combine(history$, live$)` → `Observable<T[]>`
-- Event type: `VyzorixEvent` (replaces the current `OpenHandsEvent`-inspired type)
+### Naming (if the trigger is ever hit)
 
-### Effort
-
-This is the highest-risk change — it's a paradigm shift from Promises to
-Observables across the data layer. Recommend doing this LAST, after the other
-five improvements are in place, and only if the WS event handler complexity
-justifies it.
+- Shared merge: `mergeNewestFirst` (currently private to `timeline-stream-store`).
+- If promoted: `packages/API_Client/src/vyzorServer/data/` with
+  `VyzorixDataPipeline.combine(history, live)` — only then.
 
 ---
 
@@ -546,14 +538,14 @@ tests reference the selector, not the raw URL.
 | 3 | Vyzorix Schema Definitions (#2) | Medium-high | Eliminates config schema drift | Medium |
 | 4 | Vyzorix Realtime Channel (#4) | — | No change: keep `graphql-ws` + Go hub until multi-instance | — |
 | 5 | Vyzorix Test Selectors (#6) | Low | Future-proofs test suite | Low |
-| 6 | Vyzorix Data Pipeline (#5) | High | Simplifies WS event handler | High |
+| 6 | Vyzorix Data Pipeline (#5) | — | No change: keep Zustand + TanStack Query; one merge primitive | — |
 
 Phases 1 and 5 can be done independently and in parallel. Phase 2 depends on
-the OpenAPI spec being stable (which it is after the annotation work). Phase 4
-is deliberately deferred: the existing `graphql-ws` + in-process Go hub is the
-right design at one instance — revisit only when the API scales past one replica
-(see §4). Phase 6 should only be attempted after all others are complete, as
-it's a paradigm shift.
+the OpenAPI spec being stable (which it is after the annotation work). Phases 4
+and 6 are deliberately deferred: the existing `graphql-ws` + in-process Go hub
+is the right design at one instance (§4), and the RxJS data-pipeline rewrite is
+not justified at the current data-layer size — the REST↔WS seam is handled by one
+shared merge primitive (§5).
 
 ---
 
@@ -571,7 +563,14 @@ Already completed:
 
 Not yet started:
 - ❌ Vyzorix Test Selectors (#6)
-- ❌ Vyzorix Data Pipeline (#5)
+
+Decided — Vyzorix Data Pipeline (#5):
+- ✅ **Keep Zustand + TanStack Query; no RxJS.** The proposal targeted OpenHands
+  files that don't exist here and rxjs isn't a dependency. The real REST↔WS seam
+  (device timeline) is fixed with one `mergeNewestFirst(existing, incoming)`
+  helper in `timeline-stream-store` (both `append` and `appendBatch` dedupe by
+  id); 3 regression tests added. Revisit only if a second realtime-merge site
+  appears.
 
 Decided — Vyzorix Realtime Channel (#4):
 - ✅ **Keep `graphql-ws` + the in-process Go hub.** No external broker at the

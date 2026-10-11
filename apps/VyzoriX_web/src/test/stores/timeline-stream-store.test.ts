@@ -56,6 +56,36 @@ describe('useTimelineStreamStore', () => {
     expect(useTimelineStreamStore.getState().byDevice['123']).toBeUndefined();
   });
 
+  it('REST history merged after a live append does not duplicate the event (append -> appendBatch)', () => {
+    // Live WS event arrives first…
+    useTimelineStreamStore.getState().append('123', makeEvent({ id: 'shared' }));
+    // …then the REST history fetch (same window) includes it again.
+    useTimelineStreamStore.getState().appendBatch('123', [
+      makeEvent({ id: 'shared' }),
+      makeEvent({ id: 'older' }),
+    ]);
+    const events = useTimelineStreamStore.getState().byDevice['123']!;
+    expect(events.map((e) => e.id)).toEqual(['older', 'shared']);
+  });
+
+  it('live append of an id already in REST history does not duplicate it (appendBatch -> append)', () => {
+    useTimelineStreamStore.getState().appendBatch('123', [
+      makeEvent({ id: 'shared' }),
+      makeEvent({ id: 'older' }),
+    ]);
+    // A live event re-delivers an id we already have from history.
+    useTimelineStreamStore.getState().append('123', makeEvent({ id: 'shared' }));
+    const events = useTimelineStreamStore.getState().byDevice['123']!;
+    expect(events.map((e) => e.id)).toEqual(['shared', 'older']);
+  });
+
+  it('append with a duplicate id is a no-op (no state churn)', () => {
+    useTimelineStreamStore.getState().append('123', makeEvent({ id: 'dup' }));
+    const before = useTimelineStreamStore.getState().byDevice;
+    useTimelineStreamStore.getState().append('123', makeEvent({ id: 'dup' }));
+    expect(useTimelineStreamStore.getState().byDevice).toBe(before);
+  });
+
   it('setFilter category filters via getEventCategory', () => {
     useTimelineStreamStore.getState().append('123', makeEvent({ id: 'tel', type: 'TELEMETRY' }));
     useTimelineStreamStore.getState().append('123', makeEvent({ id: 'cmd', type: 'COMMAND_SENT' }));

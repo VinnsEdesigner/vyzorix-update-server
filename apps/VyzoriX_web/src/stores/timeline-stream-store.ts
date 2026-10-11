@@ -49,6 +49,25 @@ function categoryOf(type: TimelineEventType): TimelineEventCategory {
   return getEventCategory(type);
 }
 
+/**
+ * Merge `incoming` ahead of `existing`, newest-first, dropping any incoming event
+ * whose id is already present (REST history + WS live feed the same buffer, so
+ * the same event can arrive via both paths). Caps the result at `max`.
+ */
+function mergeNewestFirst(
+  existing: TimelineEvent[],
+  incoming: TimelineEvent[],
+  max = DEFAULT_MAX_EVENTS,
+): TimelineEvent[] {
+  if (incoming.length === 0) return existing;
+  const seen = new Set(existing.map((e) => e.id));
+  const fresh = incoming.filter((e) => !seen.has(e.id));
+  if (fresh.length === 0) return existing;
+  const next = [...fresh, ...existing];
+  if (next.length > max) next.length = max;
+  return next;
+}
+
 export const useTimelineStreamStore = createVyzorStore<TimelineStreamState>('TimelineStreamStore', (set, get) => ({
   byDevice: {},
   filters: {},
@@ -59,11 +78,8 @@ export const useTimelineStreamStore = createVyzorStore<TimelineStreamState>('Tim
   append: (imei, event) => {
     set((state) => {
       const existing = state.byDevice[imei] ?? [];
-      const next = [event, ...existing];
-      if (next.length > DEFAULT_MAX_EVENTS) {
-        next.length = DEFAULT_MAX_EVENTS;
-      }
-      return { byDevice: { ...state.byDevice, [imei]: next } };
+      const next = mergeNewestFirst(existing, [event]);
+      return next === existing ? state : { byDevice: { ...state.byDevice, [imei]: next } };
     });
   },
 
@@ -72,13 +88,8 @@ export const useTimelineStreamStore = createVyzorStore<TimelineStreamState>('Tim
     set((state) => {
       const existing = state.byDevice[imei] ?? [];
       // Merge, dedupe by id, keep newest-first ordering.
-      const seen = new Set(existing.map((e) => e.id));
-      const incoming = events.filter((e) => !seen.has(e.id));
-      const next = [...incoming, ...existing];
-      if (next.length > DEFAULT_MAX_EVENTS) {
-        next.length = DEFAULT_MAX_EVENTS;
-      }
-      return { byDevice: { ...state.byDevice, [imei]: next } };
+      const next = mergeNewestFirst(existing, events);
+      return next === existing ? state : { byDevice: { ...state.byDevice, [imei]: next } };
     });
   },
 
