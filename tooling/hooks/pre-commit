@@ -105,5 +105,25 @@ if command -v python3 &>/dev/null; then
 else
   info "python3 not installed — skipping CUE schema drift check."
 fi
+
+# --- e2e selectors drift gate: openapi3.json -> e2e/selectors ---
+if command -v python3 &>/dev/null; then
+  info "Checking e2e selectors drift (openapi3.json -> e2e/selectors)..."
+  SEL_TMP=$(mktemp -d)
+  if (cd "$REPO_ROOT" && OUT="$SEL_TMP/selectors.cjs" \
+        python3 tooling/codegen/build_selectors.py >/dev/null 2>&1); then
+    if ! cmp -s "$SEL_TMP/selectors.cjs" "$REPO_ROOT/e2e/selectors/vyzorix-selectors.cjs" 2>/dev/null; then
+      rm -rf "$SEL_TMP"
+      fail "e2e selectors drift detected — run 'python3 tooling/codegen/build_selectors.py' from the repo root."
+    fi
+    rm -rf "$SEL_TMP"
+    pass "e2e selectors drift: clean"
+  else
+    rm -rf "$SEL_TMP"
+    fail "build_selectors.py failed — check apps/api/swag/openapi3.json."
+  fi
+else
+  info "python3 not installed — skipping e2e selectors drift check."
+fi
 echo ""
 pass "All checks passed. Commit proceeding."

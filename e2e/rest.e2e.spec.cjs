@@ -13,6 +13,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { loadHarness } = require('./helpers/e2e-helpers.cjs');
+const { vyzorixSelectors: S } = require('./selectors/vyzorix-selectors.cjs');
 
 const TEST_API_KEY = 'vxyz_735ed9eea2cfda407db746f0492c1b2b1de89f32a84ba853253858e518615d6b';
 const TEST_ORG_ID = '38912763-0f82-42b8-a2a7-96f73ce79ac5';
@@ -20,7 +21,7 @@ const TEST_ORG_ID = '38912763-0f82-42b8-a2a7-96f73ce79ac5';
 test.describe('REST through proxy', () => {
   test('GET /v1/version returns version info', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/version');
+    const res = await harness.fetchJSON(S.api.getVersion());
 
     expect(res.status).toBe(200);
     expect(res.body.version).toBeDefined();
@@ -38,7 +39,7 @@ test.describe('REST through proxy', () => {
 
   test('GET /v1/changelog returns changelog', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/changelog');
+    const res = await harness.fetchJSON(S.api.getChangelog());
 
     expect(res.status).toBe(200);
     expect(res.body).toBeDefined();
@@ -72,7 +73,7 @@ test.describe('REST through proxy', () => {
 
   test('GET /v1/devices without API key returns 401 or 429', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/devices');
+    const res = await harness.fetchJSON(S.api.getDevices());
 
     // 401 = auth required, 429 = rate limited (both prove path exists)
     expect([401, 429]).toContain(res.status);
@@ -80,7 +81,7 @@ test.describe('REST through proxy', () => {
 
   test('GET /v1/devices with API key returns device list', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/devices', {
+    const res = await harness.fetchJSON(S.api.getDevices(), {
       headers: {
         'X-API-Key': TEST_API_KEY,
         'X-Organization-Id': TEST_ORG_ID,
@@ -115,7 +116,7 @@ test.describe('REST through proxy', () => {
 
   test('GET /v1/devices with invalid API key returns 401 or 429', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/devices', {
+    const res = await harness.fetchJSON(S.api.getDevices(), {
       headers: {
         'X-API-Key': 'vxyz_invalid_key',
         'X-Organization-Id': TEST_ORG_ID,
@@ -127,7 +128,7 @@ test.describe('REST through proxy', () => {
 
   test('GET /v1/updates/versions returns version list', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/updates/versions', {
+    const res = await harness.fetchJSON(S.api.getUpdatesVersions(), {
       headers: {
         'X-API-Key': TEST_API_KEY,
         'X-Organization-Id': TEST_ORG_ID,

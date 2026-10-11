@@ -24,6 +24,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { loadHarness } = require('./helpers/e2e-helpers.cjs');
+const { vyzorixSelectors: S } = require('./selectors/vyzorix-selectors.cjs');
 
 const TEST_API_KEY = 'vxyz_735ed9eea2cfda407db746f0492c1b2b1de89f32a84ba853253858e518615d6b';
 const TEST_ORG_ID = '38912763-0f82-42b8-a2a7-96f73ce79ac5';
@@ -92,7 +93,7 @@ test.describe('Developer Client (API Key + HMAC signing)', () => {
   test('developer client raw request to /v1/devices works', async ({ page }) => {
     const harness = await loadHarness(page);
     try {
-      const result = await harness.developerRequest(TEST_API_KEY, '/v1/devices', {}, TEST_ORG_ID);
+      const result = await harness.developerRequest(TEST_API_KEY, S.api.getDevices(), {}, TEST_ORG_ID);
       expect(result).toBeDefined();
       expect(result.devices).toBeDefined();
       expect(Array.isArray(result.devices)).toBe(true);
@@ -106,7 +107,7 @@ test.describe('Developer Client (API Key + HMAC signing)', () => {
 
     // /v1/version is a public path — no signing needed
     try {
-      const versionResult = await harness.developerRequest(TEST_API_KEY, '/v1/version', {}, TEST_ORG_ID);
+      const versionResult = await harness.developerRequest(TEST_API_KEY, S.api.getVersion(), {}, TEST_ORG_ID);
       expect(versionResult).toBeDefined();
       expect(versionResult.version).toBeDefined();
     } catch (err) {
@@ -115,7 +116,7 @@ test.describe('Developer Client (API Key + HMAC signing)', () => {
 
     // /v1/devices is a tenant path — signing required
     try {
-      const devicesResult = await harness.developerRequest(TEST_API_KEY, '/v1/devices', {}, TEST_ORG_ID);
+      const devicesResult = await harness.developerRequest(TEST_API_KEY, S.api.getDevices(), {}, TEST_ORG_ID);
       expect(devicesResult).toBeDefined();
       expect(devicesResult.devices).toBeDefined();
     } catch (err) {
@@ -129,7 +130,7 @@ test.describe('Developer Client (API Key + HMAC signing)', () => {
     const headers = await harness.call(
       'signHttpRequestBrowser',
       'GET',
-      '/v1/devices',
+      S.api.getDevices(),
       '',
       secret,
     );

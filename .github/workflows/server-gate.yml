@@ -125,6 +125,19 @@ jobs:
             exit 1
           fi
 
+      # --- Step 8: e2e selectors drift (openapi3.json -> e2e/selectors) ---
+      - name: e2e selectors drift
+        id: selectors-drift
+        if: always()
+        working-directory: .
+        run: |
+          TMP=$(mktemp -d)
+          OUT="$TMP/selectors.cjs" python3 tooling/codegen/build_selectors.py
+          if ! cmp -s "$TMP/selectors.cjs" e2e/selectors/vyzorix-selectors.cjs; then
+            echo "e2e selectors drift — run: python3 tooling/codegen/build_selectors.py"
+            exit 1
+          fi
+
       # --- Gate failed: revert main, push bad commit to fix branch ---
       - name: Gate failed — revert and branch
         if: ${{ failure() }}

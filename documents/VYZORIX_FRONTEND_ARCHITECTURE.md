@@ -469,63 +469,59 @@ non-trivial operators). One seam does not justify a paradigm.
 
 ---
 
-## 6. Vyzorix Test Selectors — Version-Aware E2E Selectors
+## 6. Vyzorix Test Selectors — Generated API Path Selectors
 
 ### Problem
 
-Tests hardcode API URLs and DOM selectors:
-```typescript
-await page.goto('/v1/devices/123');
-await expect(page.locator('[data-testid="device-list"]')).toBeVisible();
+The Playwright e2e specs (`e2e/*.e2e.spec.cjs`) exercise the real API Client
+through the proxy and hardcoded ~60 `/v1/...` path strings. When a route is
+renamed, the spec fails at runtime with a 404 — no compile-time signal, no
+type check.
+
+### Implemented
+
+`tooling/codegen/build_selectors.py` reads `apps/api/swag/openapi3.json` and
+emits `e2e/selectors/vyzorix-selectors.cjs` (CommonJS — the specs `require` it):
+
+```js
+const { vyzorixSelectors: S } = require('./selectors/vyzorix-selectors.cjs');
+
+await harness.fetchJSON(S.api.getVersion());              // -> '/v1/version'
+await harness.fetchJSON(S.api.getDevicesImei({ imei }));  // -> '/v1/devices/<imei>'
+await harness.fetchJSON(S.api.getCommandDispatchIdStatus({ dispatchId }));
 ```
 
-When a route changes, tests break silently — no compiler, no type check.
+- **Operation names mirror orval's** (method + PascalCase path segments, e.g.
+  `POST /device/inbox/{imei}/ack` -> `postDeviceInboxImeiAck`), so selectors line
+  up with `@vyzorix/api-client`.
+- `fill()` prepends `/v1` and URL-encodes path params, throwing on a missing
+  param (so a renamed/removed param fails loudly).
+- `S.byOperation` / `S.all` expose the raw `{ method, path }` for drift checks
+  and iteration.
 
-### Proposal
+The e2e specs were refactored to reference selectors instead of literals. A
+route change now surfaces as a **codegen diff**, not a silent 404.
 
-Generate a `selectors` module from the route definitions and OpenAPI paths:
+### Scope note (what is NOT generated)
 
-```typescript
-// packages/API_Client/src/vyzorServer/testing/selectors.ts
-export const vyzorixSelectors = {
-  pages: {
-    devices: {
-      list: { url: '/v1/devices', testId: 'device-list' },
-      detail: (imei: string) => ({ url: `/v1/devices/${imei}`, testId: 'device-detail' }),
-    },
-    updates: {
-      versions: { url: '/v1/updates/versions', testId: 'update-versions' },
-      push: { url: '/v1/updates/push', testId: 'update-push-form' },
-    },
-  },
-  api: {
-    devices: {
-      list: 'GET /v1/devices',
-      get: (imei: string) => `GET /v1/devices/${imei}`,
-      deregister: (imei: string) => `DELETE /v1/devices/${imei}`,
-    },
-  },
-};
-```
+This repo's e2e suite is an **API-client harness** (Playwright drives the API
+Client bundle at `/__e2e__/`); it is not a UI `data-testid` suite — there is
+effectively no `data-testid` usage in the web app, so no DOM selectors are
+generated. WebSocket paths are not in `openapi3.json` and stay hardcoded. The
+original proposal's `pages.{domain}.{action}.testId` shape does not apply here.
 
-Tests reference selectors instead of hardcoding:
-```typescript
-await page.goto(vyzorixSelectors.pages.devices.list.url);
-await expect(page.locator(`[data-testid="${vyzorixSelectors.pages.devices.list.testId}"]`)).toBeVisible();
-```
+### Enforcement
 
-### Generation
-
-A script reads `openapi3.json` paths + route definitions and generates the
-selectors file. When an API path changes, only the selector file updates —
-tests reference the selector, not the raw URL.
+`tooling/codegen/build_selectors.py` is wired into the **pre-commit** hook and
+the **Server Gate CI** as a drift gate: regenerate to a temp file and fail if
+`e2e/selectors/vyzorix-selectors.cjs` is stale. `pnpm codegen:selectors` runs it.
 
 ### Naming
 
-- File: `packages/API_Client/src/vyzorServer/testing/vyzorix-selectors.ts`
+- File: `e2e/selectors/vyzorix-selectors.cjs`
 - Generator: `tooling/codegen/build_selectors.py`
-- Export: `vyzorixSelectors`
-- Pattern: `vyzorixSelectors.pages.{domain}.{action}.{url|testId}`
+- Export: `vyzorixSelectors` (`api`, `byOperation`, `all`, `prefix`)
+- Pattern: `S.api.{orvalOperationName}(params)` -> `/v1/...` path
 
 ---
 
@@ -537,10 +533,10 @@ tests reference the selector, not the raw URL.
 | 2 | Vyzorix Query SDK (#1) | Medium | Deletes 40+ manual hooks, auto cache invalidation | Medium |
 | 3 | Vyzorix Schema Definitions (#2) | Medium-high | Eliminates config schema drift | Medium |
 | 4 | Vyzorix Realtime Channel (#4) | — | No change: keep `graphql-ws` + Go hub until multi-instance | — |
-| 5 | Vyzorix Test Selectors (#6) | Low | Future-proofs test suite | Low |
+| 5 | Vyzorix Test Selectors (#6) | Low | Future-proofs e2e (generated API paths + drift gate) | Low |
 | 6 | Vyzorix Data Pipeline (#5) | — | No change: keep Zustand + TanStack Query; one merge primitive | — |
 
-Phases 1 and 5 can be done independently and in parallel. Phase 2 depends on
+Phases 1 and 5 are independent and in parallel (both now done). Phase 2 depends on
 the OpenAPI spec being stable (which it is after the annotation work). Phases 4
 and 6 are deliberately deferred: the existing `graphql-ws` + in-process Go hub
 is the right design at one instance (§4), and the RxJS data-pipeline rewrite is
@@ -562,7 +558,14 @@ Already completed:
 - ✅ CUE schema layer + build_schemas.py + CUE drift gate (§2; single source of truth)
 
 Not yet started:
-- ❌ Vyzorix Test Selectors (#6)
+- (none — all six sections are now implemented or decided)
+
+Completed — Vyzorix Test Selectors (#6):
+- ✅ `tooling/codegen/build_selectors.py` generates `e2e/selectors/vyzorix-selectors.cjs`
+  from `openapi3.json` (201 operations, names mirror orval). e2e specs now reference
+  `S.api.<op>()` instead of ~60 hardcoded `/v1/...` strings. Drift gate in pre-commit +
+  Server Gate CI; `pnpm codegen:selectors`. No DOM `data-testid` selectors (this repo's
+  e2e is an API-client harness, not a UI suite).
 
 Decided — Vyzorix Data Pipeline (#5):
 - ✅ **Keep Zustand + TanStack Query; no RxJS.** The proposal targeted OpenHands

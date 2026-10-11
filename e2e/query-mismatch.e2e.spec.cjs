@@ -18,6 +18,7 @@
 
 const { test, expect } = require('@playwright/test');
 const { loadHarness } = require('./helpers/e2e-helpers.cjs');
+const { vyzorixSelectors: S } = require('./selectors/vyzorix-selectors.cjs');
 
 const TEST_API_KEY = 'vxyz_735ed9eea2cfda407db746f0492c1b2b1de89f32a84ba853253858e518615d6b';
 const TEST_ORG_ID = '38912763-0f82-42b8-a2a7-96f73ce79ac5';
@@ -35,7 +36,7 @@ const PATH_NOT_FOUND_STATUS = 404;
 test.describe('Query mismatch detection', () => {
   test('developer client /v1/devices path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/devices');
+    const res = await harness.fetchJSON(S.api.getDevices());
 
     // Without auth → 401 (path exists, auth required)
     // 404 would mean path mismatch
@@ -45,49 +46,49 @@ test.describe('Query mismatch detection', () => {
 
   test('developer client /v1/devices/:imei path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/devices/000000000000000');
+    const res = await harness.fetchJSON(S.api.getDevicesImei({ imei: '000000000000000' }));
 
     expect(res.status).not.toBe(PATH_NOT_FOUND_STATUS);
   });
 
   test('developer client /v1/command/:id/status path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/command/test-dispatch-id/status');
+    const res = await harness.fetchJSON(S.api.getCommandDispatchIdStatus({ dispatchId: 'test-dispatch-id' }));
 
     expect(res.status).not.toBe(PATH_NOT_FOUND_STATUS);
   });
 
   test('developer client /v1/telemetry/history path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/telemetry/history?device_id=test');
+    const res = await harness.fetchJSON(S.api.getTelemetryHistory() + '?device_id=test');
 
     expect(res.status).not.toBe(PATH_NOT_FOUND_STATUS);
   });
 
   test('developer client /v1/telemetry/latest/:deviceId path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/telemetry/latest/test-device');
+    const res = await harness.fetchJSON(S.api.getTelemetryLatestDeviceId({ deviceId: 'test-device' }));
 
     expect(res.status).not.toBe(PATH_NOT_FOUND_STATUS);
   });
 
   test('developer client /v1/updates/status path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/updates/status');
+    const res = await harness.fetchJSON(S.api.getUpdatesStatus());
 
     expect(res.status).not.toBe(PATH_NOT_FOUND_STATUS);
   });
 
   test('developer client /v1/updates/versions path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/updates/versions');
+    const res = await harness.fetchJSON(S.api.getUpdatesVersions());
 
     expect(res.status).not.toBe(PATH_NOT_FOUND_STATUS);
   });
 
   test('public /v1/version path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/version');
+    const res = await harness.fetchJSON(S.api.getVersion());
 
     expect(res.status).toBe(200);
     expect(res.body.version).toBeDefined();
@@ -95,7 +96,7 @@ test.describe('Query mismatch detection', () => {
 
   test('public /v1/changelog path matches Go API route', async ({ page }) => {
     const harness = await loadHarness(page);
-    const res = await harness.fetchJSON('/v1/changelog');
+    const res = await harness.fetchJSON(S.api.getChangelog());
 
     expect(res.status).toBe(200);
   });
@@ -203,11 +204,11 @@ test.describe('Query mismatch detection', () => {
     // Test both /v1/... and /api/v1/... variants — both should return
     // the same status (not 404), proving the proxy strips /api correctly.
     const paths = [
-      '/v1/devices',
+      S.api.getDevices(),
       '/api/v1/devices',
-      '/v1/version',
+      S.api.getVersion(),
       '/api/v1/version',
-      '/v1/changelog',
+      S.api.getChangelog(),
       '/api/v1/changelog',
     ];
 
