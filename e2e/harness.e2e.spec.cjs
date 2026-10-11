@@ -31,7 +31,7 @@ test.describe('E2E Harness', () => {
       'createDeveloperClient',
       'restClient',
       'graphqlClient',
-      'devices',
+      'getDevices',
       'deriveAPIKeySigningSecret',
       'signHttpRequestBrowser',
       'setOrganizationContext',

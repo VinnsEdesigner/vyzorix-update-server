@@ -6,6 +6,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/permission"
 	"github.com/gin-gonic/gin"
 )
@@ -47,6 +48,18 @@ func (s *Server) requireScope(action permission.Action, scope string) gin.Handle
 		}
 
 		m := op.GetMembership(orgID)
+		if m == nil || !m.IsActive() {
+			// The in-memory memberships are only populated on the session/login
+			// path. API-key auth builds a minimal operator (ID only), so fall
+			// back to the authoritative DB membership check before denying.
+			if s.memberHandler != nil {
+				if loaded, err := s.memberHandler.MembershipChecker().GetMembership(c.Request.Context(), op.ID, orgID); err == nil {
+					if member, ok := loaded.(*organization.OrganizationMember); ok && member.IsActive() {
+						m = member
+					}
+				}
+			}
+		}
 		if m == nil || !m.IsActive() {
 			responses.RespondStructured(c, http.StatusForbidden, "not a member of this organization")
 			c.Abort()
