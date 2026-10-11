@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse,
 import { getRESTConfig, type RESTConfig } from '../../config';
 import { parseApiError, type RateLimitInfo } from '../../auth/api-error';
 import { getConnectivityMonitor } from '../_connectivity';
-import { getRESTBatcher, resetBatchers } from '../_batching';
+import { getRequestQueue, resetRequestQueue } from './request-queue';
 import { signHttpRequestBrowser } from '../../crypto/browser-sign';
 
 export { type RESTConfig } from '../../config';
@@ -11,7 +11,7 @@ export type { ApiError } from '../../auth/api-error';
 export type { RateLimitInfo } from '../../auth/api-error';
 
 export { initConnectivityMonitor, getConnectivityMonitor } from '../_connectivity';
-export { getRESTBatcher, resetBatchers } from '../_batching';
+export { getRequestQueue, resetRequestQueue } from './request-queue';
 
 type RateLimitCallback = (info: RateLimitInfo) => void;
 
@@ -43,11 +43,6 @@ interface CircuitBreaker {
   cachedException: Error | null;
 }
 
-interface InFlightRequest {
-  promise: Promise<unknown>;
-  idempotencyKey: string;
-}
-
 interface ClientState {
   organizationId: string | null;
   authToken: string | null;
@@ -57,7 +52,6 @@ interface ClientState {
   rateLimitListeners: Set<RateLimitCallback>;
   isRefreshing: boolean;
   refreshSubscribers: ((token: string | null) => void)[];
-  inFlightRequests: Map<string, InFlightRequest>;
   circuitBreaker: CircuitBreaker;
   axiosInstance: AxiosInstance | null;
 }
@@ -75,7 +69,6 @@ const clientState: ClientState = {
   rateLimitListeners: new Set<RateLimitCallback>(),
   isRefreshing: false,
   refreshSubscribers: [],
-  inFlightRequests: new Map<string, InFlightRequest>(),
   circuitBreaker: {
     state: CircuitState.CLOSED,
     failures: [],
@@ -392,21 +385,6 @@ function getCircuitBreakerError(): Error {
   return err;
 }
 
-function hashPayload(data: unknown): string {
-  const str = data ? JSON.stringify(data) : '';
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(36);
-}
-
-function getInFlightKey(method: string, url: string, data: unknown): string {
-  return `${method}:${url}:${hashPayload(data)}`;
-}
-
 function createAxiosInstance(config: RESTConfig): AxiosInstance {
   const instance = axios.create({
     baseURL: config.baseURL,
@@ -575,32 +553,16 @@ export const restClient = {
       console.warn(`[REST] Offline GET: ${url}`);
     }
 
-    // Use request batching for GET requests (collapses duplicate GETs within 50ms window)
-    const batcher = getRESTBatcher();
-    const params = config?.params;
-    return batcher.execute(
-      'GET',
-      url,
-      params,
-      config as Record<string, unknown>,
-      async () => {
-        const response = await getAxios().get<T>(url, config);
-        return response.data;
-      }
-    );
+    // GETs are stale-cached + de-duplicated by the shared request queue.
+    return getRequestQueue().execute('GET', url, config?.params, async () => {
+      const response = await getAxios().get<T>(url, config);
+      return response.data;
+    });
   },
 
   async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     if (!canAttempt()) {
       throw getCircuitBreakerError();
-    }
-
-    // In-flight deduplication
-    const inFlightKey = getInFlightKey('POST', url, data);
-    const existing = clientState.inFlightRequests.get(inFlightKey);
-    if (existing) {
-      console.warn(`[REST] Duplicate POST detected for ${url}, returning existing promise`);
-      return existing.promise as Promise<T>;
     }
 
     const monitor = getConnectivityMonitor();
@@ -615,30 +577,16 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    const requestPromise = getAxios().post<T>(url, data, config);
-    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
-    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
-
-    try {
-      const result = await requestPromise;
-      clientState.inFlightRequests.delete(inFlightKey);
+    // In-flight dedup (all methods) via the shared request queue.
+    return getRequestQueue().execute('POST', url, data, async () => {
+      const result = await getAxios().post<T>(url, data, config);
       return result.data as T;
-    } catch (error) {
-      clientState.inFlightRequests.delete(inFlightKey);
-      throw error;
-    }
+    });
   },
 
   async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     if (!canAttempt()) {
       throw getCircuitBreakerError();
-    }
-
-    const inFlightKey = getInFlightKey('PUT', url, data);
-    const existing = clientState.inFlightRequests.get(inFlightKey);
-    if (existing) {
-      console.warn(`[REST] Duplicate PUT detected for ${url}, returning existing promise`);
-      return existing.promise as Promise<T>;
     }
 
     const monitor = getConnectivityMonitor();
@@ -653,30 +601,15 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    const requestPromise = getAxios().put<T>(url, data, config);
-    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
-    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
-
-    try {
-      const result = await requestPromise;
-      clientState.inFlightRequests.delete(inFlightKey);
+    return getRequestQueue().execute('PUT', url, data, async () => {
+      const result = await getAxios().put<T>(url, data, config);
       return result.data as T;
-    } catch (error) {
-      clientState.inFlightRequests.delete(inFlightKey);
-      throw error;
-    }
+    });
   },
 
   async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     if (!canAttempt()) {
       throw getCircuitBreakerError();
-    }
-
-    const inFlightKey = getInFlightKey('PATCH', url, data);
-    const existing = clientState.inFlightRequests.get(inFlightKey);
-    if (existing) {
-      console.warn(`[REST] Duplicate PATCH detected for ${url}, returning existing promise`);
-      return existing.promise as Promise<T>;
     }
 
     const monitor = getConnectivityMonitor();
@@ -691,30 +624,15 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    const requestPromise = getAxios().patch<T>(url, data, config);
-    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
-    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
-
-    try {
-      const result = await requestPromise;
-      clientState.inFlightRequests.delete(inFlightKey);
+    return getRequestQueue().execute('PATCH', url, data, async () => {
+      const result = await getAxios().patch<T>(url, data, config);
       return result.data as T;
-    } catch (error) {
-      clientState.inFlightRequests.delete(inFlightKey);
-      throw error;
-    }
+    });
   },
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     if (!canAttempt()) {
       throw getCircuitBreakerError();
-    }
-
-    const inFlightKey = getInFlightKey('DELETE', url, config?.data);
-    const existing = clientState.inFlightRequests.get(inFlightKey);
-    if (existing) {
-      console.warn(`[REST] Duplicate DELETE detected for ${url}, returning existing promise`);
-      return existing.promise as Promise<T>;
     }
 
     const monitor = getConnectivityMonitor();
@@ -728,18 +646,10 @@ export const restClient = {
       }) as Promise<T>;
     }
 
-    const requestPromise = getAxios().delete<T>(url, config);
-    const idempotencyKey = (config as (InternalAxiosRequestConfig & { __idempotencyKey?: string }) | undefined)?.__idempotencyKey || '';
-    clientState.inFlightRequests.set(inFlightKey, { promise: requestPromise, idempotencyKey });
-
-    try {
-      const result = await requestPromise;
-      clientState.inFlightRequests.delete(inFlightKey);
+    return getRequestQueue().execute('DELETE', url, config?.data, async () => {
+      const result = await getAxios().delete<T>(url, config);
       return result.data as T;
-    } catch (error) {
-      clientState.inFlightRequests.delete(inFlightKey);
-      throw error;
-    }
+    });
   },
 };
 
@@ -765,11 +675,11 @@ export function resetCircuitBreaker(): void {
 }
 
 export function getInFlightRequestCount(): number {
-  return clientState.inFlightRequests.size;
+  return getRequestQueue().getInFlightCount();
 }
 
 export function clearInFlightRequests(): void {
-  clientState.inFlightRequests.clear();
+  getRequestQueue().clear();
   console.log('[REST] Cleared all in-flight requests');
 }
 
@@ -783,7 +693,6 @@ export function resetClientState(): void {
   clientState.rateLimitListeners.clear();
   clientState.isRefreshing = false;
   clientState.refreshSubscribers = [];
-  clientState.inFlightRequests.clear();
   clientState.circuitBreaker.state = CircuitState.CLOSED;
   clientState.circuitBreaker.failures = [];
   clientState.circuitBreaker.successes = 0;
@@ -792,5 +701,5 @@ export function resetClientState(): void {
   clientState.circuitBreaker.nextAttempt = 0;
   clientState.circuitBreaker.cachedException = null;
   clientState.axiosInstance = null;
-  resetBatchers();
+  resetRequestQueue();
 }

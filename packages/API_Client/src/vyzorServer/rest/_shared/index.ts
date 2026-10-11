@@ -1,6 +1,12 @@
 export { restClient, axios } from './rest-client';
 
 export {
+  VyzorixRequestQueue,
+  DEFAULT_REQUEST_QUEUE_CONFIG,
+  type RequestQueueConfig,
+} from './request-queue';
+
+export {
   setAuthToken,
   setCSRFToken,
   setRefreshToken,
@@ -13,7 +19,6 @@ export {
   resetClientState,
   resetCircuitBreaker,
   clearInFlightRequests,
-  resetBatchers,
 } from './rest-client';
 
 export {

@@ -29,22 +29,9 @@ function simpleHashPayload(data: unknown): string {
 // TYPES & INTERFACES
 // ==========================================
 
-export interface BatchedRequest<T = unknown> {
-  key: string;
-  promise: Promise<T>;
-  url: string;
-  method: string;
-  data?: unknown;
-  config?: Record<string, unknown>;
-  callers: BatchedCaller<T>[];
-  timer?: ReturnType<typeof setTimeout>;
-  executed: boolean;
-}
-
-export interface BatchedCaller<T> {
-  resolve: (value: T) => void;
-  reject: (error: Error) => void;
-}
+// ==========================================
+// GRAPHQL REQUEST BATCHING
+// ==========================================
 
 export interface GraphQLBatchedOperation {
   query: string;
@@ -69,180 +56,6 @@ const DEFAULT_CONFIG: BatchConfig = {
   enableREST: true,
   enableGraphQL: true,
 };
-
-// ==========================================
-// REST REQUEST COLLAPSING
-// ==========================================
-
-/**
- * REST Request Batcher
- * 
- * Tracks in-flight requests and collapses identical ones within a time window.
- */
-export class RESTRequestBatcher {
-  private pendingRequests: Map<string, BatchedRequest> = new Map();
-  private config: BatchConfig;
-
-  constructor(config: Partial<BatchConfig> = {}) {
-    this.config = { ...DEFAULT_CONFIG, ...config };
-  }
-
-  /**
-   * Generate a batch key for REST requests
-   */
-  private getBatchKey(method: string, url: string, data?: unknown): string {
-    return `${method}:${url}:${simpleHashPayload(data)}`;
-  }
-
-  /**
-   * Check if a request can be batched (same method + url + data)
-   */
-  private canBatch(existing: BatchedRequest, method: string, url: string, data?: unknown): boolean {
-    return existing.method === method && existing.url === url && simpleHashPayload(existing.data) === simpleHashPayload(data);
-  }
-
-  /**
-   * Execute or queue a REST request
-   */
-  async execute<T>(
-    method: string,
-    url: string,
-    data: unknown,
-    config: Record<string, unknown> | undefined,
-    executor: () => Promise<T>
-  ): Promise<T> {
-    if (!this.config.enableREST) {
-      return executor();
-    }
-
-    const batchKey = this.getBatchKey(method, url, data);
-    const existing = this.pendingRequests.get(batchKey);
-
-    // If same request is already pending, attach to its callers
-    if (existing && this.canBatch(existing, method, url, data)) {
-      return new Promise<T>((resolve, reject) => {
-        existing.callers.push({ resolve: resolve as (value: unknown) => void, reject });
-        console.debug(`[Batcher] Request collapsed: ${method} ${url}`);
-      });
-    }
-
-    // Create new batched request
-    return new Promise<T>((resolve, reject) => {
-      const batchedRequest: BatchedRequest<T> = {
-        key: batchKey,
-        promise: null as unknown as Promise<T>,
-        url,
-        method,
-        data,
-        config,
-        callers: [{ resolve: resolve as (value: unknown) => void, reject }],
-        executed: false,
-      };
-
-      // Set up timer to flush batch after window
-      batchedRequest.timer = setTimeout(() => {
-        this.flushBatch(batchedRequest, executor);
-      }, this.config.windowMs);
-
-      this.pendingRequests.set(batchKey, batchedRequest as BatchedRequest);
-
-      console.debug(`[Batcher] Request queued: ${method} ${url}`);
-    });
-  }
-
-  /**
-   * Flush a batch - execute request and distribute results
-   */
-  private async flushBatch<T>(
-    request: BatchedRequest<T>,
-    executor: () => Promise<T>
-  ): Promise<void> {
-    if (request.executed) return;
-    request.executed = true;
-
-    // Remove from pending
-    this.pendingRequests.delete(request.key);
-
-    if (request.timer) {
-      clearTimeout(request.timer);
-    }
-
-    try {
-      // Execute the actual request
-      const result = await executor();
-
-      // Resolve all callers with the same result
-      for (const caller of request.callers) {
-        caller.resolve(result);
-      }
-    } catch (error) {
-      // Reject all callers with the same error
-      const err = error instanceof Error ? error : new Error(String(error));
-      for (const caller of request.callers) {
-        caller.reject(err);
-      }
-    }
-  }
-
-  /**
-   * Cancel a pending batched request
-   */
-  cancel(method: string, url: string, data?: unknown): void {
-    const batchKey = this.getBatchKey(method, url, data);
-    const request = this.pendingRequests.get(batchKey);
-
-    if (request) {
-      if (request.timer) {
-        clearTimeout(request.timer);
-      }
-
-      const error = new Error('Request cancelled');
-      for (const caller of request.callers) {
-        caller.reject(error);
-      }
-
-      this.pendingRequests.delete(batchKey);
-    }
-  }
-
-  /**
-   * Clear all pending requests
-   */
-  clear(): void {
-    for (const request of this.pendingRequests.values()) {
-      if (request.timer) {
-        clearTimeout(request.timer);
-      }
-      const error = new Error('Batcher cleared');
-      for (const caller of request.callers) {
-        caller.reject(error);
-      }
-    }
-    this.pendingRequests.clear();
-  }
-
-  /**
-   * Get count of pending requests
-   */
-  getPendingCount(): number {
-    return this.pendingRequests.size;
-  }
-
-  /**
-   * Get batch statistics
-   */
-  getStats(): { pending: number; collapsed: number } {
-    let collapsed = 0;
-    for (const request of this.pendingRequests.values()) {
-      collapsed += request.callers.length - 1;
-    }
-    return { pending: this.pendingRequests.size, collapsed };
-  }
-}
-
-// ==========================================
-// GRAPHQL REQUEST BATCHING
-// ==========================================
 
 interface BatchedGraphQLOperation {
   query: string;
@@ -439,19 +252,8 @@ export class GraphQLBatcher {
 // Single encapsulated holder for batcher singleton instances (previously two
 // module-level `let` bindings — the singleton-globals smell).
 const batcherState = {
-  rest: null as RESTRequestBatcher | null,
   graphql: null as GraphQLBatcher | null,
 };
-
-/**
- * Get REST request batcher instance
- */
-export function getRESTBatcher(config?: Partial<BatchConfig>): RESTRequestBatcher {
-  if (!batcherState.rest) {
-    batcherState.rest = new RESTRequestBatcher(config);
-  }
-  return batcherState.rest;
-}
 
 /**
  * Get GraphQL request batcher instance
@@ -467,12 +269,8 @@ export function getGraphQLBatcher(config?: Partial<BatchConfig>): GraphQLBatcher
  * Reset all batcher instances
  */
 export function resetBatchers(): void {
-  if (batcherState.rest) {
-    batcherState.rest.clear();
-  }
   if (batcherState.graphql) {
     batcherState.graphql.clear();
   }
-  batcherState.rest = null;
   batcherState.graphql = null;
 }

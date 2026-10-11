@@ -297,19 +297,36 @@ Component B → restClient.get('/v1/devices')  (fired 5ms later)
 
 ### Implementation
 
-Replace the current `request-batcher.ts` with a `VyzorixRequestQueue` that:
-- Hashes the method + URL + body to create a dedup key
-- If a request with the same key is in-flight, returns the existing promise
-- If a GET was fetched within the stale window (configurable, default 5s),
-  returns the cached response without a new request
-- Processes the queue in a single worker to avoid race conditions
+`packages/API_Client/src/vyzorServer/rest/_shared/request-queue.ts` defines
+`VyzorixRequestQueue`, now the single dedup primitive `restClient` routes every
+HTTP method through:
+
+- hashes `method + url + params/body` (stable, key-order-independent) into a
+  dedup key;
+- shares the in-flight promise across all callers with the same key — so the
+  duplicate-POST case (two conversations firing the same mutation) fires one
+  request, not two;
+- registers the in-flight entry synchronously before the executor runs, so a
+  caller arriving on the same tick joins it. JS is single-threaded, so no lock
+  is needed; the design's "single worker" is intentionally omitted because
+  serialising unrelated requests would defeat HTTP/2 multiplexing;
+- can serve a completed GET from a short cache (`staleMs`), **disabled by
+  default**. A non-zero window is an opaque HTTP-level cache that TanStack
+  Query's `invalidateQueries` cannot see, which would make "mutate then refetch"
+  observe stale data — so it is opt-in, not the default. In-flight dedup is
+  always on.
+
+`restClient` still owns the transport concerns inside the executor it hands the
+queue: the connectivity monitor's offline queue, the circuit breaker, token
+refresh, and HMAC signing. The old `RESTRequestBatcher` and the per-method
+`inFlightRequests` map are removed (the GraphQL batcher is unaffected).
 
 ### Naming
 
 - Class: `VyzorixRequestQueue`
 - File: `packages/API_Client/src/vyzorServer/rest/_shared/request-queue.ts`
-- Config: `{ staleMs: 5000, maxQueueSize: 100 }`
-- Integration: `restClient` delegates to `VyzorixRequestQueue.execute()`
+- Config: `{ staleMs: 0, maxQueueSize: 100 }` (`staleMs` opt-in)
+- Integration: `restClient` delegates to `getRequestQueue().execute()`
 
 ---
 
@@ -540,10 +557,16 @@ Already completed:
 - ✅ CUE schema layer + build_schemas.py + CUE drift gate (§2; single source of truth)
 
 Not yet started:
-- ❌ Vyzorix Request Deduplicator (#3)
 - ❌ Vyzorix Realtime Channel (#4)
 - ❌ Vyzorix Test Selectors (#6)
 - ❌ Vyzorix Data Pipeline (#5)
+
+Completed — Vyzorix Request Deduplicator (#3):
+- ✅ `VyzorixRequestQueue` (rest/_shared/request-queue.ts) dedupes ALL methods via
+  in-flight promise sharing keyed on method+url+body; `restClient` routes every
+  method through it. Old GET-only `RESTRequestBatcher` + `inFlightRequests` map
+  removed. Optional GET stale cache (`staleMs`) is opt-in / disabled by default
+  to avoid a second opaque cache TanStack Query cannot invalidate.
 
 Completed — Vyzorix Schema Definitions (#2):
 - ✅ `tooling/schema/*.cue` (30 files, 226 types) is the single source of truth;
