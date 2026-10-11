@@ -4,7 +4,7 @@
 // unified key shape is `[organizationId, ...orvalKey]`, mirroring the hand-
 // written hooks (which scope their keys by org). This is what lets generated
 // `invalidateQueries` calls and the hooks' cached entries match, so automatic
-// invalidation actually fires (VYZORIX_FRONTEND_ARCHITECTURE §1).
+// invalidation actually fires.
 //
 // The org id comes from the api-client's in-memory authContext (the source of
 // truth); importing it from `@vyzorix/api-client` is safe — api-client has no

@@ -1,6 +1,6 @@
 /**
  * Unit tests for VyzorixRequestQueue — the transport-level request
- * deduplicator (§3 of VYZORIX_FRONTEND_ARCHITECTURE).
+ * deduplicator.
  *
  * Real class, no mocks. The executor is an inline counter so we assert exactly
  * how many times the underlying transport would fire.

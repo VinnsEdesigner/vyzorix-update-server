@@ -24,7 +24,7 @@ export function useConfirmDevice() {
       // Confirm carries no GraphQL fallback, but it is wired by hand because the
       // variables shape (`{ imei, commandSecret }`) predates the generated hook.
       // Invalidate the same org-scoped keys the generated `postDeviceConfirm`
-      // mutation tag declares (VYZORIX_FRONTEND_ARCHITECTURE §1) so confirm and
+      // mutation tag declares so confirm and
       // the generated surface stay in lockstep.
       void invalidateGetDevices(queryClient);
       void invalidateGetDashboardDevices(queryClient);

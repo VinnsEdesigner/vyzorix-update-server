@@ -26,7 +26,7 @@ export function useAcknowledgeInbox() {
       }
     },
     onSuccess: (_, { imei }) => {
-      // Org-scoped generated keys (VYZORIX_FRONTEND_ARCHITECTURE §1) — the
+      // Org-scoped generated keys — the
       // mutation ran through the GraphQL fallback, so the generated hook's
       // automatic invalidation did not fire.
       void invalidateGetDeviceInbox(queryClient);

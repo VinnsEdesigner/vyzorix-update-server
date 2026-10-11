@@ -1,12 +1,11 @@
 # Vyzorix Feature Expansion: Requirements & Design
 
-8 features to implement, each better than Grafana's equivalent. No dead
+8 features, each designed for Vyzorix's use cases. No dead
 functions, full wiring, minimal new files (merge into existing where
 possible), tests, lint clean.
 
 ## 1. Quota System
 
-**Grafana**: Multi-scope (global/org/user) quota with RegisterQuotaReporter.
 **Vyzorix improvement**: Org-scoped quotas checked at the application layer
 (not middleware), with per-resource-type limits enforced inline at creation
 time. No separate quota DB table — quotas live on the org entity as a JSON
@@ -26,7 +25,6 @@ config field), `internal/application/organization/` (quota check calls).
 
 ## 2. Tag System
 
-**Grafana**: Simple `Tag` entity with `EnsureTagsExist`.
 **Vyzorix improvement**: Tags are a JSON string array on the device entity
 (`Tags []string`), not a separate table. No join tables, no tag entities —
 just indexed JSON. Searchable via SQLite JSON functions.
@@ -41,8 +39,6 @@ just indexed JSON. Searchable via SQLite JSON functions.
 
 ## 3. Server Lock (Distributed Mutex)
 
-**Grafana**: `pkg/infra/serverlock` — DB-backed advisory lock for single-instance
-operations.
 **Vyzorix improvement**: SQLite `advisory_lock` table with `acquired_at` +
 `expires_at` + `holder` identity. Workers acquire a named lock before running;
 release on completion; auto-expire after timeout. No external dependency
@@ -58,7 +54,6 @@ release on completion; auto-expire after timeout. No external dependency
 
 ## 4. Preferences (Per-Operator)
 
-**Grafana**: `(org_id, user_id, team_id)` triple-keyed preferences table with
 hot+cold fields and version-locked PATCH.
 **Vyzorix improvement**: Merge into existing `operator_settings` table (already
 exists). Add a `preferences` JSON column. No separate table — the operator
@@ -75,7 +70,6 @@ settings service already handles get/update. Add `PATCH /v1/me/preferences`.
 
 ## 5. Support Bundles
 
-**Grafana**: Collector pattern, tar archive, async generation.
 **Vyzorix improvement**: Synchronous JSON export (not tar — simpler, API-native).
 Collects: config (redacted), DB schema version, recent errors, worker status,
 hub metrics, device count, operator count. Returns as a JSON download.
@@ -90,7 +84,6 @@ hub metrics, device count, operator count. Returns as a JSON download.
 
 ## 6. Update Manager
 
-**Grafana**: Periodic GitHub release check for the server binary + plugins.
 **Vyzorix improvement**: Check the Vyzorix GitHub releases API for newer
 versions than the running binary's version. Expose via
 `GET /v1/admin/updates/check`. No background polling — on-demand only
@@ -107,7 +100,6 @@ versions than the running binary's version. Expose via
 
 ## 7. Search Service
 
-**Grafana**: Full-text search across dashboards/folders with tag + sort filters.
 **Vyzorix improvement**: Cross-resource search (devices + commands + events +
 updates) in a single query. Uses SQLite LIKE (no FTS5 dependency). Returns
 typed results with resource type + snippet.
@@ -123,7 +115,6 @@ typed results with resource type + snippet.
 
 ## 8. Provisioning (Declarative YAML at Boot)
 
-**Grafana**: Reads YAML files at boot, creates resources.
 **Vyzorix improvement**: Single `provisioning.yaml` file read at boot that
 declares orgs, operators, device groups, API keys, and permission grants.
 Idempotent — skips resources that already exist. Runs before the HTTP server

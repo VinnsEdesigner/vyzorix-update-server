@@ -1,7 +1,7 @@
 // Thin wrappers over the generated TanStack Query hooks for alerts.
 // Cache invalidation is automatic: the generated mutations invalidate the
 // org-scoped keys their `mutationInvalidates` tag declares
-// (VYZORIX_FRONTEND_ARCHITECTURE §1), so no manual invalidateQueries is needed.
+// so no manual invalidateQueries is needed.
 import {
   useGetAlertsRules,
   useGetAlertsRulesIdHistory,

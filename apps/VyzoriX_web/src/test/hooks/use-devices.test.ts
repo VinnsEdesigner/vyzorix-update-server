@@ -169,7 +169,7 @@ describe('useDeregisterDevice', () => {
   });
 
   it('auto-invalidates the org-scoped device list without manual wiring', async () => {
-    // Proves VYZORIX_FRONTEND_ARCHITECTURE §1: the generated mutation invalidates
+    // Proves the generated mutation invalidates
     // the org-scoped device query key, so the list refetches on success.
     const queryClient = createTestQueryClient();
     const list = renderHookWithQueryClient(() => useDevices(), { queryClient });

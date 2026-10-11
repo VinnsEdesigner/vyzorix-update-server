@@ -30,6 +30,22 @@
 - [GraphQL API](GRAPHQL_API.md) — Endpoint, schema, resolvers, subscriptions.
 - [Background Workers](BACKGROUND_WORKERS.md) — Device deletion, FCM retry, command outbox.
 
+## Observability & Operations
+
+- [Alerting](ALERTING.md) — Org-scoped rules, the evaluation loop, the state machine (inactive → pending → firing), metrics, policies, and delivery.
+- [Contact Points](CONTACT_POINTS.md) — Email, webhook, and Slack destinations; the dispatcher; delivery history.
+- [Annotations](ANNOTATIONS.md) — Time-range markers on the fleet timeline for correlating changes with events.
+- [Metrics](METRICS.md) — Prometheus endpoint, every metric and label, scraping.
+- [Caching](CACHING.md) — In-memory TTL cache, sections, invalidation, hit/miss metrics.
+- [Service Lifecycle](SERVICE_LIFECYCLE.md) — Named background services, dependency-ordered start/stop, per-service health.
+- [Usage Stats](USAGE_STATS.md) — Periodic self-telemetry: entity counts and feature-toggle state.
+
+## Access & Configuration
+
+- [Service Accounts](SERVICE_ACCOUNTS.md) — Non-human identities with scoped, rotatable tokens for automation.
+- [Config Versioning](CONFIG_VERSIONING.md) — Versioned snapshots of org settings and thresholds, with restore.
+- [Live Channels](LIVE_CHANNELS.md) — Org-scoped event streams (`stream/<org>/<scope>`), permission-gated subscriptions.
+
 ## Architecture Decisions
 
 - [ADR-001: Structured Errors via Middleware, not Handler-level JSON](ADR_001_STRUCTURED_ERRORS.md) — Why we moved error rendering out of handlers and into a central middleware.
