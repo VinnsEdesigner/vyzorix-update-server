@@ -160,6 +160,49 @@ func (c *Client) handleComplete(id string) {
 	c.mu.Unlock()
 }
 
+// deviceInOrg reports whether deviceID belongs to orgID. Used to stop a caller
+// from subscribing to another tenant's device by supplying its ID.
+func (c *Client) deviceInOrg(deviceID string) bool {
+	if c.handler == nil || c.handler.resolver == nil {
+		// No resolver wired (e.g. tests) - fall back to allowing only the
+		// connection org, which is the safe default.
+		return false
+	}
+	ds := c.handler.resolver.DeviceService
+	if ds == nil || ds.DeviceRepo() == nil {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := ds.DeviceRepo().FindByIMEIAndOrganization(ctx, deviceID, c.orgID)
+
+	return err == nil
+}
+
+// commandInOrg reports whether the command identified by dispatchID belongs to a
+// device in orgID.
+func (c *Client) commandInOrg(dispatchID string) bool {
+	if c.handler == nil || c.handler.resolver == nil {
+		return false
+	}
+	cs := c.handler.resolver.CommandService
+	if cs == nil || cs.CommandRepo() == nil {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cmd, err := cs.CommandRepo().FindByDispatchIDOnly(ctx, dispatchID)
+	if err != nil || cmd == nil {
+		return false
+	}
+
+	return c.deviceInOrg(cmd.DeviceID)
+}
+
 // subscribeDeviceUpdates subscribes to device update events.
 func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 	// Extract device ID from variables if present.
@@ -171,8 +214,15 @@ func (c *Client) subscribeDeviceUpdates(id string, sub SubscribePayload) {
 		return
 	}
 
-	// Subscribe to hub for device updates.
-	unsubscribe := c.handler.hub.SubscribeDeviceUpdates(c.operator.ID, deviceID, func(data interface{}) error {
+	// A specific device may only be subscribed to by an operator in the org that
+	// owns it; otherwise the device ID would leak another tenant's activity.
+	if deviceID != "" && !c.deviceInOrg(deviceID) {
+		c.sendError(id, "device not found in this organization")
+		return
+	}
+
+	// Subscribe to hub for device updates, keyed by the connection's organization.
+	unsubscribe := c.handler.hub.SubscribeDeviceUpdates(c.orgID, deviceID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
@@ -201,7 +251,13 @@ func (c *Client) subscribeTelemetry(id string, sub SubscribePayload) {
 		return
 	}
 
-	unsubscribe := c.handler.hub.SubscribeTelemetry(c.operator.ID, deviceID, func(data interface{}) error {
+	// Restrict device-specific telemetry to devices owned by the connection's org.
+	if deviceID != "" && !c.deviceInOrg(deviceID) {
+		c.sendError(id, "device not found in this organization")
+		return
+	}
+
+	unsubscribe := c.handler.hub.SubscribeTelemetry(c.orgID, deviceID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,
@@ -229,7 +285,14 @@ func (c *Client) subscribeCommandStatus(id string, sub SubscribePayload) {
 		return
 	}
 
-	unsubscribe := c.handler.hub.SubscribeCommandStatus(c.operator.ID, dispatchID, func(data interface{}) error {
+	// A dispatch ID is org-scoped; verify it belongs to the connection's org so a
+	// caller cannot observe another tenant's command progress.
+	if dispatchID != "" && !c.commandInOrg(dispatchID) {
+		c.sendError(id, "command not found in this organization")
+		return
+	}
+
+	unsubscribe := c.handler.hub.SubscribeCommandStatus(c.orgID, dispatchID, func(data interface{}) error {
 		c.sendMessage(wsMessage{
 			Type:    "next",
 			ID:      id,

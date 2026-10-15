@@ -47,6 +47,7 @@ type Client struct {
 	Done        chan struct{}
 	DeviceID    string
 	ClientID    string
+	OrgID       string
 	metrics     ClientMetrics
 	connectedAt int64
 	isConnected atomic.Bool
@@ -233,6 +234,12 @@ func (c *Client) processTelemetry(raw []byte) {
 		}
 	}
 	c.Hub.BroadcastTelemetry(raw)
+
+	// Fan out to GraphQL telemetryReceived subscribers in the device's org. The
+	// org is resolved once at registration (c.OrgID), so this is O(1).
+	if c.OrgID != "" {
+		c.Hub.PublishTelemetry(c.OrgID, c.DeviceID, t)
+	}
 
 	// Process telemetry for threshold breach events.
 	if c.Hub.eventProcessor != nil {

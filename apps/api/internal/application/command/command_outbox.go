@@ -10,8 +10,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 )
 
@@ -296,6 +296,9 @@ func (o *Outbox) markDelivered(cmd *command.Command) error {
 	}
 	metrics.Get().RecordCommandOutcome("delivered")
 	metrics.Get().RecordCommandDelivery(time.Since(cmd.CreatedAt))
+	if o.hub != nil {
+		o.hub.PublishCommandStatusForDevice(ctx, cmd.DispatchID, cmd.DeviceID, "delivered")
+	}
 	return nil
 }
 

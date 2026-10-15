@@ -2,6 +2,7 @@
 package hub
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -130,17 +131,19 @@ func (h *Hub) InitSubscriptions() {
 	})
 }
 
-// SubscribeDeviceUpdates subscribes to device update events.
-func (h *Hub) SubscribeDeviceUpdates(operatorID, deviceID string, callback subscriptionCallback) func() {
+// SubscribeDeviceUpdates subscribes to device update events for an organization.
+// Keyed by organization (not operator): a device event is an org-level fact, so
+// every operator in the org should observe it.
+func (h *Hub) SubscribeDeviceUpdates(orgID, deviceID string, callback subscriptionCallback) func() {
 	h.InitSubscriptions()
 
 	subMgr := subscriptionMgr
 	subMgr.mu.Lock()
 	defer subMgr.mu.Unlock()
 
-	key := operatorID
+	key := orgID
 	if deviceID != "" {
-		key = operatorID + ":" + deviceID
+		key = orgID + ":" + deviceID
 	}
 
 	wrapper := callbackWrapper{
@@ -163,18 +166,19 @@ func (h *Hub) SubscribeDeviceUpdates(operatorID, deviceID string, callback subsc
 	}
 }
 
-// SubscribeTelemetry subscribes to real-time telemetry events.
-func (h *Hub) SubscribeTelemetry(operatorID, deviceID string, callback subscriptionCallback) func() {
+// SubscribeTelemetry subscribes to real-time telemetry events for an organization.
+// Keyed by organization so any operator in the org receives the org's telemetry.
+func (h *Hub) SubscribeTelemetry(orgID, deviceID string, callback subscriptionCallback) func() {
 	h.InitSubscriptions()
 
 	subMgr := subscriptionMgr
 	subMgr.mu.Lock()
 	defer subMgr.mu.Unlock()
 
-	// If deviceID is empty, subscribe to all devices for this operator.
-	key := operatorID
+	// If deviceID is empty, subscribe to all devices in this organization.
+	key := orgID
 	if deviceID != "" {
-		key = operatorID + ":" + deviceID
+		key = orgID + ":" + deviceID
 	}
 
 	wrapper := callbackWrapper{
@@ -197,15 +201,16 @@ func (h *Hub) SubscribeTelemetry(operatorID, deviceID string, callback subscript
 	}
 }
 
-// SubscribeCommandStatus subscribes to command status change events.
-func (h *Hub) SubscribeCommandStatus(operatorID, dispatchID string, callback subscriptionCallback) func() {
+// SubscribeCommandStatus subscribes to command status change events for an organization.
+// Keyed by organization so any operator in the org observes command progress.
+func (h *Hub) SubscribeCommandStatus(orgID, dispatchID string, callback subscriptionCallback) func() {
 	h.InitSubscriptions()
 
 	subMgr := subscriptionMgr
 	subMgr.mu.Lock()
 	defer subMgr.mu.Unlock()
 
-	key := operatorID + ":" + dispatchID
+	key := orgID + ":" + dispatchID
 
 	wrapper := callbackWrapper{
 		id:       nextCallbackID(),
@@ -287,17 +292,53 @@ func (h *Hub) SubscribeMemberEvents(operatorID, orgID string, callback subscript
 	}
 }
 
+// PublishCommandStatusForDevice resolves the device's organization and publishes
+// a command status change to that org's subscribers. It is a no-op when the org
+// cannot be resolved, so callers do not need to guard.
+func (h *Hub) PublishCommandStatusForDevice(ctx context.Context, dispatchID, deviceID, status string) {
+	if dispatchID == "" {
+		return
+	}
+	orgID := h.OrganizationForDevice(ctx, deviceID)
+	if orgID == "" {
+		return
+	}
+
+	h.PublishCommandStatus(orgID, dispatchID, map[string]any{
+		"dispatchId": dispatchID,
+		"deviceId":   deviceID,
+		"status":     status,
+		"timestamp":  time.Now().UnixMilli(),
+	})
+}
+
+// OrganizationForDevice returns the organization ID a device belongs to, or ""
+// if it cannot be resolved. Used by the realtime fan-out so device, telemetry
+// and command events are delivered to every operator in the device's org.
+func (h *Hub) OrganizationForDevice(ctx context.Context, deviceID string) string {
+	if h.deviceRepo == nil || deviceID == "" {
+		return ""
+	}
+
+	dev, err := h.deviceRepo.FindByIMEI(ctx, deviceID)
+	if err != nil || dev == nil {
+		return ""
+	}
+
+	return dev.OrganizationID
+}
+
 // PublishDeviceUpdate publishes a device update event.
-func (h *Hub) PublishDeviceUpdate(operatorID, deviceID string, data interface{}) {
+func (h *Hub) PublishDeviceUpdate(orgID, deviceID string, data interface{}) {
 	h.InitSubscriptions()
 
 	subMgr := subscriptionMgr
 	subMgr.mu.RLock()
 	defer subMgr.mu.RUnlock()
 
-	// Notify all subscriptions for this operator.
+	// Notify all subscriptions for this organization.
 	for key, wrappers := range subMgr.deviceUpdates {
-		if key == operatorID || key == operatorID+":"+deviceID {
+		if key == orgID || key == orgID+":"+deviceID {
 			for _, w := range wrappers {
 
 				subMgr.worker.execute(w.callback, data)
@@ -307,14 +348,14 @@ func (h *Hub) PublishDeviceUpdate(operatorID, deviceID string, data interface{})
 }
 
 // PublishTelemetry publishes a telemetry event.
-func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
+func (h *Hub) PublishTelemetry(orgID, deviceID string, data interface{}) {
 	h.InitSubscriptions()
 
 	subMgr := subscriptionMgr
 	subMgr.mu.RLock()
 	defer subMgr.mu.RUnlock()
 
-	key := operatorID + ":" + deviceID
+	key := orgID + ":" + deviceID
 	if wrappers, ok := subMgr.telemetry[key]; ok {
 		for _, w := range wrappers {
 
@@ -322,8 +363,8 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 		}
 	}
 
-	// Also notify operator-wide subscriptions.
-	if wrappers, ok := subMgr.telemetry[operatorID]; ok {
+	// Also notify organization-wide subscriptions.
+	if wrappers, ok := subMgr.telemetry[orgID]; ok {
 		for _, w := range wrappers {
 
 			subMgr.worker.execute(w.callback, data)
@@ -332,14 +373,14 @@ func (h *Hub) PublishTelemetry(operatorID, deviceID string, data interface{}) {
 }
 
 // PublishCommandStatus publishes a command status change event.
-func (h *Hub) PublishCommandStatus(operatorID, dispatchID string, data interface{}) {
+func (h *Hub) PublishCommandStatus(orgID, dispatchID string, data interface{}) {
 	h.InitSubscriptions()
 
 	subMgr := subscriptionMgr
 	subMgr.mu.RLock()
 	defer subMgr.mu.RUnlock()
 
-	key := operatorID + ":" + dispatchID
+	key := orgID + ":" + dispatchID
 	if wrappers, ok := subMgr.commandStatus[key]; ok {
 		for _, w := range wrappers {
 

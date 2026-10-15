@@ -382,6 +382,7 @@ func (h *ExecuteHandler) deliverCommand(c *gin.Context, imei string, frame comma
 			if err := h.commandService.MarkDelivered(c.Request.Context(), cmdResp.CommandID); err != nil {
 				h.log.Warn("failed to mark command delivered", "error", err)
 			}
+			h.hub.PublishCommandStatusForDevice(c.Request.Context(), cmdResp.DispatchID, imei, "delivered")
 		}
 	}
 

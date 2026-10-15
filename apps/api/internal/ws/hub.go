@@ -226,6 +226,11 @@ func (h *Hub) handleClientRegistration(ctx context.Context, c *Client) {
 	}
 
 	c.log = h.log
+	// Resolve the device's organization once, at registration, so the realtime
+	// fan-out does not need a DB lookup per telemetry frame.
+	if c.OrgID == "" {
+		c.OrgID = h.OrganizationForDevice(ctx, c.DeviceID)
+	}
 	h.clients[c.DeviceID] = c
 	h.mu.Unlock()
 
@@ -258,6 +263,16 @@ func (h *Hub) emitDeviceConnected(ctx context.Context, c *Client) {
 		"clientIP":  c.Conn.RemoteAddr().String(),
 		"timestamp": time.Now().UnixMilli(),
 	}
+
+	// Fan out to GraphQL deviceUpdated subscribers in the device's organization.
+	if c.OrgID != "" {
+		h.PublishDeviceUpdate(c.OrgID, c.DeviceID, map[string]any{
+			"deviceId":  c.DeviceID,
+			"online":    true,
+			"timestamp": metadata["timestamp"],
+		})
+	}
+
 	if err := h.eventProcessor.ProcessDeviceConnected(ctx, c.DeviceID, metadata); err != nil {
 		h.log.Warn("failed to emit device connected event", "deviceId", c.DeviceID, "err", err)
 	}
@@ -285,6 +300,16 @@ func (h *Hub) emitDeviceDisconnected(ctx context.Context, c *Client) {
 	metadata := map[string]any{
 		"timestamp": time.Now().UnixMilli(),
 	}
+
+	// Fan out to GraphQL deviceUpdated subscribers in the device's organization.
+	if c.OrgID != "" {
+		h.PublishDeviceUpdate(c.OrgID, c.DeviceID, map[string]any{
+			"deviceId":  c.DeviceID,
+			"online":    false,
+			"timestamp": metadata["timestamp"],
+		})
+	}
+
 	if err := h.eventProcessor.ProcessDeviceDisconnected(ctx, c.DeviceID, "client_disconnect", metadata); err != nil {
 		h.log.Warn("failed to emit device disconnected event", "deviceId", c.DeviceID, "err", err)
 	}
