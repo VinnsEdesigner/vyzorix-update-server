@@ -32,6 +32,16 @@ type KnownDevice struct {
 	IsTrusted   bool
 }
 
+// Bounds on the device store. Fingerprints are derived from request signals (IP,
+// User-Agent, ...), so an authenticated operator logging in from many networks or
+// clients could otherwise grow these maps without limit.
+const (
+	// maxDevicesPerOperator caps fingerprints tracked per operator.
+	maxDevicesPerOperator = 50
+	// maxSignalsPerDevice caps the distinct IPs / User-Agents retained per device.
+	maxSignalsPerDevice = 20
+)
+
 // DeviceStore manages known devices per operator.
 type DeviceStore struct {
 	devices map[string]map[string]*KnownDevice
@@ -82,6 +92,12 @@ func (ds *DeviceStore) RegisterDevice(operatorID, fingerprint, ipAddress, userAg
 
 	device, exists := ds.devices[operatorID][fingerprint]
 	if !exists {
+		// Evict the least-recently-seen device if this operator is at capacity, so
+		// the per-operator map stays bounded.
+		if len(ds.devices[operatorID]) >= maxDevicesPerOperator {
+			ds.evictOldestLocked(ds.devices[operatorID])
+		}
+
 		ds.devices[operatorID][fingerprint] = &KnownDevice{
 			Fingerprint: fingerprint,
 			IPAddresses: make(map[string]bool),
@@ -93,9 +109,42 @@ func (ds *DeviceStore) RegisterDevice(operatorID, fingerprint, ipAddress, userAg
 		device = ds.devices[operatorID][fingerprint]
 	}
 
+	// Bound the per-device signal sets as well.
+	if !device.IPAddresses[ipAddress] && len(device.IPAddresses) >= maxSignalsPerDevice {
+		dropOne(device.IPAddresses)
+	}
+	if !device.UserAgents[userAgent] && len(device.UserAgents) >= maxSignalsPerDevice {
+		dropOne(device.UserAgents)
+	}
+
 	device.IPAddresses[ipAddress] = true
 	device.UserAgents[userAgent] = true
 	device.LastSeenAt = time.Now()
+}
+
+// evictOldestLocked removes the least-recently-seen device. Caller holds ds.mu.
+func (ds *DeviceStore) evictOldestLocked(devices map[string]*KnownDevice) {
+	var oldestKey string
+
+	var oldestAt time.Time
+
+	for key, d := range devices {
+		if oldestKey == "" || d.LastSeenAt.Before(oldestAt) {
+			oldestKey, oldestAt = key, d.LastSeenAt
+		}
+	}
+	if oldestKey != "" {
+		delete(devices, oldestKey)
+	}
+}
+
+// dropOne removes an arbitrary element from a set map, used to keep the per-device
+// signal sets bounded. Which element is dropped is unimportant for detection.
+func dropOne(set map[string]bool) {
+	for k := range set {
+		delete(set, k)
+		return
+	}
 }
 
 // RemoveDevice removes a known device.
@@ -149,6 +198,12 @@ func HashFingerprint(combined string) string {
 // ShouldNotifyLogin determines if login notification should be sent.
 // Returns false for known devices with consistent IP/UserAgent.
 // Returns true for new devices or significant parameter changes.
+//
+// The device store is in-memory only: it is populated on login and reset on
+// restart, so the first login after a deploy is treated as a new device and
+// notifies. That is a deliberate trade-off - persisting it would need a schema
+// and migration, and erring towards notifying is the safe direction for a
+// security signal.
 func (s *AuthService) ShouldNotifyLogin(ctx context.Context, operatorID, ipAddress, userAgent, fingerprint string) bool {
 	// If device store is not configured, always notify.
 	if s.deviceStore == nil {

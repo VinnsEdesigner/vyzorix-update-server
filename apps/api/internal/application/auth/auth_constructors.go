@@ -95,6 +95,7 @@ func NewAuthService(
 		passwordResetRepo: passwordResetRepo,
 		passwordHasher:    passwordHasher,
 		sessionTTL:        sessionTTL,
+		deviceStore:       NewDeviceStore(),
 	}
 }
 
@@ -122,6 +123,7 @@ func NewAuthServiceWithRefresh(
 		refreshTokenExpiry: refreshTokenExpiry,
 		jwtManager:         jwtManager,
 		ldapConfig:         ldapConfig,
+		deviceStore:        NewDeviceStore(),
 	}
 }
 

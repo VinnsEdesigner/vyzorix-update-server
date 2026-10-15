@@ -103,3 +103,14 @@ OAuth state is stored in the `oauth_states` table to prevent CSRF during the OAu
 After 5 failed login attempts (configurable), the account is locked for a duration. The lockout is tracked in the `account_lockouts` table. The `Lockout` middleware in `internal/api/middleware/api_lockout.go` checks and records lockout state.
 
 During lockout, login returns 429 with `retry_after` indicating how long until the account unlocks.
+
+## New-device login notifications
+
+After a successful login, `AuthService.ShouldNotifyLogin` decides whether to email the operator that their account was accessed from an unrecognised device or IP.
+
+The signal is a device fingerprint built from the request's IP, User-Agent, `Accept-Language` and `Accept-Encoding` (`LoginHandler.generateDeviceFingerprint`). Because the fingerprint already includes the IP, a change in either the network or the client produces a new fingerprint and therefore a notification; a repeat login from the same device on the same IP does not.
+
+Fingerprints are held in `DeviceStore` (`internal/application/auth/auth_device_recognition.go`), keyed per operator, and both the per-operator device map and the per-device signal sets are bounded so a client that changes IP or User-Agent repeatedly cannot grow them without limit.
+
+The store is **in-memory**: it is populated on login and reset on restart, so the first login after a deployment notifies. Persisting it would need a schema and migration, and notifying is the safe direction for a security signal.
+
