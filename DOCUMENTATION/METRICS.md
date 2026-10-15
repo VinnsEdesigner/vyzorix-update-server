@@ -79,10 +79,10 @@ See [Caching](CACHING.md) for what the sections mean.
 GET /metrics
 ```
 
-Standard Prometheus text exposition. The endpoint is registered when the metrics
-handler is configured; it sits outside the authenticated routes because scrapers
-don't carry user credentials — put it behind your network boundary, not behind
-the app's auth.
+Standard Prometheus text exposition. The endpoint sits outside the authenticated
+routes — scrapers don't carry user credentials, and the SSR proxy treats
+`/metrics` like `/health`, so it is served directly rather than redirected to
+`/login`. Put it behind your network boundary, not behind the app's auth.
 
 A minimal scrape config:
 
