@@ -276,11 +276,16 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 
 	addr := ":" + cfg.Port
 	server := &http.Server{
-		Addr:         addr,
-		Handler:      apiServer.Routes(),
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:    addr,
+		Handler: apiServer.Routes(),
+		// ReadHeaderTimeout bounds how long a client may take to send the
+		// request headers. Without it a slow-loris client can hold a connection
+		// open indefinitely (ReadTimeout alone does not cover header-only
+		// connections).
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	// Background workers registered on the lifecycle manager.

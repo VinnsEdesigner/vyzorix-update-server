@@ -317,6 +317,11 @@ func (r *APIKeyRepositoryImpl) ListAll(ctx context.Context, limit, offset int) (
 		}
 		keys = append(keys, key)
 	}
+	// Surface iteration errors (e.g. a dropped connection mid-scan); without
+	// this the caller would receive a silently truncated list.
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("failed to iterate api keys: %w", err)
+	}
 
 	return keys, total, nil
 }
