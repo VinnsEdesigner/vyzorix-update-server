@@ -288,6 +288,17 @@ func (h *Hub) handleClientUnregistration(ctx context.Context, c *Client) {
 	}
 	h.mu.Unlock()
 
+	// Release per-device state so a long-lived server does not accumulate an entry
+	// for every device ID it has ever seen (device IDs are client-supplied, so the
+	// maps are attacker-influenceable).
+	h.metricsMu.Lock()
+	delete(h.deviceLatency, c.DeviceID)
+	h.metricsMu.Unlock()
+
+	if h.messageQueue != nil {
+		h.messageQueue.RemoveQueue(c.DeviceID)
+	}
+
 	h.deviceStatus <- DeviceStatusUpdate{DeviceID: c.DeviceID, Online: false, Source: "websocket"}
 	h.log.Info("device websocket offline", "deviceId", c.DeviceID)
 }

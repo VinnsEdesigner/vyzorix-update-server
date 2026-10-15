@@ -173,15 +173,28 @@ func (q *MessageQueue) GetOrCreateQueue(deviceID string) chan *QueuedMessage {
 	return ch
 }
 
-// RemoveQueue removes the queue for a device.
+// QueueCount returns the number of in-memory device queues currently held. Used
+// by tests and diagnostics to confirm queues are released on disconnect.
+func (q *MessageQueue) QueueCount() int {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	return len(q.queues)
+}
+
+// RemoveQueue drops the in-memory queue for a device.
+//
+// The channel is deliberately NOT closed: Enqueue and evictOldest send/receive on
+// it without holding q.mu (channel ops are atomic), so closing it here would race
+// with those operations and panic on "send on closed channel". Dropping the map
+// entry is enough - the buffer becomes unreachable and is collected, and any
+// message still buffered is recoverable from the database (messages are persisted
+// on enqueue and reloaded by ReplayQueue).
 func (q *MessageQueue) RemoveQueue(deviceID string) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
-	if ch, ok := q.queues[deviceID]; ok {
-		close(ch)
-		delete(q.queues, deviceID)
-	}
+	delete(q.queues, deviceID)
 }
 
 // Enqueue adds a message to the device's queue.

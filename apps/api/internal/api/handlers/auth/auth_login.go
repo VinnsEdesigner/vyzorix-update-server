@@ -40,9 +40,26 @@ type LoginHandler struct {
 
 // LoginLockout provides login attempt tracking with device fingerprinting.
 type LoginLockout struct {
-	attempts map[string]*LoginAttemptInfo
-	mu       sync.RWMutex
+	attempts    map[string]*LoginAttemptInfo
+	lastCleanup time.Time
+	mu          sync.RWMutex
 }
+
+// maxLockoutEntries caps the tracked-emails map. The key is the email supplied by
+// an unauthenticated caller, so the map must be bounded.
+const maxLockoutEntries = 10000
+
+// lockoutEvictBatch is how many entries are dropped when the map is at capacity.
+// Evicting a batch (rather than one) keeps the eviction cost amortized O(1) per
+// call instead of scanning the map on every request.
+const lockoutEvictBatch = 100
+
+// lockoutSweepInterval is the minimum spacing between full expiry sweeps.
+const lockoutSweepInterval = 10 * time.Minute
+
+// lockoutEntryTTL is how long an entry with no active lock is remembered before
+// it can be swept.
+const lockoutEntryTTL = 1 * time.Hour
 
 // LoginAttemptInfo tracks login attempts with device fingerprint.
 type LoginAttemptInfo struct {
@@ -56,14 +73,60 @@ type LoginAttemptInfo struct {
 // NewLoginLockout creates a new login lockout tracker.
 func NewLoginLockout() *LoginLockout {
 	return &LoginLockout{
-		attempts: make(map[string]*LoginAttemptInfo),
+		attempts:    make(map[string]*LoginAttemptInfo),
+		lastCleanup: time.Now(),
 	}
+}
+
+// evictStaleLocked bounds the tracked-emails map. Caller holds l.mu.
+//
+// Two independent mechanisms, both kept off the hot path:
+//   - a time-based sweep of expired, unlocked entries, at most once per
+//     sweepInterval, and
+//   - a size cap that evicts a small batch when the map is full.
+//
+// The full scan is NOT run on every call once the map is at capacity: doing so
+// would make each request O(n) precisely while an attacker is spraying emails,
+// turning the defence into the amplifier.
+func (l *LoginLockout) evictStaleLocked() {
+	now := time.Now()
+
+	if len(l.attempts) >= maxLockoutEntries {
+		// At capacity: drop a bounded batch without scanning the whole map.
+		evicted := 0
+		for email := range l.attempts {
+			delete(l.attempts, email)
+			evicted++
+			if evicted >= lockoutEvictBatch {
+				break
+			}
+		}
+		l.lastCleanup = now
+
+		return
+	}
+
+	if now.Sub(l.lastCleanup) < lockoutSweepInterval {
+		return
+	}
+
+	for email, info := range l.attempts {
+		locked := info.LockedUntil != nil && now.Before(*info.LockedUntil)
+		if !locked && now.Sub(info.FirstAt) > lockoutEntryTTL {
+			delete(l.attempts, email)
+		}
+	}
+	l.lastCleanup = now
 }
 
 // RecordFailed records a failed login attempt.
 func (l *LoginLockout) RecordFailed(email, ip, userAgent string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+
+	// Bound the map: entries are keyed by the (attacker-supplied) email, so an
+	// unauthenticated spray of unique emails would otherwise grow it without limit.
+	l.evictStaleLocked()
 
 	info, exists := l.attempts[email]
 	now := time.Now()
