@@ -2,12 +2,15 @@
 package middleware
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
 
-	gintimeout "github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,95 +30,280 @@ func DefaultTimeoutConfig() TimeoutConfig {
 	}
 }
 
-// longLivedPathSuffixes are paths that must never be subject to the request
-// timeout: WebSocket upgrades and server-sent event streams are long-lived by
-// design, and the timeout wrapper's buffering writer would also break the
-// hijacked connection.
-var longLivedPathSuffixes = []string{"/ws", "/stream"}
+// timeoutBufferThreshold is the response size past which the buffering writer
+// switches to streaming passthrough. Buffering exists only so a timed-out
+// handler cannot write to the client; once a response is this large it is
+// certainly not a timeout case, and buffering it would mean holding the whole
+// body (potentially a multi-megabyte APK) in memory.
+const timeoutBufferThreshold = 64 << 10 // 64 KiB.
 
-// streamingPathPrefixes are path prefixes served by streaming/file handlers.
-// The timeout wrapper buffers the entire response in memory, which would be
-// wasteful (or fatal) for static assets and APK/binary downloads, so they bypass
-// it as well.
-var streamingPathPrefixes = []string{"/assets", "/bin", "/apk", "/api/v1/apk", "/v1/apk"}
+// skipPaths that are always excluded: liveness/readiness probes must never be
+// buffered or delayed.
+var timeoutSkipPaths = []string{"/health", "/healthz", "/metrics"}
 
-// isLongLivedPath reports whether the path is a WebSocket/SSE endpoint that must
-// bypass the timeout wrapper.
-func isLongLivedPath(path string) bool {
-	for _, suffix := range longLivedPathSuffixes {
-		if len(path) >= len(suffix) && path[len(path)-len(suffix):] == suffix {
-			return true
-		}
-	}
-	return false
+// timeoutWriter wraps the real gin.ResponseWriter so the handler's output is
+// buffered (and therefore discardable) until the request either completes or the
+// deadline fires. Unlike a plain buffering writer it degrades gracefully:
+//
+//   - Hijack passes straight through, so WebSocket/SSE upgrades are unaffected.
+//   - Flush/FlushBuffer and an over-threshold write switch to passthrough, so
+//     server-sent events and large file downloads are streamed, not buffered.
+//   - CloseNotify forwards the underlying channel.
+//
+// After the switch to passthrough the response can no longer be discarded, which
+// is correct: those cases are never the ones a timeout needs to suppress.
+type timeoutWriter struct {
+	gin.ResponseWriter
+
+	body      *bytes.Buffer
+	headers   http.Header
+	threshold int
+	timedOut  bool
+	passthru  bool
+	wroteHdr  bool
+	code      int
 }
 
-// isStreamingPath reports whether the path is served by a streaming/file handler
-// that must bypass the buffering timeout wrapper.
-func isStreamingPath(path string) bool {
-	for _, prefix := range streamingPathPrefixes {
-		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
-			return true
+func newTimeoutWriter(w gin.ResponseWriter, threshold int) *timeoutWriter {
+	return &timeoutWriter{
+		ResponseWriter: w,
+		body:           &bytes.Buffer{},
+		headers:        make(http.Header),
+		threshold:      threshold,
+	}
+}
+
+func (w *timeoutWriter) Header() http.Header { return w.headers }
+
+func (w *timeoutWriter) WriteHeader(code int) {
+	if w.timedOut || w.wroteHdr || code == -1 {
+		return
+	}
+	w.wroteHdr = true
+	w.code = code
+	if w.passthru {
+		w.ResponseWriter.WriteHeader(code)
+	}
+}
+
+func (w *timeoutWriter) WriteHeaderNow() {
+	if w.timedOut || w.wroteHdr {
+		return
+	}
+	w.wroteHdr = true
+	if w.code == 0 {
+		w.code = http.StatusOK
+	}
+	if w.passthru {
+		w.ResponseWriter.WriteHeader(w.code)
+	}
+}
+
+func (w *timeoutWriter) Write(p []byte) (int, error) {
+	if w.timedOut {
+		return len(p), nil
+	}
+	if !w.passthru && w.body.Len()+len(p) > w.threshold {
+		w.enterPassthrough()
+	}
+	if w.passthru {
+		return w.ResponseWriter.Write(p)
+	}
+	return w.body.Write(p)
+}
+
+func (w *timeoutWriter) WriteString(s string) (int, error) {
+	return w.Write([]byte(s))
+}
+
+func (w *timeoutWriter) Status() int {
+	if w.code == 0 || w.timedOut {
+		return w.ResponseWriter.Status()
+	}
+	return w.code
+}
+
+func (w *timeoutWriter) Size() int {
+	if w.passthru {
+		return w.ResponseWriter.Size()
+	}
+	return w.body.Len()
+}
+
+func (w *timeoutWriter) Written() bool {
+	if w.passthru {
+		return w.ResponseWriter.Written()
+	}
+	return w.wroteHdr || w.body.Len() > 0
+}
+
+// Flush switches to passthrough and flushes the underlying writer, so SSE and
+// other streaming responses are delivered incrementally.
+func (w *timeoutWriter) Flush() {
+	if w.timedOut {
+		return
+	}
+	w.enterPassthrough()
+	w.ResponseWriter.Flush()
+}
+
+// Hijack passes through to the real connection for protocol upgrades
+// (WebSocket), which cannot work through a buffering writer.
+//
+// gin's ResponseWriter always advertises Hijack but panics (rather than
+// returning an error) when the underlying writer is not hijackable, so the call
+// is guarded with a recover and converted to a normal error.
+func (w *timeoutWriter) Hijack() (conn net.Conn, rw *bufio.ReadWriter, err error) {
+	h, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("underlying ResponseWriter does not support hijacking")
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			conn, rw = nil, nil
+			err = fmt.Errorf("hijack not supported by underlying writer: %v", p)
+		}
+	}()
+
+	conn, rw, err = h.Hijack()
+	if err == nil {
+		w.passthru = true
+	}
+	return conn, rw, err
+}
+
+func (w *timeoutWriter) CloseNotify() <-chan bool {
+	return w.ResponseWriter.CloseNotify()
+}
+
+// Pusher forwards HTTP/2 server push when available.
+func (w *timeoutWriter) Pusher() http.Pusher {
+	if p, ok := w.ResponseWriter.(http.Pusher); ok {
+		return p
+	}
+	return nil
+}
+
+// enterPassthrough flushes anything buffered to the real writer and switches to
+// direct streaming for all subsequent writes.
+func (w *timeoutWriter) enterPassthrough() {
+	if w.passthru {
+		return
+	}
+	w.passthru = true
+	if !w.wroteHdr {
+		w.wroteHdr = true
+		if w.code == 0 {
+			w.code = http.StatusOK
 		}
 	}
-	return false
+	dst := w.ResponseWriter.Header()
+	for k, vv := range w.headers {
+		dst[k] = vv
+	}
+	w.ResponseWriter.WriteHeader(w.code)
+	if w.body.Len() > 0 {
+		_, _ = w.ResponseWriter.Write(w.body.Bytes())
+		w.body.Reset()
+	}
+}
+
+// commit writes the buffered response to the real writer on normal completion.
+func (w *timeoutWriter) commit() {
+	if w.timedOut || w.passthru {
+		return
+	}
+	dst := w.ResponseWriter.Header()
+	for k, vv := range w.headers {
+		dst[k] = vv
+	}
+	if w.code == 0 {
+		w.code = http.StatusOK
+	}
+	w.ResponseWriter.WriteHeader(w.code)
+	if w.body.Len() > 0 {
+		_, _ = w.ResponseWriter.Write(w.body.Bytes())
+	}
+}
+
+// discard marks the response as timed out so late writes are ignored.
+func (w *timeoutWriter) discard() {
+	w.timedOut = true
+	w.body.Reset()
 }
 
 // GinTimeout returns a Gin middleware that aborts a request after a configured
-// deadline, responding with the standard structured error envelope. It wraps
-// github.com/gin-contrib/timeout, which runs the rest of the chain under a
-// buffered writer and discards the response if the deadline elapses.
+// deadline, responding with the standard structured error envelope.
 //
-// Two categories of request deliberately pass through untouched:
-//   - paths in config.SkipPaths, and
-//   - long-lived paths (WebSocket upgrades, SSE streams), which the buffering
-//     writer would break.
+// It replaces github.com/gin-contrib/timeout, whose buffering writer breaks
+// WebSocket upgrades and buffers large/streaming responses in memory. This
+// implementation keeps the buffering (so a timed-out handler cannot write to the
+// client) but its writer passes through on hijack/flush/oversize, so streaming
+// and downloads are never buffered.
+//
+// Paths in config.SkipPaths and the built-in health/metrics paths bypass the
+// deadline entirely. Per-route overrides are read from TimeoutConfig.RouteTimeouts.
 func GinTimeout(config TimeoutConfig) gin.HandlerFunc {
 	timeout := config.DefaultTimeout
 	if timeout <= 0 {
 		timeout = DefaultTimeoutConfig().DefaultTimeout
 	}
 
-	skip := make(map[string]struct{}, len(config.SkipPaths))
+	skip := make(map[string]struct{}, len(config.SkipPaths)+len(timeoutSkipPaths))
 	for _, p := range config.SkipPaths {
 		skip[p] = struct{}{}
 	}
-
-	timeoutResponse := func(c *gin.Context) {
-		// Only write the envelope if the buffered handler produced nothing.
-		if !c.Writer.Written() {
-			responses.RespondStructured(c, http.StatusGatewayTimeout,
-				"the request timed out, please try again")
-		}
+	for _, p := range timeoutSkipPaths {
+		skip[p] = struct{}{}
 	}
-
-	inner := gintimeout.New(
-		gintimeout.WithTimeout(timeout),
-		gintimeout.WithHandler(func(c *gin.Context) { c.Next() }),
-		gintimeout.WithResponse(timeoutResponse),
-	)
 
 	return func(c *gin.Context) {
 		if _, ok := skip[c.Request.URL.Path]; ok {
 			c.Next()
 			return
 		}
-		if isLongLivedPath(c.Request.URL.Path) || isStreamingPath(c.Request.URL.Path) {
-			c.Next()
-			return
-		}
 
-		// Per-route override: when a route declares its own timeout, run the
-		// library with that deadline instead of the default.
+		deadline := timeout
 		if rt, ok := config.RouteTimeouts[c.Request.URL.Path]; ok && rt > 0 {
-			gintimeout.New(
-				gintimeout.WithTimeout(rt),
-				gintimeout.WithHandler(func(c *gin.Context) { c.Next() }),
-				gintimeout.WithResponse(timeoutResponse),
-			)(c)
-			return
+			deadline = rt
 		}
 
-		inner(c)
+		real := c.Writer
+		tw := newTimeoutWriter(real, timeoutBufferThreshold)
+		c.Writer = tw
+
+		finish := make(chan struct{})
+		panicCh := make(chan interface{}, 1)
+
+		go func() {
+			defer func() {
+				if p := recover(); p != nil {
+					panicCh <- p
+				}
+			}()
+			c.Next()
+			close(finish)
+		}()
+
+		select {
+		case <-finish:
+			tw.commit()
+			c.Writer = real
+
+		case p := <-panicCh:
+			tw.discard()
+			c.Writer = real
+			panic(p)
+
+		case <-time.After(deadline):
+			tw.discard()
+			c.Writer = real
+			c.Abort()
+			if !real.Written() {
+				responses.RespondStructured(c, http.StatusGatewayTimeout,
+					"the request timed out, please try again")
+			}
+		}
 	}
 }

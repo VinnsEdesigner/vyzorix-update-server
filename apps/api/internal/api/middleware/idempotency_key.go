@@ -91,13 +91,13 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 			return
 		}
 
-		idempotencyKey := c.GetHeader(config.HeaderName)
-		if idempotencyKey == "" {
+		rawKey := c.GetHeader(config.HeaderName)
+		if rawKey == "" {
 			c.Next()
 			return
 		}
 
-		if err := ValidateIdempotencyKey(idempotencyKey); err != nil {
+		if err := ValidateIdempotencyKey(rawKey); err != nil {
 			responses.RespondStructuredAbort(c, http.StatusBadRequest,
 
 				err.Error(),
@@ -105,8 +105,30 @@ func GinIdempotency(config IdempotencyConfig) func(c *gin.Context) {
 			return
 		}
 
-		handleIdempotentRequest(c, config, path, idempotencyKey)
+		// Namespace the stored key by the authenticated principal and the target
+		// path. Without this the record is keyed by the caller-supplied header
+		// alone, so (a) two tenants that choose the same idempotency key collide,
+		// and the second caller replays the first tenant's cached response, and
+		// (b) a key reused across different endpoints on the same principal
+		// replays an unrelated response. Principal is org (tenant) plus client/API
+		// key for device requests; both are empty for unauthenticated paths, which
+		// then fall back to path-scoping only.
+		scopedKey := idempotencyScopeKey(c, path, rawKey)
+
+		handleIdempotentRequest(c, config, path, scopedKey)
 	}
+}
+
+// idempotencyScopeKey derives a tenant-scoped, path-scoped idempotency key from
+// the caller-supplied header value. It never returns the raw header, so two
+// tenants cannot collide on the same user-chosen key.
+func idempotencyScopeKey(c *gin.Context, path, rawKey string) string {
+	orgID := GetOrganizationID(c)
+	clientID := c.GetHeader("X-Client-ID")
+	principal := orgID + "\x00" + clientID
+	sum := sha256.Sum256([]byte(principal + "\x00" + path + "\x00" + rawKey))
+
+	return hex.EncodeToString(sum[:])
 }
 
 // compilePatterns pre-compiles regex patterns for efficiency.

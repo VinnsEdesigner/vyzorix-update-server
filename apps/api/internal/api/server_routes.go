@@ -88,11 +88,11 @@ func (s *Server) setupGlobalMiddleware() {
 	s.engine.Use(s.mwFactory.BodySizeLimit())
 	// Request deadline. Runs after body-size limiting (so oversized bodies are
 	// rejected before the buffered handler starts) and before the rest of the
-	// chain. Health/metrics probes and streaming/WS paths are excluded inside the
-	// middleware so they are never buffered.
+	// chain. The timeout writer streams rather than buffers on hijack (WebSocket),
+	// flush (SSE) and large responses, so no per-path streaming exceptions are
+	// needed; /health, /healthz and /metrics bypass the deadline by default.
 	s.engine.Use(middleware.GinTimeout(middleware.TimeoutConfig{
 		DefaultTimeout: 30 * time.Second,
-		SkipPaths:      []string{"/health", "/healthz", "/metrics"},
 	}))
 	s.engine.Use(s.mwFactory.DisableTrace())
 	s.engine.Use(s.mwFactory.DisableConnect())
