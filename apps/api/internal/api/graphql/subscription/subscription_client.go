@@ -254,6 +254,14 @@ func (c *Client) subscribeOrganizationEvent(id string, sub SubscribePayload) {
 		orgID = c.orgID // Use connection orgID as fallback.
 	}
 
+	// The events are keyed by organization, so a caller-supplied orgId that does
+	// not match the organization the connection authenticated against would leak
+	// another tenant's events. Only the connection's own org is allowed.
+	if orgID != c.orgID {
+		c.sendError(id, "organization ID does not match authenticated scope")
+		return
+	}
+
 	// Check hub availability.
 	if c.handler.hub == nil {
 		c.sendError(id, "subscription service unavailable")
@@ -283,6 +291,13 @@ func (c *Client) subscribeMemberEvent(id string, sub SubscribePayload) {
 	orgID, _ := sub.Variables["orgId"].(string)
 	if orgID == "" {
 		orgID = c.orgID // Use connection orgID as fallback.
+	}
+
+	// As with organization events, a mismatched orgId would leak another tenant's
+	// membership events; restrict to the connection's authenticated org.
+	if orgID != c.orgID {
+		c.sendError(id, "organization ID does not match authenticated scope")
+		return
 	}
 
 	// Check hub availability.
