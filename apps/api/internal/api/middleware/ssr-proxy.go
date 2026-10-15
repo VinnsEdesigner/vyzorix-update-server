@@ -139,6 +139,7 @@ func isStaticPath(path string) bool {
 	return strings.HasPrefix(path, "/api/") ||
 		strings.HasPrefix(path, "/v1/") ||
 		strings.HasPrefix(path, "/health") ||
+		strings.HasPrefix(path, "/metrics") ||
 		strings.HasPrefix(path, "/bin/") ||
 		strings.Contains(path, ".")
 }

@@ -14,14 +14,14 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
-	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/provisioning"
 	devicedomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
@@ -105,6 +105,7 @@ func main() {
 		APIKeyService:   deps.APIKeyService,
 		DeviceRepo:      deps.DeviceRepo,
 		IdempotencyRepo: deps.IdempotencyRepo,
+		Metrics:         deps.Metrics,
 	})
 
 	// Register GraphQL if enabled.

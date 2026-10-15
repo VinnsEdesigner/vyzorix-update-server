@@ -722,6 +722,7 @@ type ServerConfigWithDeps struct {
 	DeviceRepo      *storage.DeviceRepository
 	IdempotencyRepo *storage.IdempotencyRepository
 	FCMRetryWorker  *worker.FCMRetryWorker
+	Metrics         *infraMetrics.Metrics
 	Config          config.Config
 }
 
@@ -823,6 +824,14 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.lifecycleManager = lifecycle.NewManager()
 	if cfg.Config.CacheTTLSeconds > 0 {
 		s.cache = infracache.New(time.Duration(cfg.Config.CacheTTLSeconds) * time.Second)
+	}
+
+	// Metrics handler + request middleware. The legacy NewServer path wires these
+	// inline; the DI path must too, or /metrics is never registered and request
+	// metrics are never recorded.
+	if cfg.Metrics != nil {
+		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
+		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
 
 	s.setupRoutes()
