@@ -61,6 +61,21 @@ Resolvers are in `internal/api/graphql/resolver/`. They call the same applicatio
 
 WebSocket subscriptions are handled by `internal/api/graphql/subscription/subscription_handler.go`. It upgrades the connection and manages subscription lifecycle. Clients send `subscribe` messages with a query and receive `next` messages with data.
 
+The connection is authenticated by the same middleware chain as REST (`/:org/graphql/ws`), so the operator and organization come from the session/API key and the URL `:org`.
+
+### Subscriptions and organization scoping
+
+Five subscriptions are available: `deviceUpdated`, `telemetryReceived`, `commandStatusChanged`, `organizationEvent`, `memberEvent`.
+
+All five are scoped to the connection's organization:
+
+- `organizationEvent` / `memberEvent` reject a client-supplied `orgId` that differs from the connection's org.
+- `deviceUpdated` / `telemetryReceived` / `commandStatusChanged` reject a client-supplied `deviceId` / `dispatchId` that does not belong to the connection's org.
+
+Events are keyed by organization, so every operator in an org receives that org's events (not just the operator who triggered them). Subscribing without a `deviceId` receives events for all devices in the org. Publishing is done by the Hub: device connect/disconnect, inbound telemetry, and command delivery (both the synchronous send path and the asynchronous outbox).
+
+For the transport-level view (hub, rate limiting, FCM fallback) see [REALTIME_COMMUNICATION.md](REALTIME_COMMUNICATION.md).
+
 ## Introspection
 
 GraphQL introspection (`__schema`, `__type`) is blocked without authentication. The `POST /:org/graphql` endpoint requires a valid session cookie — unauthenticated requests get 401.

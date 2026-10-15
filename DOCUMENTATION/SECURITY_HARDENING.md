@@ -78,6 +78,16 @@ All present on every response (verified via nmap + curl + nikto):
 
 TRACE and CONNECT methods are blocked (405). The server only accepts GET, POST, PATCH, DELETE, HEAD, and OPTIONS.
 
+## Request deadlines and slow clients
+
+The HTTP server sets `ReadHeaderTimeout` (10s), `ReadTimeout` (30s), `WriteTimeout` (30s) and `IdleTimeout` (60s). `ReadHeaderTimeout` is what bounds a slow-loris client that dribbles headers; `ReadTimeout` alone does not cover a header-only connection.
+
+Per-request deadlines are enforced by `middleware.GinTimeout`, a buffering writer that abandons a request after 30s with a structured 504. It streams rather than buffers on hijack (WebSocket), flush (SSE) and responses over 64 KiB, so downloads and long-lived connections are unaffected. `/health`, `/healthz` and `/metrics` bypass the deadline.
+
+## Replay protection
+
+Signed requests carry a timestamp, a nonce and a signature. The timestamp must be inside the configured window (`HMAC_WINDOW_SECONDS`, default 30s), and the nonce is recorded in a bounded cache (`crypto.NonceCache`) so a captured request cannot be replayed within that window. The cache is size-capped and sweeps expired entries lazily, so a flood of distinct nonces cannot grow it without bound.
+
 ## What the security scan found
 
 Ran nmap, nikto, sqlmap, gobuster, ffuf, govulncheck, and 28 manual advanced attack tests (JWT manipulation, IDOR, mass assignment, SSRF, timing attacks, request smuggling, race conditions, XXE, CRLF injection, session fixation, cache poisoning, cookie bombs, slowloris, null byte injection, path traversal, HTTP parameter pollution).

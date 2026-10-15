@@ -26,9 +26,12 @@ The `MessageRouter` in `internal/api/handlers/websocket/stream_message.go` handl
 
 ## Dashboard broadcasting
 
-Dashboard clients (operators) connect via WebSocket to monitor devices in realtime. The Hub supports a dashboard broadcast mode where one client subscribes to all devices in an organization. When a device sends telemetry or a command result, the Hub forwards it to all subscribed dashboard clients.
+Dashboard clients (operators) connect over WebSocket and monitor devices in realtime. There are two transports:
 
-The `DashboardBroadcaster` interface on the Hub handles this. It's set during server initialization.
+- The device stream (`/v1/device/:imei/stream`), where the device itself connects. Inbound telemetry is broadcast to dashboards via `hub.BroadcastTelemetry`.
+- The GraphQL subscription endpoint (`/:org/graphql/ws`), where dashboards subscribe to `deviceUpdated`, `telemetryReceived` and `commandStatusChanged`.
+
+GraphQL subscription fan-out is keyed by organization, not by operator: a device going offline, a telemetry frame, or a command reaching `delivered` is published to every subscriber in the device's organization. The Hub resolves a device's organization once, when the device connects, and caches it on the client so the telemetry path needs no per-frame lookup. See [GRAPHQL_API.md](GRAPHQL_API.md) for the subscription-level authorization rules.
 
 ## Rate limiting
 
