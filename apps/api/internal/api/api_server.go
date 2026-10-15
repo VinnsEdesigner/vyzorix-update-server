@@ -226,9 +226,17 @@ func (s *Server) wireOperationalHandlers(cfg *ServerConfig) {
 	s.dashboardRateLimiter = middleware.NewDashboardRateLimiterMiddleware(nil)
 
 	s.wireDashboardHandlers(cfg)
+	s.createUpdatesHandler(cfg)
 	s.wireInboxHandler(cfg)
 	s.wireConfirmHandler(cfg)
 	s.wireDiagnosticsHandler(cfg)
+
+	// Wire the telemetry-history response cache. The handler itself comes from the
+	// injected HandlerSet (or the legacy path), so attach the cache here, after the
+	// cache and the handler both exist.
+	if s.cache != nil && s.telemetryHistoryHandler != nil {
+		s.telemetryHistoryHandler.SetHistoryCache(s.cache.Section("telemetry"))
+	}
 
 	if cfg.DB != nil {
 		s.initUpdateChecker(cfg)
@@ -380,10 +388,6 @@ func (s *Server) wireDashboardHandlers(cfg *ServerConfig) {
 	logsRepo, metricsRepo, eventRepo := s.createStorageRepositories(cfg)
 	historySvc, logsSvc, metricsSvc, dashboardSvc := s.createDashboardServices(cfg, logsRepo, metricsRepo)
 	s.createDashboardHandlers(cfg, historySvc, logsSvc, metricsSvc, eventRepo, dashboardSvc)
-	s.createUpdatesHandler(cfg)
-	s.wireInboxHandler(cfg)
-	s.wireConfirmHandler(cfg)
-	s.wireDiagnosticsHandler(cfg)
 }
 
 // createStorageRepositories creates storage repositories for dashboard.
@@ -513,50 +517,8 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 	}
 }
 
-// wireSupplementalHandlers wires the contact-point, service-account and
-// annotation handlers. GraphQL registration dereferences all three, so they must
-// be non-nil whenever the DB is available.
-func (s *Server) wireSupplementalHandlers(cfg *ServerConfig) {
-	if cfg.DB == nil {
-		return
-	}
-
-	cpRepo := storage.NewContactPointRepository(cfg.DB.DB())
-	cpDeliveries := storage.NewDeliveryRepository(cfg.DB.DB())
-	notificationSvc := appnotification.NewService(cpRepo)
-
-	channels := map[notificationdomain.ChannelType]notificationdomain.Channel{
-		notificationdomain.ChannelTypeEmail:   appnotification.NewEmailChannel(emailService.NewService()),
-		notificationdomain.ChannelTypeWebhook: appnotification.NewWebhookChannel(infrawebhook.NewClient(10 * time.Second)),
-		notificationdomain.ChannelTypeSlack:   appnotification.NewSlackChannel(infrawebhook.NewClient(10 * time.Second)),
-	}
-	dispatcher := appnotification.NewDispatcher(cpRepo, cpDeliveries, channels, cfg.Log)
-
-	s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
-
-	// Service accounts + annotations are also GraphQL-wired, so build them here so
-	// the server doesn't dereference nil handlers during GraphQL registration.
-	saRepo := storage.NewServiceAccountRepository(cfg.DB.DB())
-	saTokenRepo := storage.NewServiceAccountTokenRepository(cfg.DB.DB())
-	saService := saapp.NewService(saRepo, saTokenRepo)
-	saService.SetAuditLogger(s.AuditLogger)
-	saService.SetMemberRepository(storage.NewMemberStorage(cfg.DB.DB()))
-	if limit := os.Getenv("SA_TOKEN_LIMIT"); limit != "" {
-		if n, err := strconv.Atoi(limit); err == nil && n > 0 {
-			saService.SetMaxTokens(n)
-		}
-	}
-	s.ServiceAccountHandler = sahandlers.NewHandler(saService)
-	if s.tenantAPIKeyAuth != nil {
-		s.tenantAPIKeyAuth.SetServiceAccountAuth(saService)
-	}
-
-	annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
-	s.AnnotationHandler = annotationhandlers.NewHandler(appannotation.NewService(annotationRepo))
-}
-
 func (s *Server) wireConfirmHandler(cfg *ServerConfig) {
-	if cfg.DeviceService == nil {
+	if cfg.DeviceService == nil || cfg.DB == nil {
 		return
 	}
 
@@ -730,7 +692,6 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	}
 	s.wireAuthorizationWiring(serverCfg)
 	s.wireOperationalHandlers(serverCfg)
-	s.wireSupplementalHandlers(serverCfg)
 
 	// Create updater handler for OTA update distribution.
 	s.updaterHandler = updaterhandlers.NewHandler(cfg.Log, cfg.Config)
