@@ -2,15 +2,12 @@
 package middleware
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/responses"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/errors"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/tracing"
+
+	gintimeout "github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,89 +27,95 @@ func DefaultTimeoutConfig() TimeoutConfig {
 	}
 }
 
-// GinTimeout returns a Gin middleware that applies request timeouts.
-// This is the enterprise-grade solution for Bug 49 - timeouts at middleware level.
-func GinTimeout(config TimeoutConfig) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		// Check if this path should skip timeout.
-		for _, path := range config.SkipPaths {
-			if c.Request.URL.Path == path {
-				c.Next()
-				return
-			}
-		}
+// longLivedPathSuffixes are paths that must never be subject to the request
+// timeout: WebSocket upgrades and server-sent event streams are long-lived by
+// design, and the timeout wrapper's buffering writer would also break the
+// hijacked connection.
+var longLivedPathSuffixes = []string{"/ws", "/stream"}
 
-		// Determine timeout for this request.
-		timeout := config.DefaultTimeout
-		if routeTimeout, ok := config.RouteTimeouts[c.Request.URL.Path]; ok {
-			timeout = routeTimeout
-		}
+// streamingPathPrefixes are path prefixes served by streaming/file handlers.
+// The timeout wrapper buffers the entire response in memory, which would be
+// wasteful (or fatal) for static assets and APK/binary downloads, so they bypass
+// it as well.
+var streamingPathPrefixes = []string{"/assets", "/bin", "/apk", "/api/v1/apk", "/v1/apk"}
 
-		// Create context with timeout.
-		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
-		defer cancel()
-
-		// Replace request context with timeout context.
-		c.Request = c.Request.WithContext(ctx)
-
-		// Process request in goroutine to allow timeout detection.
-		done := make(chan struct{})
-		go func() {
-			c.Next()
-			close(done)
-		}()
-
-		// Wait for either completion or timeout.
-		select {
-		case <-done:
-			// Request completed normally.
-		case <-ctx.Done():
-			// Timeout occurred.
-			c.Abort()
-			if !c.Writer.Written() {
-				responses.RespondStructured(c, http.StatusGatewayTimeout,
-
-					fmt.Sprintf("request timed out after %v", timeout),
-				)
-			}
+// isLongLivedPath reports whether the path is a WebSocket/SSE endpoint that must
+// bypass the timeout wrapper.
+func isLongLivedPath(path string) bool {
+	for _, suffix := range longLivedPathSuffixes {
+		if len(path) >= len(suffix) && path[len(path)-len(suffix):] == suffix {
+			return true
 		}
 	}
+	return false
 }
 
-// TimeoutMiddleware returns an http.Handler middleware for request timeouts.
-// This version works with standard http.Handler (non-Gin).
-func TimeoutMiddleware(defaultTimeout time.Duration) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, cancel := context.WithTimeout(r.Context(), defaultTimeout)
-			defer cancel()
+// isStreamingPath reports whether the path is served by a streaming/file handler
+// that must bypass the buffering timeout wrapper.
+func isStreamingPath(path string) bool {
+	for _, prefix := range streamingPathPrefixes {
+		if len(path) >= len(prefix) && path[:len(prefix)] == prefix {
+			return true
+		}
+	}
+	return false
+}
 
-			r = r.WithContext(ctx)
+// GinTimeout returns a Gin middleware that aborts a request after a configured
+// deadline, responding with the standard structured error envelope. It wraps
+// github.com/gin-contrib/timeout, which runs the rest of the chain under a
+// buffered writer and discards the response if the deadline elapses.
+//
+// Two categories of request deliberately pass through untouched:
+//   - paths in config.SkipPaths, and
+//   - long-lived paths (WebSocket upgrades, SSE streams), which the buffering
+//     writer would break.
+func GinTimeout(config TimeoutConfig) gin.HandlerFunc {
+	timeout := config.DefaultTimeout
+	if timeout <= 0 {
+		timeout = DefaultTimeoutConfig().DefaultTimeout
+	}
 
-			done := make(chan struct{})
-			go func() {
-				next.ServeHTTP(w, r)
-				close(done)
-			}()
+	skip := make(map[string]struct{}, len(config.SkipPaths))
+	for _, p := range config.SkipPaths {
+		skip[p] = struct{}{}
+	}
 
-			select {
-			case <-done:
-				// Request completed.
-			case <-ctx.Done():
-				// Emit the structured error envelope so this net/http-level
-				// timeout matches the gin structured-error shape. The docs URL.
-				// is built dynamically via the tracing builder (not hardcoded).
-				body, _ := json.Marshal(responses.StructuredErrorResponse{
-					Error: responses.ErrorDetail{
-						Code:    string(errors.CodeInternalTimeout),
-						Message: "The request timed out. Please try again.",
-						DocsURL: tracing.BuildErrorDocsURL(string(errors.CodeInternalTimeout)),
-					},
-				})
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusGatewayTimeout)
-				_, _ = w.Write(body)
-			}
-		})
+	timeoutResponse := func(c *gin.Context) {
+		// Only write the envelope if the buffered handler produced nothing.
+		if !c.Writer.Written() {
+			responses.RespondStructured(c, http.StatusGatewayTimeout,
+				"the request timed out, please try again")
+		}
+	}
+
+	inner := gintimeout.New(
+		gintimeout.WithTimeout(timeout),
+		gintimeout.WithHandler(func(c *gin.Context) { c.Next() }),
+		gintimeout.WithResponse(timeoutResponse),
+	)
+
+	return func(c *gin.Context) {
+		if _, ok := skip[c.Request.URL.Path]; ok {
+			c.Next()
+			return
+		}
+		if isLongLivedPath(c.Request.URL.Path) || isStreamingPath(c.Request.URL.Path) {
+			c.Next()
+			return
+		}
+
+		// Per-route override: when a route declares its own timeout, run the
+		// library with that deadline instead of the default.
+		if rt, ok := config.RouteTimeouts[c.Request.URL.Path]; ok && rt > 0 {
+			gintimeout.New(
+				gintimeout.WithTimeout(rt),
+				gintimeout.WithHandler(func(c *gin.Context) { c.Next() }),
+				gintimeout.WithResponse(timeoutResponse),
+			)(c)
+			return
+		}
+
+		inner(c)
 	}
 }

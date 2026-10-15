@@ -86,6 +86,14 @@ func (s *Server) setupGlobalMiddleware() {
 	s.engine.Use(s.mwFactory.CORS())
 	s.engine.Use(s.mwFactory.SecurityHeaders())
 	s.engine.Use(s.mwFactory.BodySizeLimit())
+	// Request deadline. Runs after body-size limiting (so oversized bodies are
+	// rejected before the buffered handler starts) and before the rest of the
+	// chain. Health/metrics probes and streaming/WS paths are excluded inside the
+	// middleware so they are never buffered.
+	s.engine.Use(middleware.GinTimeout(middleware.TimeoutConfig{
+		DefaultTimeout: 30 * time.Second,
+		SkipPaths:      []string{"/health", "/healthz", "/metrics"},
+	}))
 	s.engine.Use(s.mwFactory.DisableTrace())
 	s.engine.Use(s.mwFactory.DisableConnect())
 	s.engine.Use(s.mwFactory.ErrorHandler())
