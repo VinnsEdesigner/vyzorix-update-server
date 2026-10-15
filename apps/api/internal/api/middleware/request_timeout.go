@@ -269,8 +269,8 @@ func GinTimeout(config TimeoutConfig) gin.HandlerFunc {
 			deadline = rt
 		}
 
-		real := c.Writer
-		tw := newTimeoutWriter(real, timeoutBufferThreshold)
+		underlying := c.Writer
+		tw := newTimeoutWriter(underlying, timeoutBufferThreshold)
 		c.Writer = tw
 
 		finish := make(chan struct{})
@@ -289,18 +289,18 @@ func GinTimeout(config TimeoutConfig) gin.HandlerFunc {
 		select {
 		case <-finish:
 			tw.commit()
-			c.Writer = real
+			c.Writer = underlying
 
 		case p := <-panicCh:
 			tw.discard()
-			c.Writer = real
+			c.Writer = underlying
 			panic(p)
 
 		case <-time.After(deadline):
 			tw.discard()
-			c.Writer = real
+			c.Writer = underlying
 			c.Abort()
-			if !real.Written() {
+			if !underlying.Written() {
 				responses.RespondStructured(c, http.StatusGatewayTimeout,
 					"the request timed out, please try again")
 			}

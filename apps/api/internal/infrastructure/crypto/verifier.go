@@ -86,9 +86,9 @@ func (e SignatureInvalidError) Error() string {
 // stays O(1) instead of an O(N) scan on every request.
 type NonceCache struct {
 	seen        map[string]time.Time
+	lastCleanup time.Time
 	window      time.Duration
 	maxSize     int
-	lastCleanup time.Time
 	mu          sync.Mutex
 }
 
@@ -153,22 +153,22 @@ func (c *NonceCache) evictOldestLocked(n int) {
 		n = 1
 	}
 	type entry struct {
-		key string
 		at  time.Time
+		key string
 	}
 
 	oldest := make([]entry, 0, n)
 	for k, t := range c.seen {
-		oldest = append(oldest, entry{k, t})
+		oldest = append(oldest, entry{t, k})
 		// Keep only the n oldest seen so far (simple bounded selection).
 		if len(oldest) > n {
-			min := 0
+			oldestIdx := 0
 			for i := 1; i < len(oldest); i++ {
-				if oldest[i].at.Before(oldest[min].at) {
-					min = i
+				if oldest[i].at.Before(oldest[oldestIdx].at) {
+					oldestIdx = i
 				}
 			}
-			oldest[min] = oldest[len(oldest)-1]
+			oldest[oldestIdx] = oldest[len(oldest)-1]
 			oldest = oldest[:len(oldest)-1]
 		}
 	}
