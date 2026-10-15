@@ -159,9 +159,17 @@ func (h *Hub) SubscribeDeviceUpdates(orgID, deviceID string, callback subscripti
 		subs := subMgr.deviceUpdates[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {
-				subMgr.deviceUpdates[key] = append(subs[:i], subs[i+1:]...)
+				subs = append(subs[:i], subs[i+1:]...)
 				break
 			}
+		}
+		// Drop the key once its last subscriber leaves; the subscription
+		// manager is a process-lifetime singleton, so otherwise it accumulates
+		// a key per device/org ever subscribed to.
+		if len(subs) == 0 {
+			delete(subMgr.deviceUpdates, key)
+		} else {
+			subMgr.deviceUpdates[key] = subs
 		}
 	}
 }
@@ -194,9 +202,17 @@ func (h *Hub) SubscribeTelemetry(orgID, deviceID string, callback subscriptionCa
 		subs := subMgr.telemetry[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {
-				subMgr.telemetry[key] = append(subs[:i], subs[i+1:]...)
+				subs = append(subs[:i], subs[i+1:]...)
 				break
 			}
+		}
+		// Drop the key once its last subscriber leaves; the subscription
+		// manager is a process-lifetime singleton, so otherwise it accumulates
+		// a key per device/org ever subscribed to.
+		if len(subs) == 0 {
+			delete(subMgr.telemetry, key)
+		} else {
+			subMgr.telemetry[key] = subs
 		}
 	}
 }
@@ -225,9 +241,17 @@ func (h *Hub) SubscribeCommandStatus(orgID, dispatchID string, callback subscrip
 		subs := subMgr.commandStatus[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {
-				subMgr.commandStatus[key] = append(subs[:i], subs[i+1:]...)
+				subs = append(subs[:i], subs[i+1:]...)
 				break
 			}
+		}
+		// Drop the key once its last subscriber leaves; the subscription
+		// manager is a process-lifetime singleton, so otherwise it accumulates
+		// a key per device/org ever subscribed to.
+		if len(subs) == 0 {
+			delete(subMgr.commandStatus, key)
+		} else {
+			subMgr.commandStatus[key] = subs
 		}
 	}
 }
@@ -255,9 +279,17 @@ func (h *Hub) SubscribeOrganizationEvents(operatorID, orgID string, callback sub
 		subs := subMgr.orgEvents[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {
-				subMgr.orgEvents[key] = append(subs[:i], subs[i+1:]...)
+				subs = append(subs[:i], subs[i+1:]...)
 				break
 			}
+		}
+		// Drop the key once its last subscriber leaves; the subscription
+		// manager is a process-lifetime singleton, so otherwise it accumulates
+		// a key per device/org ever subscribed to.
+		if len(subs) == 0 {
+			delete(subMgr.orgEvents, key)
+		} else {
+			subMgr.orgEvents[key] = subs
 		}
 	}
 }
@@ -285,9 +317,17 @@ func (h *Hub) SubscribeMemberEvents(operatorID, orgID string, callback subscript
 		subs := subMgr.memberEvents[key]
 		for i, w := range subs {
 			if w.id == wrapper.id {
-				subMgr.memberEvents[key] = append(subs[:i], subs[i+1:]...)
+				subs = append(subs[:i], subs[i+1:]...)
 				break
 			}
+		}
+		// Drop the key once its last subscriber leaves; the subscription
+		// manager is a process-lifetime singleton, so otherwise it accumulates
+		// a key per device/org ever subscribed to.
+		if len(subs) == 0 {
+			delete(subMgr.memberEvents, key)
+		} else {
+			subMgr.memberEvents[key] = subs
 		}
 	}
 }
