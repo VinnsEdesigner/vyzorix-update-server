@@ -260,21 +260,6 @@ func NewServer(cfg *ServerConfig) *Server {
 		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
-	s.lifecycleManager = lifecycle.NewManager()
-	if cfg.Config.CacheTTLSeconds > 0 {
-		s.cache = infracache.New(time.Duration(cfg.Config.CacheTTLSeconds) * time.Second)
-	}
-	if cfg.DB != nil {
-		collector := usagestats.NewCollector(cfg.DB.DB())
-		statsSvc := usagestats.NewService(collector, s.features)
-		version := cfg.Version
-		if version == "" {
-			version = "dev"
-		}
-		s.updateCheckerHandler = admin.NewUpdateCheckerHandler(version, "VinnsEdesigner/vyzorix-update-server")
-		s.updateCheckerHandler.SetUsageStats(statsSvc)
-		s.statsSvc = statsSvc
-	}
 
 	s.setupRoutes()
 
@@ -323,36 +308,8 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 	// bypass the confirmation/MFA requirements the REST path enforces.
 	s.commandAuthorizer = command.NewAuthorizerFromService(cfg.ConfirmationService)
 
-	// Scoped permission grants + device groups, wired for route-level
-	// authorization (RequireScope) and team-based device access.
-	if cfg.DB != nil {
-		permCache := permission.NewCache(30 * time.Second)
-		s.grantRepo = storage.NewGrantRepositoryWithCache(cfg.DB.DB(), permCache)
-		s.groupRepo = storage.NewDeviceGroupRepository(cfg.DB.DB())
-		s.InvitationStorage = storage.NewInvitationStorage(cfg.DB.DB())
-	}
-
-	// Feature manager: all new authz features default ON in production,
-	// individually overridable via FEATURE_* env vars.
-	allToggles := map[featuremgmt.Feature]bool{
-		featuremgmt.ScopedRBAC:      true,
-		featuremgmt.DeviceGroups:    true,
-		featuremgmt.ServerDrivenOrg: true,
-		featuremgmt.ActionSets:      true,
-		featuremgmt.ScopeResolvers:  true,
-		featuremgmt.PermissionCache: true,
-	}
-	s.features = featuremgmt.NewManager(allToggles)
-
-	if cfg.Metrics != nil {
-		for toggle := range allToggles {
-			infraMetrics.Get().UpdateFeatureToggle(string(toggle), s.features.IsEnabled(toggle))
-		}
-	}
-
-	if cfg.DB != nil {
-		s.wireFeatureHandlers(cfg, presenter)
-	}
+	s.wireAuthorizationWiring(cfg)
+	s.wireOperationalHandlers(cfg)
 	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
 
 	// Telemetry history handler.
@@ -378,9 +335,6 @@ func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, 
 		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
 
-	// Dashboard command handlers - wire up new handlers.
-	s.wireDashboardHandlers(cfg)
-
 	// Initialize dashboard rate limiter.
 	s.dashboardRateLimiter = middleware.NewDashboardRateLimiterMiddleware(nil)
 }
@@ -390,9 +344,97 @@ func (s *Server) Routes() http.Handler {
 	return s.engine
 }
 
+// wireOperationalHandlers wires the DB-backed operational surface that both
+// construction paths need: the response cache, search/support-bundle, the
+// dashboard/log/event/metrics/telemetry/stats handlers, inbox + confirm,
+// diagnostics, the update checker, and the feature handlers.
+//
+// Ordering matters: the cache is created before the feature wiring so
+// SetDashboardCache/SetHistoryCache actually take effect, and the alert
+// evaluator is built before the annotator is attached to it.
+func (s *Server) wireOperationalHandlers(cfg *ServerConfig) {
+	if cfg.Config.CacheTTLSeconds > 0 {
+		s.cache = infracache.New(time.Duration(cfg.Config.CacheTTLSeconds) * time.Second)
+	}
+
+	if cfg.DB != nil {
+		s.wireFeatureHandlers(cfg, response.NewPresenter(nil, cfg.AuditLogger, nil))
+	}
+
+	// The dashboard/device rate limiter is dereferenced by the log, metrics,
+	// telemetry and diagnostics RegisterRoutes helpers, so it must exist before
+	// those handlers are wired (and before setupRoutes runs).
+	s.dashboardRateLimiter = middleware.NewDashboardRateLimiterMiddleware(nil)
+
+	s.wireDashboardHandlers(cfg)
+	s.wireInboxHandler(cfg)
+	s.wireConfirmHandler(cfg)
+	s.wireDiagnosticsHandler(cfg)
+
+	if cfg.DB != nil {
+		s.initUpdateChecker(cfg)
+	}
+}
+
+// wireAuthorizationWiring initializes the shared authorization plumbing used by
+// both the REST route guards and the GraphQL resolver: the scoped permission
+// grant / device-group repositories, the lifecycle registry, the feature
+// manager, and the command risk gate. Both construction paths call this so the
+// two never diverge.
+func (s *Server) wireAuthorizationWiring(cfg *ServerConfig) {
+	s.lifecycleManager = lifecycle.NewManager()
+
+	// Scoped permission grants + device groups, wired for route-level
+	// authorization (requireScope) and team-based device access.
+	if cfg.DB != nil {
+		permCache := permission.NewCache(30 * time.Second)
+		s.grantRepo = storage.NewGrantRepositoryWithCache(cfg.DB.DB(), permCache)
+		s.groupRepo = storage.NewDeviceGroupRepository(cfg.DB.DB())
+		s.InvitationStorage = storage.NewInvitationStorage(cfg.DB.DB())
+	}
+
+	// Shared command risk gate. It gates REST command execution and the GraphQL
+	// command mutation identically so neither transport can skip the MFA or
+	// confirmation requirements.
+	s.commandAuthorizer = command.NewAuthorizerFromService(cfg.ConfirmationService)
+
+	// Feature manager: all new authz features default ON in production,
+	// individually overridable via FEATURE_* env vars.
+	allToggles := map[featuremgmt.Feature]bool{
+		featuremgmt.ScopedRBAC:      true,
+		featuremgmt.DeviceGroups:    true,
+		featuremgmt.ServerDrivenOrg: true,
+		featuremgmt.ActionSets:      true,
+		featuremgmt.ScopeResolvers:  true,
+		featuremgmt.PermissionCache: true,
+	}
+	s.features = featuremgmt.NewManager(allToggles)
+
+	if cfg.Metrics != nil {
+		for toggle := range allToggles {
+			infraMetrics.Get().UpdateFeatureToggle(string(toggle), s.features.IsEnabled(toggle))
+		}
+	}
+}
+
+// initUpdateChecker builds the admin update-checker handler and its self-telemetry
+// service. It is registered unconditionally by setupAdminRoutes, so it must be
+// non-nil whenever the DB is available or the route panics.
+func (s *Server) initUpdateChecker(cfg *ServerConfig) {
+	collector := usagestats.NewCollector(cfg.DB.DB())
+	statsSvc := usagestats.NewService(collector, s.features)
+	version := cfg.Version
+	if version == "" {
+		version = "dev"
+	}
+	s.updateCheckerHandler = admin.NewUpdateCheckerHandler(version, "VinnsEdesigner/vyzorix-update-server")
+	s.updateCheckerHandler.SetUsageStats(statsSvc)
+	s.statsSvc = statsSvc
+}
+
 // wireFeatureHandlers wires the DB-backed feature handlers: search, support
 // bundles, annotations, config versions, alerts + notifications, and service
-// accounts.
+// accounts. s.cache must already be initialized.
 func (s *Server) wireFeatureHandlers(cfg *ServerConfig, presenter *response.Presenter) {
 	s.searchService = searchsvc.NewService(cfg.DB.DB())
 	s.supportBundleHandler = admin.NewSupportBundleHandler(cfg.DB)
@@ -400,9 +442,8 @@ func (s *Server) wireFeatureHandlers(cfg *ServerConfig, presenter *response.Pres
 	annotationRepo := storage.NewAnnotationRepository(cfg.DB.DB())
 	annotationService := appannotation.NewService(annotationRepo)
 	s.AnnotationHandler = annotationhandlers.NewHandler(annotationService)
-	if s.AlertEvaluator != nil {
-		s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
-	}
+	// Note: the alert evaluator is built later in this function, so the annotator
+	// is attached there (not here) - otherwise it would be attached to nil.
 	if cfg.UpdatesService != nil && cfg.UpdatesService.GetPushService() != nil {
 		cfg.UpdatesService.GetPushService().SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
 		if s.cache != nil {
@@ -444,6 +485,7 @@ func (s *Server) wireFeatureHandlers(cfg *ServerConfig, presenter *response.Pres
 		cfg.Hub,
 		cfg.Log,
 	)
+	s.AlertEvaluator.SetAnnotator(appannotation.NewAlertAnnotator(annotationService))
 	if s.cache != nil {
 		s.AlertEvaluator.SetDashboardCache(s.cache.Section("dashboard"))
 	}
@@ -707,23 +749,25 @@ func (s *Server) wireDiagnosticsHandler(cfg *ServerConfig) {
 
 // ServerConfigWithDeps is the config for NewServerWithDeps using pre-wired dependencies.
 type ServerConfigWithDeps struct {
-	AlertConfig     config.AlertConfig
-	Version         string
-	Log             *slog.Logger
-	DB              *storage.SQLite
-	Engine          *gin.Engine
-	Middleware      *wire.MiddlewareSet
-	HandlerSet      *wire.HandlerSet
-	SessionManager  *infraauth.SessionManager
-	Hub             *hub.Hub
-	AuditLogger     *audit.Logger
-	UpdatesService  *updatesapp.Service
-	APIKeyService   *keys.APIKeyService
-	DeviceRepo      *storage.DeviceRepository
-	IdempotencyRepo *storage.IdempotencyRepository
-	FCMRetryWorker  *worker.FCMRetryWorker
-	Metrics         *infraMetrics.Metrics
-	Config          config.Config
+	AlertConfig         config.AlertConfig
+	Version             string
+	Log                 *slog.Logger
+	DB                  *storage.SQLite
+	Engine              *gin.Engine
+	Middleware          *wire.MiddlewareSet
+	HandlerSet          *wire.HandlerSet
+	SessionManager      *infraauth.SessionManager
+	Hub                 *hub.Hub
+	AuditLogger         *audit.Logger
+	UpdatesService      *updatesapp.Service
+	APIKeyService       *keys.APIKeyService
+	CommandService      *command.Service
+	ConfirmationService *confirmation.Service
+	DeviceRepo          *storage.DeviceRepository
+	IdempotencyRepo     *storage.IdempotencyRepository
+	FCMRetryWorker      *worker.FCMRetryWorker
+	Metrics             *infraMetrics.Metrics
+	Config              config.Config
 }
 
 // NewServerWithDeps creates a Server using pre-wired dependencies from wire.
@@ -743,6 +787,19 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		}
 	}
 
+	// ProvideMiddlewareSet omits the request-signing verifier and the response
+	// encryption key function (only WireMiddleware produced them). Without them
+	// device request signing is silently skipped and response encryption panics
+	// on any request carrying X-Client-ID, so recover both from the factory.
+	if cfg.Middleware != nil && cfg.Middleware.Factory != nil {
+		if cfg.Middleware.SignatureVerifier == nil {
+			cfg.Middleware.SignatureVerifier = cfg.Middleware.Factory.GetSignatureVerifier()
+		}
+		if cfg.Middleware.EncryptKeyFn == nil {
+			cfg.Middleware.EncryptKeyFn = cfg.Middleware.Factory.GetEncryptionKeyFn()
+		}
+	}
+
 	s := &Server{
 		engine:                   cfg.Engine,
 		mwFactory:                cfg.Middleware.Factory,
@@ -758,6 +815,8 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		ipIntelligence:           cfg.Middleware.IPIntelligence,
 		hmacVerifier:             cfg.Middleware.HmacVerifier,
 		sessionSignatureVerifier: cfg.Middleware.SessionSignVerifier,
+		signatureVerifier:        cfg.Middleware.SignatureVerifier,
+		encryptKeyFn:             cfg.Middleware.EncryptKeyFn,
 		sessionManager:           cfg.SessionManager,
 		DB:                       cfg.DB,
 		hub:                      cfg.Hub,
@@ -796,19 +855,29 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
 
-	// Wire inbox and confirm handlers using ServerConfig.
-	// Note: FCMNotifier and AppCheckVerifier are passed via HandlerSet.
+	// The legacy NewServer constructor wired a large amount of DB-backed
+	// functionality inline. NewServerWithDeps must perform the same wiring or the
+	// features are silently absent (and several always-registered routes panic on
+	// nil handlers). Everything below is driven from one ServerConfig.
 	serverCfg := &ServerConfig{
-		DB:               cfg.DB,
-		Version:          cfg.Version,
-		DeviceService:    cfg.HandlerSet.DeviceService,
-		FCMNotifier:      cfg.HandlerSet.FCMNotifier,
-		Config:           cfg.Config,
-		Log:              cfg.Log,
-		AppCheckVerifier: cfg.HandlerSet.AppCheckVerifier,
+		DB:                    cfg.DB,
+		Version:               cfg.Version,
+		DeviceService:         cfg.HandlerSet.DeviceService,
+		CommandService:        cfg.CommandService,
+		ConfirmationService:   cfg.ConfirmationService,
+		FCMNotifier:           cfg.HandlerSet.FCMNotifier,
+		Config:                cfg.Config,
+		Log:                   cfg.Log,
+		AuditLogger:           cfg.AuditLogger,
+		Metrics:               cfg.Metrics,
+		UpdatesService:        cfg.UpdatesService,
+		DeviceSettingsService: cfg.HandlerSet.DeviceSettingsService,
+		OrgSettingsService:    cfg.HandlerSet.OrgSettingsService,
+		AlertConfig:           cfg.AlertConfig,
+		AppCheckVerifier:      cfg.HandlerSet.AppCheckVerifier,
 	}
-	s.wireInboxHandler(serverCfg)
-	s.wireConfirmHandler(serverCfg)
+	s.wireAuthorizationWiring(serverCfg)
+	s.wireOperationalHandlers(serverCfg)
 	s.wireSupplementalHandlers(serverCfg)
 
 	// Create updater handler for OTA update distribution.
@@ -818,20 +887,18 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.DeviceRepo = cfg.DeviceRepo
 	s.FCMRetryWorker = cfg.FCMRetryWorker
 
-	// Background-service lifecycle registry (api_main.go registers workers on
-	// this). The legacy NewServer path created it inside its constructor; the DI
-	// path must do the same or LifecycleManager() returns nil.
-	s.lifecycleManager = lifecycle.NewManager()
-	if cfg.Config.CacheTTLSeconds > 0 {
-		s.cache = infracache.New(time.Duration(cfg.Config.CacheTTLSeconds) * time.Second)
-	}
-
 	// Metrics handler + request middleware. The legacy NewServer path wires these
 	// inline; the DI path must too, or /metrics is never registered and request
 	// metrics are never recorded.
 	if cfg.Metrics != nil {
 		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
+	}
+
+	// Start the WebSocket hub event loop. The legacy NewServer path did this;
+	// without it device registration, broadcasts and telemetry never run.
+	if cfg.Hub != nil {
+		go cfg.Hub.Run(context.Background())
 	}
 
 	s.setupRoutes()

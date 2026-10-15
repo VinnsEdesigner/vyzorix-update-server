@@ -336,12 +336,18 @@ func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 	}
 
 	// Admin diagnostic + update routes (super_admin, no org scope needed).
+	// Guarded individually: a deployment without a DB never builds these
+	// handlers, and registering a nil handler panics on request.
 	adminDiag := r.Group("/admin")
 	adminDiag.Use(s.cookieAuth.Middleware())
 	adminDiag.Use(middleware.RequireSuperAdmin())
 	{
-		adminDiag.GET("/support-bundle", s.supportBundleHandler.GetBundle)
-		adminDiag.GET("/updates/check", s.updateCheckerHandler.Check)
+		if s.supportBundleHandler != nil {
+			adminDiag.GET("/support-bundle", s.supportBundleHandler.GetBundle)
+		}
+		if s.updateCheckerHandler != nil {
+			adminDiag.GET("/updates/check", s.updateCheckerHandler.Check)
+		}
 	}
 }
 

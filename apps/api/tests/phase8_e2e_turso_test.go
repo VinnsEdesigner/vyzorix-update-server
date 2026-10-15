@@ -16,6 +16,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
+	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
@@ -23,9 +24,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/logs"
 	appmetrics "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/metrics"
 	appnotifications "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/notifications"
-	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
-	appannotation "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/annotation"
 	appoperator "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/operator"
+	saapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/serviceaccount"
 	notificationdomain "github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/notification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	emailService "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/email"
@@ -69,7 +69,7 @@ type phase8State struct {
 	orgID         string
 	sessionCookie *http.Cookie
 	csrfToken     string
-	signingKey    string // per-session HMAC key returned by login
+	signingKey    string       // per-session HMAC key returned by login
 	client        *http.Client // cookie jar tracks _csrf + vyz_session across requests
 }
 
@@ -78,7 +78,7 @@ type phase8State struct {
 func newPhase8State(t *testing.T) *phase8State {
 	t.Helper()
 
-// Set required env vars for config.Load(). These must be set BEFORE.
+	// Set required env vars for config.Load(). These must be set BEFORE.
 	// config.Load() is called so the resolved backend is Turso.
 	t.Setenv("TURSO_DB_URL", os.Getenv("TURSO_DB_URL"))
 	t.Setenv("TURSO_AUTH_TOKEN", os.Getenv("TURSO_VYZOR_SCOPE_DB_TOKEN"))
@@ -109,22 +109,24 @@ func newPhase8State(t *testing.T) *phase8State {
 	result := wiredServer.Result
 
 	apiServer := api.NewServerWithDeps(&api.ServerConfigWithDeps{
-		Config:          cfg,
-		Log:             deps.Log,
-		DB:              deps.DB,
-		Engine:          result.Engine,
-		Middleware:      result.MiddlewareSet,
-		HandlerSet:      result.HandlerSet,
-		SessionManager:  deps.SessionManager,
-		Hub:             deps.Hub,
-		AuditLogger:     deps.AuditLogger,
-		UpdatesService:  deps.UpdatesService,
-		APIKeyService:   deps.APIKeyService,
-		DeviceRepo:      deps.DeviceRepo,
-		IdempotencyRepo: deps.IdempotencyRepo,
+		Config:              cfg,
+		Log:                 deps.Log,
+		DB:                  deps.DB,
+		Engine:              result.Engine,
+		Middleware:          result.MiddlewareSet,
+		HandlerSet:          result.HandlerSet,
+		SessionManager:      deps.SessionManager,
+		Hub:                 deps.Hub,
+		AuditLogger:         deps.AuditLogger,
+		UpdatesService:      deps.UpdatesService,
+		APIKeyService:       deps.APIKeyService,
+		CommandService:      deps.CommandService,
+		ConfirmationService: deps.ConfirmationService,
+		DeviceRepo:          deps.DeviceRepo,
+		IdempotencyRepo:     deps.IdempotencyRepo,
 	})
 
-// Register GraphQL, mirroring api_main.go's wiring of GraphQL-specific.
+	// Register GraphQL, mirroring api_main.go's wiring of GraphQL-specific.
 	// services that are NOT part of the main wire graph.
 	db := deps.DB.DB()
 	deviceRepo := deps.DeviceService.DeviceRepo()
@@ -193,7 +195,7 @@ func newPhase8State(t *testing.T) *phase8State {
 
 	ts := httptest.NewServer(apiServer.Routes())
 
-// Build an HTTP client with a cookie jar so _csrf and vyz_session cookies.
+	// Build an HTTP client with a cookie jar so _csrf and vyz_session cookies.
 	// are automatically retained across requests (required for double-submit CSRF).
 	jar, err := newCookieJar()
 	if err != nil {
@@ -338,7 +340,7 @@ func (s *phase8State) login(t *testing.T) *http.Cookie {
 		s.signingKey = key
 	}
 
-// The login endpoint sets a session cookie. The cookie jar retains it; also.
+	// The login endpoint sets a session cookie. The cookie jar retains it; also.
 	// extract it explicitly for the WebSocket dial (which needs a raw header).
 	var sessionCookie *http.Cookie
 	u, _ := url.Parse(s.server.URL)
@@ -497,7 +499,7 @@ func TestPhase8_E2E_TursoLiveServer(t *testing.T) {
 	t.Log("step 6: subscribed to telemetryReceived, initial next received")
 
 	// 7. Publish telemetry via the hub → subscriber should receive it.
-//    The hub is the same instance the server uses, so the publish goes.
+	//    The hub is the same instance the server uses, so the publish goes.
 	//    through the real subscription routing.
 	state.hub.PublishTelemetry(operatorID, "IMEI_PHASE8_LIVE", map[string]any{
 		"deviceId":  "IMEI_PHASE8_LIVE",

@@ -91,21 +91,23 @@ func main() {
 
 	// Create API server using wire outputs.
 	apiServer := api.NewServerWithDeps(&api.ServerConfigWithDeps{
-		Config:          cfg,
-		Version:         Version,
-		Log:             deps.Log,
-		DB:              deps.DB,
-		Engine:          result.Engine,
-		Middleware:      result.MiddlewareSet,
-		HandlerSet:      result.HandlerSet,
-		SessionManager:  deps.SessionManager,
-		Hub:             deps.Hub,
-		AuditLogger:     deps.AuditLogger,
-		UpdatesService:  deps.UpdatesService,
-		APIKeyService:   deps.APIKeyService,
-		DeviceRepo:      deps.DeviceRepo,
-		IdempotencyRepo: deps.IdempotencyRepo,
-		Metrics:         deps.Metrics,
+		Config:              cfg,
+		Version:             Version,
+		Log:                 deps.Log,
+		DB:                  deps.DB,
+		Engine:              result.Engine,
+		Middleware:          result.MiddlewareSet,
+		HandlerSet:          result.HandlerSet,
+		SessionManager:      deps.SessionManager,
+		Hub:                 deps.Hub,
+		AuditLogger:         deps.AuditLogger,
+		UpdatesService:      deps.UpdatesService,
+		APIKeyService:       deps.APIKeyService,
+		CommandService:      deps.CommandService,
+		ConfirmationService: deps.ConfirmationService,
+		DeviceRepo:          deps.DeviceRepo,
+		IdempotencyRepo:     deps.IdempotencyRepo,
+		Metrics:             deps.Metrics,
 	})
 
 	// Register GraphQL if enabled.
