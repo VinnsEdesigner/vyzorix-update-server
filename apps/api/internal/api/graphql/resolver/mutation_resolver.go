@@ -766,9 +766,12 @@ func (r *Resolver) CreateAlertRule(p graphql.ResolveParams) (interface{}, error)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.AlertSvc == nil {
 		return nil, r.Presenter.InternalError("alert service not available")
@@ -787,9 +790,12 @@ func (r *Resolver) UpdateAlertRule(p graphql.ResolveParams) (interface{}, error)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	ruleID, argOK := p.Args["ruleId"].(string)
 	if !argOK {
@@ -812,9 +818,12 @@ func (r *Resolver) DeleteAlertRule(p graphql.ResolveParams) (interface{}, error)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	ruleID, argOK := p.Args["ruleId"].(string)
 	if !argOK {
@@ -892,9 +901,12 @@ func (r *Resolver) CreateContactPoint(p graphql.ResolveParams) (interface{}, err
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.ContactPointSvc == nil {
 		return nil, r.Presenter.InternalError("contact point service not available")
@@ -913,9 +925,12 @@ func (r *Resolver) UpdateContactPoint(p graphql.ResolveParams) (interface{}, err
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	contactPointID, argOK := p.Args["contactPointId"].(string)
 	if !argOK {
@@ -938,9 +953,12 @@ func (r *Resolver) DeleteContactPoint(p graphql.ResolveParams) (interface{}, err
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	contactPointID, argOK := p.Args["contactPointId"].(string)
 	if !argOK {
@@ -961,9 +979,12 @@ func (r *Resolver) TestContactPoint(p graphql.ResolveParams) (interface{}, error
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	contactPointID, argOK := p.Args["contactPointId"].(string)
 	if !argOK {
@@ -1033,9 +1054,12 @@ func (r *Resolver) CreateServiceAccount(p graphql.ResolveParams) (interface{}, e
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	name, argOK := p.Args["name"].(string)
 	if !argOK {
@@ -1063,9 +1087,12 @@ func (r *Resolver) DeleteServiceAccount(p graphql.ResolveParams) (interface{}, e
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	serviceAccountID, argOK := p.Args["serviceAccountId"].(string)
 	if !argOK {
@@ -1169,9 +1196,12 @@ func (r *Resolver) CreateAnnotation(p graphql.ResolveParams) (interface{}, error
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.AnnotationSvc == nil {
 		return nil, r.Presenter.InternalError("annotation service not available")
@@ -1218,9 +1248,12 @@ func (r *Resolver) DeleteAnnotation(p graphql.ResolveParams) (interface{}, error
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	annotationID, argOK := p.Args["annotationId"].(string)
 	if !argOK {

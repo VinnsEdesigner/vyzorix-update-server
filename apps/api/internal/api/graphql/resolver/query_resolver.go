@@ -2,7 +2,6 @@
 package resolver
 
 import (
-	"errors"
 	"time"
 
 	gqlcontext "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/context"
@@ -1217,9 +1216,12 @@ func (r *Resolver) GetAlertRules(p graphql.ResolveParams) (interface{}, error) {
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.AlertSvc == nil {
 		return nil, r.Presenter.InternalError("alert service not available")
@@ -1257,9 +1259,12 @@ func (r *Resolver) GetAlertHistory(p graphql.ResolveParams) (interface{}, error)
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	ruleID := ""
 	if v, ok := p.Args["ruleId"].(string); ok {
@@ -1293,9 +1298,12 @@ func (r *Resolver) GetContactPoints(p graphql.ResolveParams) (interface{}, error
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.ContactPointSvc == nil {
 		return nil, r.Presenter.InternalError("contact point service not available")
@@ -1327,9 +1335,12 @@ func (r *Resolver) GetServiceAccounts(p graphql.ResolveParams) (interface{}, err
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.ServiceAccountSvc == nil {
 		return nil, r.Presenter.InternalError("service account service not available")
@@ -1365,9 +1376,12 @@ func (r *Resolver) GetAnnotations(p graphql.ResolveParams) (interface{}, error) 
 	if !ok || op == nil {
 		return nil, r.Presenter.UnauthorizedError()
 	}
-	orgID, argOK := p.Args["organizationId"].(string)
-	if !argOK {
-		return nil, errors.New("invalid argument: organizationId")
+	// Resolve from the authenticated organization context and reject any
+	// organizationId argument that does not match it, so a caller cannot read
+	// or mutate another tenant's resources by passing its org ID.
+	orgID, orgErr := r.resolveOrgID(p)
+	if orgErr != nil {
+		return nil, orgErr
 	}
 	if r.AnnotationSvc == nil {
 		return nil, r.Presenter.InternalError("annotation service not available")
