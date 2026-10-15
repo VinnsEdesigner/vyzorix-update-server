@@ -79,17 +79,32 @@ func (e SignatureInvalidError) Error() string {
 
 // NonceCache provides thread-safe replay protection for HTTP request nonces.
 // It tracks seen nonces and rejects duplicates within a configurable time window.
+//
+// The cache is bounded: expired entries are swept lazily (at most once per
+// cleanup interval, and immediately when the cache reaches capacity) so a burst
+// of distinct nonces cannot grow the map without limit, and the per-request cost
+// stays O(1) instead of an O(N) scan on every request.
 type NonceCache struct {
-	seen   map[string]time.Time
-	window time.Duration
-	mu     sync.Mutex
+	seen        map[string]time.Time
+	window      time.Duration
+	maxSize     int
+	lastCleanup time.Time
+	mu          sync.Mutex
 }
+
+// DefaultNonceCacheMaxSize bounds the nonce cache when no explicit size is given.
+const DefaultNonceCacheMaxSize = 100000
+
+// nonceCleanupInterval is the minimum spacing between lazy expiry sweeps.
+const nonceCleanupInterval = time.Minute
 
 // NewNonceCache creates a new NonceCache with the specified time window.
 func NewNonceCache(window time.Duration) *NonceCache {
 	return &NonceCache{
-		seen:   make(map[string]time.Time),
-		window: window,
+		seen:        make(map[string]time.Time),
+		window:      window,
+		maxSize:     DefaultNonceCacheMaxSize,
+		lastCleanup: time.Now(),
 	}
 }
 
@@ -99,20 +114,67 @@ func (c *NonceCache) Use(nonce string, now time.Time) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	cutoff := now.Add(-c.window)
-	for k, t := range c.seen {
-		if t.Before(cutoff) {
-			delete(c.seen, k)
-		}
-	}
-
 	if _, ok := c.seen[nonce]; ok {
 		return false
+	}
+
+	cutoff := now.Add(-c.window)
+
+	// Sweep lazily: on a timer, or eagerly once the cache is full. This keeps the
+	// common path O(1) rather than scanning the whole map per request.
+	if len(c.seen) >= c.maxSize || now.Sub(c.lastCleanup) > nonceCleanupInterval {
+		c.evictExpiredLocked(cutoff)
+		c.lastCleanup = now
+
+		// Still full after dropping expired entries (a burst of live nonces):
+		// evict a fraction of the oldest entries so the map stays bounded.
+		if len(c.seen) >= c.maxSize {
+			c.evictOldestLocked(c.maxSize / 10)
+		}
 	}
 
 	c.seen[nonce] = now
 
 	return true
+}
+
+// evictExpiredLocked removes entries older than cutoff. Caller holds c.mu.
+func (c *NonceCache) evictExpiredLocked(cutoff time.Time) {
+	for k, t := range c.seen {
+		if t.Before(cutoff) {
+			delete(c.seen, k)
+		}
+	}
+}
+
+// evictOldestLocked removes up to n of the oldest entries. Caller holds c.mu.
+func (c *NonceCache) evictOldestLocked(n int) {
+	if n < 1 {
+		n = 1
+	}
+	type entry struct {
+		key string
+		at  time.Time
+	}
+
+	oldest := make([]entry, 0, n)
+	for k, t := range c.seen {
+		oldest = append(oldest, entry{k, t})
+		// Keep only the n oldest seen so far (simple bounded selection).
+		if len(oldest) > n {
+			min := 0
+			for i := 1; i < len(oldest); i++ {
+				if oldest[i].at.Before(oldest[min].at) {
+					min = i
+				}
+			}
+			oldest[min] = oldest[len(oldest)-1]
+			oldest = oldest[:len(oldest)-1]
+		}
+	}
+	for _, e := range oldest {
+		delete(c.seen, e.key)
+	}
 }
 
 // Len returns the current number of nonces in the cache.

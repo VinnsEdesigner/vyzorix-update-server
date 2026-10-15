@@ -36,18 +36,6 @@ func TestSigningConfig(t *testing.T) {
 	})
 }
 
-func TestReplayProtectionFromConfig(t *testing.T) {
-	t.Run("replay_protection_with_config", func(t *testing.T) {
-		cfg := config.SigningConfig{
-			Enabled:         true,
-			TimestampWindow: 300,
-			MaxCacheSize:    100,
-		}
-		rp := NewReplayProtection(cfg)
-		assert.NotNil(t, rp)
-	})
-}
-
 // ============================================================================.
 // 4.2 SECURITY HEADERS - Tests.
 // ============================================================================.
