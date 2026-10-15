@@ -34,10 +34,12 @@ ENVIRONMENT=development DATABASE_BACKEND=sqlite \
 python3 e2e/security/seed-tenants.py /tmp/vyzdata/vyzorix.db
 
 # 3. Probe.
-python3 e2e/security/cross-tenant-probe.py
+python3 e2e/security/cross-tenant-probe.py     # REST + GraphQL resolver path
+python3 e2e/security/subscription-probe.py     # WebSocket subscription path
 ```
 
-Exit code 0 means every probe behaved correctly.
+Both exit 0 when every probe behaves correctly. The subscription probe needs
+`pip install websockets`.
 
 `SSR_ENABLED=false` is required: with the SSR proxy enabled, `/:org/graphql` is
 proxied to the (absent) SSR server and returns 307 before reaching the API.
@@ -51,6 +53,13 @@ succeed, which is what stops a blanket "deny everything" from looking like a pas
 
 ## Negative control
 
-Verified by reverting the resolver fix (`git checkout <pre-fix> -- ...resolver/query_resolver.go ...resolver/mutation_resolver.go`)
-and re-running: 4/8 probes fail, with `{"data":{"serviceAccounts":[]}}` and friends
-returned to the wrong tenant. With the fix in place, 8/8 pass.
+Verified by reverting each fix and re-running:
+
+- Resolver fix reverted (`git checkout <pre-fix> -- ...resolver/query_resolver.go ...resolver/mutation_resolver.go`):
+  `cross-tenant-probe.py` reports 4/8, with the cross-org reads returning
+  `{"data":{"serviceAccounts":[]}}` and friends to the wrong tenant.
+- Subscription fix reverted (`git checkout <pre-fix> -- ...subscription/subscription_client.go`):
+  `subscription-probe.py` reports 2/4, with the cross-org subscriptions returning
+  `{"type":"next",...}` - i.e. the subscription was established rather than rejected.
+
+With both fixes in place, 8/8 and 4/4 pass.
