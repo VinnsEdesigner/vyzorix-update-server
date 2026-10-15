@@ -41,9 +41,9 @@ type TokenInput struct {
 
 // Service provides service account and token lifecycle management.
 type Service struct {
-	repo        serviceaccount.Repository
-	tokens      serviceaccount.TokenRepository
-	auditLogger *audit.Logger
+	repo         serviceaccount.Repository
+	tokens       serviceaccount.TokenRepository
+	auditLogger  *audit.Logger
 	emailService *email.Service
 	memberRepo   organization.MemberRepository
 	maxTokens    int

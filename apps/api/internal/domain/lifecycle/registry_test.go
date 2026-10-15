@@ -6,13 +6,13 @@ import (
 )
 
 type fakeService struct {
-	healthy  bool
-	started  int32
-	stopped  int32
+	healthy bool
+	started int32
+	stopped int32
 }
 
-func (f *fakeService) Start()  { atomic.AddInt32(&f.started, 1) }
-func (f *fakeService) Stop()   { atomic.AddInt32(&f.stopped, 1) }
+func (f *fakeService) Start()        { atomic.AddInt32(&f.started, 1) }
+func (f *fakeService) Stop()         { atomic.AddInt32(&f.stopped, 1) }
 func (f *fakeService) Healthy() bool { return f.healthy }
 
 func TestRegistry_RegisterAndGet(t *testing.T) {

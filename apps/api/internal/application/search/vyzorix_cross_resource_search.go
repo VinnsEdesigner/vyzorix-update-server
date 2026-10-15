@@ -21,7 +21,7 @@ type Result struct {
 }
 
 type Service struct {
-	db *sql.DB
+	db          *sql.DB
 	searchCache *cache.Section
 }
 

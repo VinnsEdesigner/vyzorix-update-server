@@ -90,7 +90,6 @@ func TestSearch_EmptyDB_ReturnsEmpty(t *testing.T) {
 	}
 }
 
-
 func setupSearchTestDB(t *testing.T) *storage.SQLite {
 	t.Helper()
 	cfg := storage.DefaultConfig(filepath.Join(t.TempDir(), "search-test.db"))

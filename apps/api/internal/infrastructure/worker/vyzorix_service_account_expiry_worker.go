@@ -12,11 +12,11 @@ import (
 // ServiceAccountExpiryWorker sweeps expired service account tokens and
 // revokes them, mirroring the pattern of DeviceDeletionWorker.
 type ServiceAccountExpiryWorker struct {
-	tokens  serviceaccount.TokenRepository
-	lockSvc *serverlock.Service
-	logger  *slog.Logger
-	stopCh  chan struct{}
-	doneCh  chan struct{}
+	tokens   serviceaccount.TokenRepository
+	lockSvc  *serverlock.Service
+	logger   *slog.Logger
+	stopCh   chan struct{}
+	doneCh   chan struct{}
 	interval time.Duration
 }
 
@@ -99,10 +99,10 @@ func (w *ServiceAccountExpiryWorker) sweep() {
 
 // Healthy reports whether the worker has not yet been stopped.
 func (w *ServiceAccountExpiryWorker) Healthy() bool {
-select {
-case <-w.doneCh:
-return false
-default:
-return true
-}
+	select {
+	case <-w.doneCh:
+		return false
+	default:
+		return true
+	}
 }

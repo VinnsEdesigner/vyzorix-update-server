@@ -21,8 +21,8 @@ type Metrics struct {
 	httpRequestDuration  *prometheus.HistogramVec
 	httpRequestsInFlight prometheus.Gauge
 
-	loginAttempts    *prometheus.CounterVec
-	loginFailures    *prometheus.CounterVec
+	loginAttempts *prometheus.CounterVec
+	loginFailures *prometheus.CounterVec
 
 	securityFailures *prometheus.CounterVec
 
@@ -37,7 +37,7 @@ type Metrics struct {
 	commandDelivery  prometheus.Histogram
 	commandQueueSize prometheus.Gauge
 
-	alertRulesActive    prometheus.Gauge
+	alertRulesActive     prometheus.Gauge
 	alertEvaluationTotal *prometheus.CounterVec
 
 	sqlConnections *prometheus.GaugeVec
@@ -45,8 +45,8 @@ type Metrics struct {
 	featureToggles *prometheus.GaugeVec
 
 	notificationDeliveries *prometheus.CounterVec
-	serviceAccountTokens  *prometheus.CounterVec
-	cacheOperations       *prometheus.CounterVec
+	serviceAccountTokens   *prometheus.CounterVec
+	cacheOperations        *prometheus.CounterVec
 
 	uptime prometheus.Gauge
 	start  time.Time
@@ -54,7 +54,6 @@ type Metrics struct {
 	// Uptime goroutine starts once per instance via initOnce.
 	initOnce sync.Once
 }
-
 
 // counterVec short-cuts named CounterVec construction because funlen will
 // complain otherwise.
@@ -108,7 +107,6 @@ func newMetrics() *Metrics {
 		Name:      "login_failures_total",
 		Help:      "Login failures by reason.",
 	}, []string{"reason"})
-
 
 	m.securityFailures = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
@@ -192,7 +190,7 @@ func newMetrics() *Metrics {
 		m.httpRequestsInFlight,
 		m.loginAttempts,
 		m.loginFailures,
-		
+
 		m.securityFailures,
 		m.activeSessions,
 		m.sessionRevoked,
@@ -380,6 +378,6 @@ var singleton *Metrics
 
 // Get returns the global singleton instance, initialized lazily on first call.
 func Get() *Metrics {
-singletonOnce.Do(func() { singleton = New() })
-return singleton
+	singletonOnce.Do(func() { singleton = New() })
+	return singleton
 }

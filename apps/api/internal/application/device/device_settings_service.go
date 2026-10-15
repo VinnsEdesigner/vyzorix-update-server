@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 	configversionapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/configversion"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/configversion"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
 )
 
 // DeviceSettingsService handles device settings operations.

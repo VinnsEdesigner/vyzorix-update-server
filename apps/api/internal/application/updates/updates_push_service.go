@@ -13,8 +13,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
-	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
+	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	ws "github.com/VinnsEdesigner/vyzorix/apps/api/internal/ws"
 	"github.com/google/uuid"
@@ -36,9 +36,9 @@ type PushService struct {
 		SendCommand(ctx context.Context, req *dto.SendCommandRequest) (*dto.SendCommandResponse, error)
 		MarkDelivered(ctx context.Context, commandID string) error
 	}
-	annotator RolloutAnnotator
+	annotator      RolloutAnnotator
 	dashboardCache *cache.Section
-	logger *slog.Logger
+	logger         *slog.Logger
 }
 
 // SetDashboardCache wires the dashboard stats cache so rollout start

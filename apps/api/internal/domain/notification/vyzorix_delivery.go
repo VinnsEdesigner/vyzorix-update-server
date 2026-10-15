@@ -29,7 +29,7 @@ type Delivery struct {
 	ContactPointID string
 	Channel        ChannelType
 	Error          string
-	Status string
+	Status         string
 }
 
 // DeliveryRepository persists delivery records for audit/replay.

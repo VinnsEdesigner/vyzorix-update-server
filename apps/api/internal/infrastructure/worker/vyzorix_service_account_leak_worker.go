@@ -12,11 +12,11 @@ import (
 // ServiceAccountLeakWorker periodically scans public GitHub and GitLab code
 // search for leaked service account tokens and emails org admins.
 type ServiceAccountLeakWorker struct {
-	service *serviceaccount.Service
-	lockSvc *serverlock.Service
-	logger  *slog.Logger
-	stopCh  chan struct{}
-	doneCh  chan struct{}
+	service  *serviceaccount.Service
+	lockSvc  *serverlock.Service
+	logger   *slog.Logger
+	stopCh   chan struct{}
+	doneCh   chan struct{}
 	interval time.Duration
 }
 
@@ -97,10 +97,10 @@ func (w *ServiceAccountLeakWorker) scan() {
 
 // Healthy reports whether the worker has not yet been stopped.
 func (w *ServiceAccountLeakWorker) Healthy() bool {
-select {
-case <-w.doneCh:
-return false
-default:
-return true
-}
+	select {
+	case <-w.doneCh:
+		return false
+	default:
+		return true
+	}
 }

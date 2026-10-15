@@ -374,17 +374,17 @@ func TestEvaluator_NoDataPolicyBridges(t *testing.T) {
 	insertDevice(t, s, "dev-1", "org-1", "tablet", 1)
 
 	rule := &alert.Rule{
-		ID:        "rule-1",
-		OrgID:     "org-1",
-		Name:      "failure rate on no-data",
-		Metric:    alert.MetricCommandFailureRate,
-		Condition: alert.ConditionGte,
-		Threshold: 50,
-		Enabled:   true,
+		ID:         "rule-1",
+		OrgID:      "org-1",
+		Name:       "failure rate on no-data",
+		Metric:     alert.MetricCommandFailureRate,
+		Condition:  alert.ConditionGte,
+		Threshold:  50,
+		Enabled:    true,
 		OnNoData:   alert.NoDataNoData,
 		WebhookURL: "https://hooks.example.com/x",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 	if err := rules.Save(ctx, rule); err != nil {
 		t.Fatalf("Save: %v", err)
@@ -405,17 +405,17 @@ func TestEvaluator_NoDataPolicyBridges(t *testing.T) {
 
 	// A rule resolving on no-data recovers a firing instance.
 	ruleMapping := &alert.Rule{
-		ID:        "rule-2",
-		OrgID:     "org-1",
-		Name:      "failure rate resolve on no-data",
-		Metric:    alert.MetricCommandFailureRate,
-		Condition: alert.ConditionGte,
-		Threshold: 50,
-		Enabled:   true,
+		ID:         "rule-2",
+		OrgID:      "org-1",
+		Name:       "failure rate resolve on no-data",
+		Metric:     alert.MetricCommandFailureRate,
+		Condition:  alert.ConditionGte,
+		Threshold:  50,
+		Enabled:    true,
 		OnNoData:   alert.NoDataResolve,
 		WebhookURL: "https://hooks.example.com/x",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 	if err := rules.Save(ctx, ruleMapping); err != nil {
 		t.Fatalf("Save second: %v", err)

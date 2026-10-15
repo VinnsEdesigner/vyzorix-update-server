@@ -113,12 +113,12 @@ func TestAlertAnnotator_FiresOnTransition(t *testing.T) {
 	ctx := context.Background()
 
 	rule := &alert.Rule{
-		ID:         "rule-1",
-		OrgID:      "org-1",
-		Name:       "offline devices",
-		Metric:     alert.MetricDeviceOfflineCount,
-		Condition:  alert.ConditionGt,
-		Threshold:  5,
+		ID:        "rule-1",
+		OrgID:     "org-1",
+		Name:      "offline devices",
+		Metric:    alert.MetricDeviceOfflineCount,
+		Condition: alert.ConditionGt,
+		Threshold: 5,
 	}
 	transition := &alert.Transition{
 		From:  alert.StateInactive,

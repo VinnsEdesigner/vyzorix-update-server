@@ -96,17 +96,16 @@ type recordingVersionSvc struct {
 }
 
 type snapshotCall struct {
-	orgID      string
-	targetPtr  interface{}
-	resource   configversion.ResourceType
-	changedBy  string
+	orgID     string
+	targetPtr interface{}
+	resource  configversion.ResourceType
+	changedBy string
 }
 
 func (r *recordingVersionSvc) Snapshot(ctx context.Context, orgID string, resourceType configversion.ResourceType, snapshot interface{}, changedBy string) (int64, error) {
 	r.calls = append(r.calls, snapshotCall{orgID: orgID, targetPtr: snapshot, resource: resourceType, changedBy: changedBy})
 	return r.service.Snapshot(ctx, orgID, resourceType, snapshot, changedBy)
 }
-
 
 func ptr[T any](v T) *T { return &v }
 

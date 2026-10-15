@@ -88,10 +88,10 @@ func (w *DeviceDeletionWorker) processDeletions() {
 
 // Healthy reports whether the worker has not yet been stopped.
 func (w *DeviceDeletionWorker) Healthy() bool {
-select {
-case <-w.doneCh:
-return false
-default:
-return true
-}
+	select {
+	case <-w.doneCh:
+		return false
+	default:
+		return true
+	}
 }
