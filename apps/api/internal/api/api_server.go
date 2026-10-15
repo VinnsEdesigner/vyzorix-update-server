@@ -75,7 +75,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ServerConfig holds the server configuration.
+// ServerConfig holds the server configuration consumed by the wiring helpers
+// (wireOperationalHandlers, wireAuthorizationWiring, wireInboxHandler, ...).
+// It is built internally by NewServerWithDeps from the injected dependencies.
 type ServerConfig struct {
 	AlertConfig           config.AlertConfig
 	Version               string
@@ -194,149 +196,6 @@ type Server struct {
 	InvitationService           *orgapplication.InvitationService
 	idempotencyRepo             *storage.IdempotencyRepository
 	config                      config.Config
-}
-
-// NewServer creates a new API server with wired-up dependencies.
-func NewServer(cfg *ServerConfig) *Server {
-	if cfg.Config.Env == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	engine := gin.New()
-	engine.Use(middleware.GinPanicRecovery(cfg.Log))
-
-	// Wire middleware using wire package.
-	mwSet := wire.WireMiddleware(wire.MiddlewareConfig{
-		Log:              cfg.Log,
-		SessionManager:   cfg.SessionManager,
-		AuthService:      cfg.AuthService,
-		ClientService:    cfg.ClientService,
-		AllowedOrigins:   cfg.Config.AllowedOrigins,
-		EnforceHMAC:      cfg.Config.EnforceHMAC,
-		HMACWindow:       cfg.Config.HMACWindow,
-		PublicDir:        cfg.Config.PublicDir,
-		JWTSecret:        cfg.Config.JWTSecret,
-		RateLimitPerMin:  cfg.Config.RateLimitPerMin,
-		AuthRateLimitMin: cfg.Config.AuthRateLimitMin,
-		APIKeyService:    cfg.APIKeyService,
-		AuditLogger:      cfg.AuditLogger,
-	})
-
-	s := &Server{
-		engine:                   engine,
-		mwFactory:                mwSet.Factory,
-		rateLimiter:              cfg.RateLimiter,
-		authLimiter:              cfg.AuthLimiter,
-		config:                   cfg.Config,
-		log:                      cfg.Log,
-		cookieAuth:               middleware.NewCookieAuth(cfg.SessionManager, cfg.AuthService),
-		signatureVerifier:        mwSet.SignatureVerifier,
-		lockout:                  mwSet.Lockout,
-		csrfProtector:            mwSet.CSRFProtector,
-		turnstileVerifier:        mwSet.TurnstileVerifier,
-		revocationList:           mwSet.RevocationList,
-		ipIntelligence:           mwSet.IPIntelligence,
-		hmacVerifier:             mwSet.HmacVerifier,
-		sessionSignatureVerifier: mwSet.SessionSignVerifier,
-		encryptKeyFn:             mwSet.EncryptKeyFn,
-		sessionManager:           cfg.SessionManager,
-		DB:                       cfg.DB,
-		hub:                      cfg.Hub,
-		tenantAPIKeyAuth:         mwSet.TenantAPIKeyAuth,
-		apiKeyRateLimiter:        mwSet.APIKeyRateLimiter,
-	}
-
-	// Create presenter and wire handlers.
-	presenter := response.NewPresenter(cfg.AuthService, cfg.AuditLogger, cfg.IPIntelligence)
-	s.wireHandlers(cfg, presenter, mwSet)
-
-	// Start Hub if available.
-	if cfg.Hub != nil {
-		go cfg.Hub.Run(context.Background())
-	}
-
-	// Initialize metrics handler.
-	if cfg.Metrics != nil {
-		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
-		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
-	}
-
-	s.setupRoutes()
-
-	// Set audit logger.
-	s.AuditLogger = cfg.AuditLogger
-
-	return s
-}
-
-// wireHandlers creates and assigns all handler instances.
-func (s *Server) wireHandlers(cfg *ServerConfig, presenter *response.Presenter, mwSet *wire.MiddlewareSet) {
-	// Auth handlers.
-	s.authHandlers = authhandlers.NewAllHandlers(&authhandlers.Dependencies{
-		AuthService:    cfg.AuthService,
-		SessionManager: cfg.SessionManager,
-		Config:         cfg.Config,
-		GoogleVerifier: cfg.GoogleVerifier,
-		ClientService:  cfg.ClientService,
-		EmailService:   cfg.EmailService,
-		Lockout:        mwSet.Lockout,
-		OperatorRepo:   cfg.OperatorRepo,
-		AuditLogger:    cfg.AuditLogger,
-		IPIntelligence: mwSet.IPIntelligence,
-		Presenter:      presenter,
-		OAuthStateRepo: cfg.OAuthStateRepo,
-	})
-
-	// Device handlers.
-	// DEPRECATED: s.deviceRegisterHandler = devicehandlers.NewRegisterHandler(cfg.DeviceService) // /v1/device/register removed.
-	s.deviceStatusHandler = devicehandlers.NewStatusHandler(cfg.DeviceService)
-	s.deviceUpdaterHandler = devicehandlers.NewUpdaterHandler(cfg.DeviceService)
-	s.deviceListHandler = devicehandlers.NewListHandler(cfg.DeviceService, cfg.Hub)
-
-	// Command handler. Risk evaluator gates dangerous commands; audit logger.
-	// records every execution attempt. Fall back to a no-op if unset so the.
-	// handler never holds a nil dependency. When a confirmation service is.
-	// configured, the confirmation handler also serves as the command handler's.
-	// confirmation consumer; otherwise risky commands are blocked (425).
-	var cmdAud cmdhandlers.AuditLogger = audit.NewNoOpLogger()
-	if cfg.AuditLogger != nil {
-		cmdAud = cfg.AuditLogger
-	}
-	s.commandHandler = cmdhandlers.NewExecuteHandler(cfg.CommandService, cfg.DeviceService, cfg.Hub, cfg.FCMNotifier, command.NewAuthorizerFromService(cfg.ConfirmationService), cmdAud)
-
-	// Shared command risk gate used by the GraphQL mutation path so it cannot
-	// bypass the confirmation/MFA requirements the REST path enforces.
-	s.commandAuthorizer = command.NewAuthorizerFromService(cfg.ConfirmationService)
-
-	s.wireAuthorizationWiring(cfg)
-	s.wireOperationalHandlers(cfg)
-	s.streamHandler = websockethandlers.NewStreamHandler(cfg.Log, cfg.Config, cfg.Hub, *mwSet.HmacVerifier, cfg.AuditLogger)
-
-	// Telemetry history handler.
-	s.telemetryHistoryHandler = handlers.NewTelemetryHistoryHandler(
-		cfg.Log,
-		storage.NewTelemetryRepository(cfg.DB.DB()),
-		storage.NewDeviceRepository(cfg.DB.DB()),
-		nil,
-	)
-	if s.cache != nil {
-		s.telemetryHistoryHandler.SetHistoryCache(s.cache.Section("telemetry"))
-	}
-
-	// Connection status handler.
-	s.connectionStatusHandler = handlers.NewConnectionStatusHandler(cfg.Log, cfg.Hub, storage.NewDeviceRepository(cfg.DB.DB()))
-
-	// Admin handlers.
-	s.adminClientsHandler = admin.NewClientsHandler(cfg.ClientService)
-
-	// API key handlers.
-	if cfg.APIKeyService != nil {
-		s.apiKeysHandler = authhandlers.NewHandler(cfg.APIKeyService, cfg.AuditLogger)
-		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
-	}
-
-	// Initialize dashboard rate limiter.
-	s.dashboardRateLimiter = middleware.NewDashboardRateLimiterMiddleware(nil)
 }
 
 // Routes returns the Gin engine for serving.
@@ -654,11 +513,9 @@ func (s *Server) wireInboxHandler(cfg *ServerConfig) {
 	}
 }
 
-// wireSupplementalHandlers wires the handlers the legacy NewServer constructor
-// built inline in wireHandlers but NewServerWithDeps (used by api_main.go)
-// omitted: contact points, service accounts, and annotations. GraphQL
-// registration dereferences all three, so without this the DI server panics at
-// startup with a nil-pointer.
+// wireSupplementalHandlers wires the contact-point, service-account and
+// annotation handlers. GraphQL registration dereferences all three, so they must
+// be non-nil whenever the DB is available.
 func (s *Server) wireSupplementalHandlers(cfg *ServerConfig) {
 	if cfg.DB == nil {
 		return
@@ -677,9 +534,8 @@ func (s *Server) wireSupplementalHandlers(cfg *ServerConfig) {
 
 	s.ContactPointHandler = notificationhandlers.NewHandler(notificationSvc, dispatcher)
 
-	// Service accounts + annotations are also GraphQL-wired but were only built
-	// on the legacy NewServer path; build them here so api_main.go's DI server
-	// doesn't dereference nil handlers during GraphQL registration.
+	// Service accounts + annotations are also GraphQL-wired, so build them here so
+	// the server doesn't dereference nil handlers during GraphQL registration.
 	saRepo := storage.NewServiceAccountRepository(cfg.DB.DB())
 	saTokenRepo := storage.NewServiceAccountTokenRepository(cfg.DB.DB())
 	saService := saapp.NewService(saRepo, saTokenRepo)
@@ -776,10 +632,8 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// ProvideMiddlewareSet does not wire the API key middleware (it is normally.
-	// produced by WireMiddleware, which is only called from the legacy NewServer.
-	// constructor). Backfill TenantAPIKeyAuth here so the dependency-injected.
-	// server (used by api_main.go) also enforces API key auth on tenant routes.
+	// ProvideMiddlewareSet does not wire the API key middleware, so backfill
+	// TenantAPIKeyAuth here to ensure API key auth is enforced on tenant routes.
 	if cfg.Middleware != nil && cfg.Middleware.TenantAPIKeyAuth == nil && cfg.APIKeyService != nil && cfg.AuditLogger != nil {
 		cfg.Middleware.TenantAPIKeyAuth = middleware.NewTenantAPIKeyAuth(cfg.APIKeyService, cfg.AuditLogger)
 		if cfg.Middleware.APIKeyRateLimiter == nil {
@@ -855,10 +709,8 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 		s.superAdminAPIKeys = admin.NewSuperAdminHandler(cfg.APIKeyService, cfg.AuditLogger)
 	}
 
-	// The legacy NewServer constructor wired a large amount of DB-backed
-	// functionality inline. NewServerWithDeps must perform the same wiring or the
-	// features are silently absent (and several always-registered routes panic on
-	// nil handlers). Everything below is driven from one ServerConfig.
+	// This is the single server constructor: it wires everything the API needs
+	// from the injected dependencies, so the surface cannot drift between callers.
 	serverCfg := &ServerConfig{
 		DB:                    cfg.DB,
 		Version:               cfg.Version,
@@ -887,16 +739,15 @@ func NewServerWithDeps(cfg *ServerConfigWithDeps) *Server {
 	s.DeviceRepo = cfg.DeviceRepo
 	s.FCMRetryWorker = cfg.FCMRetryWorker
 
-	// Metrics handler + request middleware. The legacy NewServer path wires these
-	// inline; the DI path must too, or /metrics is never registered and request
-	// metrics are never recorded.
+	// Metrics handler + request middleware, so /metrics is registered and request
+	// metrics are recorded.
 	if cfg.Metrics != nil {
 		s.metricsHandler = infraMetrics.NewMetricsHandler(cfg.Metrics)
 		s.engine.Use(infraMetrics.Middleware(cfg.Metrics))
 	}
 
-	// Start the WebSocket hub event loop. The legacy NewServer path did this;
-	// without it device registration, broadcasts and telemetry never run.
+	// Start the WebSocket hub event loop; without it device registration,
+	// broadcasts and telemetry never run.
 	if cfg.Hub != nil {
 		go cfg.Hub.Run(context.Background())
 	}
