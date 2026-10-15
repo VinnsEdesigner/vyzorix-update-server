@@ -59,6 +59,16 @@ func (f *fakeGroupRepo) AddMember(_ context.Context, groupID, operatorID string)
 	return nil
 }
 
+func (f *fakeGroupRepo) ListByOrg(_ context.Context, orgID string) ([]*device_group.Group, error) {
+	var out []*device_group.Group
+	for _, g := range f.groups {
+		if g.OrgID == orgID {
+			out = append(out, g)
+		}
+	}
+	return out, nil
+}
+
 type fakeGrantRepo struct {
 	grants []*permission.ResourcePermission
 }
@@ -106,6 +116,15 @@ func (f *fakeKeyCreator) CreateKey(_ context.Context, _, _, name, _ string) (str
 	return key, nil
 }
 
+func (f *fakeKeyCreator) HasKey(_ context.Context, _, name string) (bool, error) {
+	for _, k := range f.keys {
+		if k == "vxyz-fake-"+name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func writeProvisioningFile(t *testing.T, content string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -134,14 +153,17 @@ func TestLoadAndApply_NonexistentFile_NoOp(t *testing.T) {
 
 func TestLoadAndApply_CreatesOrg(t *testing.T) {
 	json := `{
-		"organizations": [{"name": "Test Org", "description": "test"}]
+		"organizations": [{"name": "Test Org", "description": "test"}],
+		"operators": [{"email": "owner@test.local", "name": "Owner", "password": "pass123", "org_name": "Test Org", "role": "admin"}]
 	}`
 	path := writeProvisioningFile(t, json)
 	orgRepo := &fakeOrgRepo{orgs: make(map[string]*organization.Organization)}
+	opRepo := &fakeOpRepo{ops: make(map[string]*operator.Operator)}
 	orgCreator := &fakeOrgCreator{}
+	opCreator := &fakeOpCreator{}
 	p := New(slog.Default()).
-		WithRepositories(orgRepo, nil, nil, nil).
-		WithCreators(orgCreator, nil, nil)
+		WithRepositories(orgRepo, opRepo, nil, nil).
+		WithCreators(orgCreator, opCreator, nil)
 
 	err := p.LoadAndApply(context.Background(), path)
 	if err != nil {

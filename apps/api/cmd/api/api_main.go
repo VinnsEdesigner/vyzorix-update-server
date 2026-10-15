@@ -14,6 +14,8 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/wire"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/auth"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/keys"
+	orgapplication "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/organization"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dashboard"
 	diagnosticsapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/diagnostics"
@@ -172,7 +174,7 @@ func main() {
 		}
 	}
 
-	startServer(&cfg, log, apiServer, ssrConfig, ssrManager)
+	startServer(&cfg, log, apiServer, ssrConfig, ssrManager, deps.OrgService, deps.AuthService, deps.APIKeyService)
 }
 
 func initSSR(log *slog.Logger, ssrConfig config.SSRConfig, ssrManager **ssr.Manager) {
@@ -264,7 +266,8 @@ func bootstrapSlackContactPoint(log *slog.Logger, db *storage.SQLite, slackCfg c
 
 //nolint:gocyclo // startServer wires many optional services.
 func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
-	ssrConfig config.SSRConfig, ssrManager *ssr.Manager) {
+	ssrConfig config.SSRConfig, ssrManager *ssr.Manager,
+	orgService *orgapplication.OrganizationService, authService *auth.AuthService, keyService *keys.APIKeyService) {
 	PrintSection("Server")
 	PrintStatus("Go Server", "Starting on "+cfg.Port)
 
@@ -323,10 +326,23 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 	if provFile := os.Getenv("PROVISIONING_FILE"); provFile != "" {
 		prov := provisioning.New(log)
 		if apiServer.DB != nil {
-			prov = prov.WithAlertRepository(storage.NewAlertRuleRepository(apiServer.DB.DB()))
-			prov = prov.WithContactPointRepository(storage.NewContactPointRepository(apiServer.DB.DB()))
-			prov = prov.WithServiceAccountRepository(storage.NewServiceAccountRepository(apiServer.DB.DB()))
-			prov = prov.WithAnnotationRepository(storage.NewAnnotationRepository(apiServer.DB.DB()))
+			db := apiServer.DB.DB()
+			prov = prov.
+				WithRepositories(
+					provOrgRepo{storage.NewOrganizationStorage(db)},
+					provOperatorRepo{storage.NewOperatorRepository(db)},
+					provGroupRepo{storage.NewDeviceGroupRepository(db)},
+					provGrantRepo{storage.NewGrantRepository(db)},
+				).
+				WithCreators(
+					provOrgCreator{orgService},
+					provOperatorCreator{authService},
+					provKeyCreator{keyService},
+				).
+				WithAlertRepository(storage.NewAlertRuleRepository(db)).
+				WithContactPointRepository(storage.NewContactPointRepository(db)).
+				WithServiceAccountRepository(storage.NewServiceAccountRepository(db)).
+				WithAnnotationRepository(storage.NewAnnotationRepository(db))
 		}
 		if err := prov.LoadAndApply(context.Background(), provFile); err != nil {
 			log.Error("provisioning failed", "err", err)

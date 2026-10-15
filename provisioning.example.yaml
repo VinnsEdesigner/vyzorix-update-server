@@ -1,3 +1,13 @@
+# Vyzorix boot provisioning.
+#
+# Point PROVISIONING_FILE at a copy of this file (YAML or JSON) and the server
+# applies it once at startup. Every resource is idempotent: if it already exists
+# it is skipped, so the file is safe to re-run on every boot.
+#
+# Loaded in this order — later sections may reference earlier ones by name:
+#   organizations -> operators -> device_groups -> api_keys -> permission_grants
+#   -> contact_points -> alert_rules -> service_accounts -> annotations
+
 organizations:
   - name: Default Org
     description: Auto-provisioned default organization
@@ -27,3 +37,52 @@ permission_grants:
     scope: "devices:*"
     actions:
       - device.manage
+
+# Notification destinations. `channel` is email | webhook | slack; `config`
+# holds the channel-specific keys (email: `to`; webhook: `url`; slack: `webhook`).
+contact_points:
+  - name: oncall-email
+    org_name: Default Org
+    channel: email
+    enabled: true
+    config:
+      to: oncall@vyzorix.local
+  - name: ops-webhook
+    org_name: Default Org
+    channel: webhook
+    enabled: true
+    config:
+      url: https://hooks.example.com/vyzorix
+
+# Fleet alert rules. `metric` is device_offline_count | device_offline_percent |
+# command_failure_rate; `condition` is gt | gte | lt | lte.
+alert_rules:
+  - name: Fleet offline
+    org_name: Default Org
+    metric: device_offline_count
+    condition: gt
+    threshold: 10
+    for_seconds: 300
+    notify_interval_seconds: 3600
+    enabled: true
+  - name: Command failures
+    org_name: Default Org
+    metric: command_failure_rate
+    condition: gte
+    threshold: 5
+    for_seconds: 600
+    enabled: true
+
+# Automation identities (tokens are minted through the API, not this file).
+service_accounts:
+  - name: nightly-report
+    org_name: Default Org
+
+# Timeline markers, useful for recording a rollout in the boot file.
+annotations:
+  - title: Initial provisioning
+    org_name: Default Org
+    text: Created by the boot provisioning file.
+    source: provisioning
+    tags:
+      - bootstrap

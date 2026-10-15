@@ -66,17 +66,27 @@ func TestParseConfig_JSON(t *testing.T) {
 }
 
 func TestLoadAndApply_YAMLFile_CreatesOrg(t *testing.T) {
+	// An organization needs a creator operator (FK), so the operator is declared
+	// too — this mirrors how a real provisioning file must be shaped.
 	yamlContent := `
 organizations:
   - name: YAML Test Org
     description: provisioned from yaml
+operators:
+  - email: yaml@test.local
+    name: YAML Admin
+    password: pass123
+    org_name: YAML Test Org
+    role: admin
 `
 	path := writeYAMLProvisioningFile(t, yamlContent)
 	orgRepo := &fakeOrgRepo{orgs: make(map[string]*organization.Organization)}
+	opRepo := &fakeOpRepo{ops: make(map[string]*operator.Operator)}
 	orgCreator := &fakeOrgCreator{}
+	opCreator := &fakeOpCreator{}
 	p := New(slog.Default()).
-		WithRepositories(orgRepo, nil, nil, nil).
-		WithCreators(orgCreator, nil, nil)
+		WithRepositories(orgRepo, opRepo, nil, nil).
+		WithCreators(orgCreator, opCreator, nil)
 
 	err := p.LoadAndApply(context.Background(), path)
 	if err != nil {
@@ -87,6 +97,28 @@ organizations:
 	}
 	if orgCreator.orgs["YAML Test Org"] == nil {
 		t.Error("YAML Test Org should be created")
+	}
+}
+
+func TestLoadAndApply_OrgWithoutOperatorIsSkipped(t *testing.T) {
+	// Without an operator there is no valid creator, so the org is skipped
+	// rather than inserted with a dangling created_by.
+	yamlContent := `
+organizations:
+  - name: Orphan Org
+    description: no operator declared
+`
+	path := writeYAMLProvisioningFile(t, yamlContent)
+	orgCreator := &fakeOrgCreator{}
+	p := New(slog.Default()).
+		WithRepositories(nil, nil, nil, nil).
+		WithCreators(orgCreator, nil, nil)
+
+	if err := p.LoadAndApply(context.Background(), path); err != nil {
+		t.Fatalf("LoadAndApply YAML: %v", err)
+	}
+	if len(orgCreator.orgs) != 0 {
+		t.Errorf("expected no org created without an operator, got %d", len(orgCreator.orgs))
 	}
 }
 

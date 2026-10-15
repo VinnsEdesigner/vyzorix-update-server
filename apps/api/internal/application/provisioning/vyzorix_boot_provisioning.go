@@ -113,6 +113,7 @@ type OperatorRepo interface {
 type GroupRepo interface {
 	Save(ctx context.Context, g *device_group.Group) error
 	AddMember(ctx context.Context, groupID, operatorID string) error
+	ListByOrg(ctx context.Context, orgID string) ([]*device_group.Group, error)
 }
 
 type GrantRepo interface {
@@ -129,6 +130,8 @@ type OperatorCreator interface {
 
 type KeyCreator interface {
 	CreateKey(ctx context.Context, operatorID, orgID, name, scope string) (string, error)
+	// HasKey reports whether a key with this name already exists for the operator.
+	HasKey(ctx context.Context, operatorID, name string) (bool, error)
 }
 
 type AlertRuleRepo interface {
@@ -150,6 +153,7 @@ type AnnotationRepo interface {
 	Save(ctx context.Context, a *annotation.Annotation) error
 	GetByID(ctx context.Context, id string) (*annotation.Annotation, error)
 	Delete(ctx context.Context, id string) (bool, error)
+	List(ctx context.Context, f *annotation.Filter) ([]*annotation.Annotation, error)
 }
 
 type Provisioner struct {
@@ -246,16 +250,10 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 
 	orgMap := make(map[string]string)
 
-	for _, oc := range cfg.Organizations {
-		orgID, err := p.provisionOrg(ctx, oc)
-		if err != nil {
-			p.log.Error("failed to provision org", "name", oc.Name, "error", err)
-			continue
-		}
-		orgMap[oc.Name] = orgID
-		p.log.Info("provisioned org", "name", oc.Name, "id", orgID)
-	}
-
+	// Operators must exist before organizations: creating an org inserts a
+	// membership row and stamps created_by, both of which are foreign keys to
+	// operators. Creating the org first fails with a FK violation and takes
+	// every downstream resource (groups, keys, grants, alerts, …) with it.
 	opMap := make(map[string]string)
 	for _, opc := range cfg.Operators {
 		opID, err := p.provisionOperator(ctx, opc)
@@ -265,6 +263,21 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 		}
 		opMap[opc.Email] = opID
 		p.log.Info("provisioned operator", "email", opc.Email, "id", opID)
+	}
+
+	for _, oc := range cfg.Organizations {
+		creatorID := p.orgCreatorFor(oc.Name, cfg.Operators, opMap)
+		if creatorID == "" {
+			p.log.Error("failed to provision org: no operator available as creator", "name", oc.Name)
+			continue
+		}
+		orgID, err := p.provisionOrg(ctx, oc, creatorID)
+		if err != nil {
+			p.log.Error("failed to provision org", "name", oc.Name, "error", err)
+			continue
+		}
+		orgMap[oc.Name] = orgID
+		p.log.Info("provisioned org", "name", oc.Name, "id", orgID)
 	}
 
 	for _, gc := range cfg.DeviceGroups {
@@ -326,9 +339,28 @@ func (p *Provisioner) LoadAndApply(ctx context.Context, path string) error {
 	return nil
 }
 
-func (p *Provisioner) provisionOrg(ctx context.Context, oc OrgConfig) (string, error) {
+// orgCreatorFor picks the operator to own a new organization: the first operator
+// whose org_name matches, else the first operator declared. Returns "" when no
+// operator is available (the org cannot be created without one).
+func (p *Provisioner) orgCreatorFor(orgName string, ops []OperatorConfig, opMap map[string]string) string {
+	for _, op := range ops {
+		if op.OrgName == orgName {
+			if id := opMap[op.Email]; id != "" {
+				return id
+			}
+		}
+	}
+	for _, op := range ops {
+		if id := opMap[op.Email]; id != "" {
+			return id
+		}
+	}
+	return ""
+}
+
+func (p *Provisioner) provisionOrg(ctx context.Context, oc OrgConfig, creatorID string) (string, error) {
 	if p.orgRepo != nil {
-		if existing, err := p.orgRepo.FindByName(ctx, "", oc.Name); err == nil && existing != nil {
+		if existing, err := p.orgRepo.FindByName(ctx, creatorID, oc.Name); err == nil && existing != nil {
 			p.log.Info("org already exists, skipping", "name", oc.Name, "id", existing.ID)
 			return existing.ID, nil
 		}
@@ -336,7 +368,7 @@ func (p *Provisioner) provisionOrg(ctx context.Context, oc OrgConfig) (string, e
 	if p.orgCreator == nil {
 		return "", fmt.Errorf("no org creator configured")
 	}
-	org, err := p.orgCreator.CreateOrganization(ctx, "", oc.Name, oc.Description, 0, "super_admin")
+	org, err := p.orgCreator.CreateOrganization(ctx, creatorID, oc.Name, oc.Description, 0, "super_admin")
 	if err != nil {
 		return "", err
 	}
@@ -367,6 +399,15 @@ func (p *Provisioner) provisionGroup(ctx context.Context, gc GroupConfig, orgMap
 	orgID := orgMap[gc.OrgName]
 	if orgID == "" {
 		return fmt.Errorf("org not found: %s", gc.OrgName)
+	}
+	// Idempotent: a group with the same name in the org is left as-is.
+	if existing, err := p.groupRepo.ListByOrg(ctx, orgID); err == nil {
+		for _, g := range existing {
+			if g.Name == gc.Name {
+				p.log.Info("group already exists, skipping", "name", gc.Name, "org", gc.OrgName)
+				return nil
+			}
+		}
 	}
 	groupID := uuid.New().String()
 	g := &device_group.Group{
@@ -403,6 +444,12 @@ func (p *Provisioner) provisionKey(ctx context.Context, kc APIKeyConfig, orgMap,
 	}
 	if opID == "" {
 		return fmt.Errorf("no operator available for key creation")
+	}
+	if p.keyCreator != nil {
+		if exists, err := p.keyCreator.HasKey(ctx, opID, kc.Name); err == nil && exists {
+			p.log.Info("api key already exists, skipping", "name", kc.Name, "org", kc.OrgName)
+			return nil
+		}
 	}
 	_, err := p.keyCreator.CreateKey(ctx, opID, orgID, kc.Name, kc.Scope)
 	return err
@@ -445,6 +492,17 @@ func (p *Provisioner) provisionAnnotation(ctx context.Context, ac AnnotationConf
 	if !ok {
 		return fmt.Errorf("org %q not found", ac.OrgName)
 	}
+
+	// Idempotent: an annotation with the same title in the org is left as-is.
+	if existing, err := p.annotationRepo.List(ctx, &annotation.Filter{OrgID: orgID, Limit: 1000}); err == nil {
+		for _, a := range existing {
+			if a.Title == ac.Title {
+				p.log.Info("annotation already exists, skipping", "title", ac.Title, "org", ac.OrgName)
+				return nil
+			}
+		}
+	}
+
 	a := &annotation.Annotation{
 		ID:        uuid.New().String(),
 		OrgID:     orgID,

@@ -18,7 +18,9 @@
     {
       "name": "production",
       "org_name": "Default Org",
-      "operator_emails": ["admin@vyzorix.local"]
+      "operator_emails": [
+        "admin@vyzorix.local"
+      ]
     }
   ],
   "api_keys": [
@@ -34,7 +36,67 @@
       "subject_id": "admin@vyzorix.local",
       "org_name": "Default Org",
       "scope": "devices:*",
-      "actions": ["device.manage"]
+      "actions": [
+        "device.manage"
+      ]
+    }
+  ],
+  "contact_points": [
+    {
+      "name": "oncall-email",
+      "org_name": "Default Org",
+      "channel": "email",
+      "enabled": true,
+      "config": {
+        "to": "oncall@vyzorix.local"
+      }
+    },
+    {
+      "name": "ops-webhook",
+      "org_name": "Default Org",
+      "channel": "webhook",
+      "enabled": true,
+      "config": {
+        "url": "https://hooks.example.com/vyzorix"
+      }
+    }
+  ],
+  "alert_rules": [
+    {
+      "name": "Fleet offline",
+      "org_name": "Default Org",
+      "metric": "device_offline_count",
+      "condition": "gt",
+      "threshold": 10,
+      "for_seconds": 300,
+      "notify_interval_seconds": 3600,
+      "enabled": true
+    },
+    {
+      "name": "Command failures",
+      "org_name": "Default Org",
+      "metric": "command_failure_rate",
+      "condition": "gte",
+      "threshold": 5,
+      "for_seconds": 600,
+      "enabled": true
+    }
+  ],
+  "service_accounts": [
+    {
+      "name": "nightly-report",
+      "org_name": "Default Org"
+    }
+  ],
+  "annotations": [
+    {
+      "title": "Initial provisioning",
+      "org_name": "Default Org",
+      "text": "Created by the boot provisioning file.",
+      "source": "provisioning",
+      "tags": [
+        "bootstrap"
+      ]
     }
   ]
 }

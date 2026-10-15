@@ -46,6 +46,28 @@ func (r *DeviceGroupRepository) GetByID(ctx context.Context, id string) (*device
 	return &g, nil
 }
 
+// ListByOrg returns all groups in an organization.
+func (r *DeviceGroupRepository) ListByOrg(ctx context.Context, orgID string) ([]*device_group.Group, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT id, org_id, name, created_at FROM device_groups WHERE org_id = ? ORDER BY name`, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var groups []*device_group.Group
+	for rows.Next() {
+		var g device_group.Group
+		var ts int64
+		if err := rows.Scan(&g.ID, &g.OrgID, &g.Name, &ts); err != nil {
+			return nil, err
+		}
+		g.CreatedAt = time.UnixMilli(ts)
+		groups = append(groups, &g)
+	}
+	return groups, rows.Err()
+}
+
 // AddMember adds an operator to a group (idempotent).
 func (r *DeviceGroupRepository) AddMember(ctx context.Context, groupID, operatorID string) error {
 	query := `INSERT INTO device_group_members (group_id, operator_id, created_at) VALUES (?, ?, ?) ON CONFLICT(group_id, operator_id) DO NOTHING`
