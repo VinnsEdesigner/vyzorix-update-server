@@ -35,7 +35,9 @@ func nextCallbackID() int {
 const (
 	maxConcurrentCallbacks = 100              // Maximum concurrent callback goroutines.
 	callbackTimeout        = 30 * time.Second // Timeout for callback execution.
-	droppedCounterMax      = 1000             // Max dropped events before logging.
+	// droppedLogInterval is how often a saturated worker pool logs a drop, so a
+	// flood is visible without one log line per event.
+	droppedLogInterval = 100
 )
 
 // subscriptionWorker handles bounded callback execution.
@@ -89,7 +91,7 @@ func (w *subscriptionWorker) execute(callback subscriptionCallback, data interfa
 	default:
 		// Semaphore full - drop the event.
 		dropped := w.dropped.Add(1)
-		if dropped%100 == 0 {
+		if dropped%droppedLogInterval == 0 {
 			w.log.Warn("subscription callback dropped (worker pool saturated)",
 				"droppedCount", dropped,
 				"maxConcurrent", maxConcurrentCallbacks,

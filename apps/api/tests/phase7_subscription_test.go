@@ -16,6 +16,9 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/resolver"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/graphql/subscription"
 	wsHandler "github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/handlers/websocket"
+	cmdapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/command"
+	deviceapp "github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	config "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/config"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -32,6 +35,21 @@ type gqlSubState struct {
 	cancel   context.CancelFunc
 	operator *operator.Operator
 	orgID    string
+	// devices is the repo backing the subscription org guard; tests register
+	// the IMEIs they intend to observe so the guard admits them.
+	devices *noopDeviceRepoForTests
+}
+
+// ownDevice marks an IMEI as belonging to this test's organization.
+func (s *gqlSubState) ownDevice(imei string) {
+	s.devices.ownDevice(imei, s.orgID)
+}
+
+// ownDevices marks several IMEIs at once.
+func (s *gqlSubState) ownDevices(imeis ...string) {
+	for _, imei := range imeis {
+		s.ownDevice(imei)
+	}
 }
 
 func newGQLSubState(t *testing.T) *gqlSubState {
@@ -40,6 +58,7 @@ func newGQLSubState(t *testing.T) *gqlSubState {
 
 	logger := slog.New(slog.NewTextHandler(&discardWriter{}, &slog.HandlerOptions{Level: slog.LevelError}))
 	noopRepo := newNoopDeviceRepoForTests()
+	cmdRepo := newStubCommandRepoForTests()
 
 	h := wshub.New(logger, noopRepo, nil, nil, nil)
 	h.SetRateLimiter(wshub.NewRateLimiter(logger, &wshub.RateLimiterConfig{
@@ -72,8 +91,13 @@ func newGQLSubState(t *testing.T) *gqlSubState {
 	authMw := gqlmiddleware.NewAuthMiddleware(nil, nil, logger)
 
 	subHandler := subscription.NewHandler(&subscription.Config{
-		Hub:         h,
-		Resolver:    &resolver.Resolver{},
+		Hub: h,
+		Resolver: &resolver.Resolver{
+			DeviceService: deviceapp.NewService(noopRepo, nil, logger),
+			CommandService: cmdapp.NewService(
+				cmdRepo, noopRepo,
+			),
+		},
 		AuthMw:      authMw,
 		Logger:      logger,
 		AuditLogger: auditAdapter,
@@ -90,6 +114,23 @@ func newGQLSubState(t *testing.T) *gqlSubState {
 
 	server := httptest.NewServer(r)
 
+	// Register the devices these tests observe so the subscription org guard
+	// admits them. IMEI_FILTER_B is deliberately NOT registered: the filter
+	// test asserts a subscriber for device A never sees device B.
+	noopRepo.ownDevicesForTests(orgID,
+		"IMEI_BRIDGE", "IMEI_CLEANUP", "IMEI_COMPLETE_001", "IMEI_DEV_001",
+		"IMEI_FILTER_A", "IMEI_KEEPALIVE", "IMEI_LIFECYCLE", "IMEI_MULTI_A",
+		"IMEI_MULTI_B", "IMEI_NOOP", "IMEI_NO_INIT", "IMEI_PUB_001",
+		"IMEI_QUERY_MATCH", "IMEI_SHARED", "IMEI_STRESS", "IMEI_TELE_001",
+	)
+
+	cmdRepo.add(&command.Command{
+		ID:         "cmd-test-001",
+		DispatchID: "dispatch-001",
+		DeviceID:   "IMEI_PUB_001",
+		Command:    "CHECK_UPDATE",
+	})
+
 	return &gqlSubState{
 		hub:      h,
 		server:   server,
@@ -97,6 +138,7 @@ func newGQLSubState(t *testing.T) *gqlSubState {
 		cancel:   cancel,
 		operator: testOp,
 		orgID:    orgID,
+		devices:  noopRepo,
 	}
 }
 
@@ -309,7 +351,7 @@ func TestPhase7Sub_PublishDeviceUpdateReceived(t *testing.T) {
 
 	// Publish a device update event from the server side.
 	updateData := map[string]string{"id": "IMEI_PUB_001", "status": "online"}
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_PUB_001", updateData)
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_PUB_001", updateData)
 
 	// Subscriber should receive the published event.
 	msg := readMsg(t, conn, 3*time.Second)
@@ -352,7 +394,7 @@ func TestPhase7Sub_SubscribeTelemetryReceived(t *testing.T) {
 
 	// Publish telemetry event.
 	teleData := map[string]any{"deviceId": "IMEI_TELE_001", "riskScore": 77}
-	state.hub.PublishTelemetry(state.operator.ID, "IMEI_TELE_001", teleData)
+	state.hub.PublishTelemetry(state.orgID, "IMEI_TELE_001", teleData)
 
 	msg := readMsg(t, conn, 3*time.Second)
 	if msg.Type != "next" {
@@ -393,7 +435,7 @@ func TestPhase7Sub_SubscribeCommandStatusChanged(t *testing.T) {
 	readMsg(t, conn, 3*time.Second)
 
 	cmdData := map[string]string{"dispatchId": "dispatch-001", "status": "delivered"}
-	state.hub.PublishCommandStatus(state.operator.ID, "dispatch-001", cmdData)
+	state.hub.PublishCommandStatus(state.orgID, "dispatch-001", cmdData)
 
 	msg := readMsg(t, conn, 3*time.Second)
 	if msg.Type != "next" {
@@ -527,7 +569,7 @@ func TestPhase7Sub_CompleteStopsEvents(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Publish an event — subscriber should NOT receive it.
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_COMPLETE_001", map[string]string{"status": "offline"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_COMPLETE_001", map[string]string{"status": "offline"})
 
 	// Try to read — should timeout (no message).
 	if _, ok := reader.recv(1 * time.Second); ok {
@@ -563,14 +605,14 @@ func TestPhase7Sub_MultipleSubscriptions(t *testing.T) {
 	readMsg(t, conn, 3*time.Second) // initial null for sub-b
 
 	// Publish for device A — should get next on sub-a.
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_MULTI_A", map[string]string{"status": "online"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_MULTI_A", map[string]string{"status": "online"})
 	msgA := readMsg(t, conn, 3*time.Second)
 	if msgA.ID != "sub-a" {
 		t.Errorf("expected event on sub-a, got %s", msgA.ID)
 	}
 
 	// Publish for device B — should get next on sub-b.
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_MULTI_B", map[string]string{"status": "offline"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_MULTI_B", map[string]string{"status": "offline"})
 	msgB := readMsg(t, conn, 3*time.Second)
 	if msgB.ID != "sub-b" {
 		t.Errorf("expected event on sub-b, got %s", msgB.ID)
@@ -633,7 +675,7 @@ func TestPhase7Sub_MissingOrgParameter(t *testing.T) {
 	state := newGQLSubState(t)
 	defer state.close()
 
-// Connect without org parameter — the route is /:org/graphql/ws.
+	// Connect without org parameter — the route is /:org/graphql/ws.
 	// so connecting to /graphql/ws won't match the route.
 	url := "ws" + strings.TrimPrefix(state.server.URL, "http") + "/graphql/ws"
 	dialer := gorillaws.Dialer{HandshakeTimeout: 5 * time.Second}
@@ -653,6 +695,7 @@ func TestPhase7Sub_UnauthenticatedRejected(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	logger := slog.New(slog.NewTextHandler(&discardWriter{}, &slog.HandlerOptions{Level: slog.LevelError}))
 	noopRepo := newNoopDeviceRepoForTests()
+	cmdRepo := newStubCommandRepoForTests()
 
 	h := wshub.New(logger, noopRepo, nil, nil, nil)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -667,8 +710,13 @@ func TestPhase7Sub_UnauthenticatedRejected(t *testing.T) {
 	authMw := gqlmiddleware.NewAuthMiddleware(nil, nil, logger)
 
 	subHandler := subscription.NewHandler(&subscription.Config{
-		Hub:         h,
-		Resolver:    &resolver.Resolver{},
+		Hub: h,
+		Resolver: &resolver.Resolver{
+			DeviceService: deviceapp.NewService(noopRepo, nil, logger),
+			CommandService: cmdapp.NewService(
+				cmdRepo, noopRepo,
+			),
+		},
 		AuthMw:      authMw,
 		Logger:      logger,
 		AuditLogger: auditAdapter,
@@ -716,9 +764,9 @@ func TestPhase7Sub_DisconnectCleansUp(t *testing.T) {
 	conn.Close()
 	time.Sleep(500 * time.Millisecond)
 
-// Publish an event — the disconnected client should not receive it.
+	// Publish an event — the disconnected client should not receive it.
 	// (and the subscription should be cleaned up).
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_CLEANUP", map[string]string{"status": "offline"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_CLEANUP", map[string]string{"status": "offline"})
 	time.Sleep(300 * time.Millisecond)
 
 	// Verify no panic/crash — the server is still healthy.
@@ -746,7 +794,7 @@ func TestPhase7Sub_OperatorWideSubscription(t *testing.T) {
 	readMsg(t, conn, 3*time.Second) // initial null
 
 	// Publish telemetry for any device — operator-wide subscriber should receive it.
-	state.hub.PublishTelemetry(state.operator.ID, "ANY_DEVICE", map[string]int{"riskScore": 99})
+	state.hub.PublishTelemetry(state.orgID, "ANY_DEVICE", map[string]int{"riskScore": 99})
 
 	msg := readMsg(t, conn, 3*time.Second)
 	if msg.Type != "next" {
@@ -783,7 +831,7 @@ func TestPhase7Sub_MultipleSubscribersSameEvent(t *testing.T) {
 	readMsg(t, conn2, 3*time.Second)
 
 	// Publish one event — both should receive it.
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_SHARED", map[string]string{"status": "online"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_SHARED", map[string]string{"status": "online"})
 
 	msg1 := readMsg(t, conn1, 3*time.Second)
 	msg2 := readMsg(t, conn2, 3*time.Second)
@@ -903,13 +951,13 @@ func TestPhase7Sub_EventFiltering(t *testing.T) {
 	}
 
 	// Publish telemetry for device B — subscriber should NOT receive it.
-	state.hub.PublishTelemetry(state.operator.ID, "IMEI_FILTER_B", map[string]int{"riskScore": 50})
+	state.hub.PublishTelemetry(state.orgID, "IMEI_FILTER_B", map[string]int{"riskScore": 50})
 	if _, ok := reader.recv(1 * time.Second); ok {
 		t.Error("subscriber for device A should not receive device B telemetry")
 	}
 
 	// Publish telemetry for device A — subscriber SHOULD receive it.
-	state.hub.PublishTelemetry(state.operator.ID, "IMEI_FILTER_A", map[string]int{"riskScore": 75})
+	state.hub.PublishTelemetry(state.orgID, "IMEI_FILTER_A", map[string]int{"riskScore": 75})
 	msg, ok := reader.recv(3 * time.Second)
 	if !ok {
 		t.Fatal("subscriber should receive device A telemetry")
@@ -944,7 +992,7 @@ func TestPhase7Sub_MultipleSubscribeCompleteCycles(t *testing.T) {
 		readMsg(t, conn, 3*time.Second) // initial null
 
 		// Publish and receive.
-		state.hub.PublishDeviceUpdate(state.operator.ID, imei, map[string]string{"status": "online"})
+		state.hub.PublishDeviceUpdate(state.orgID, imei, map[string]string{"status": "online"})
 		msg := readMsg(t, conn, 3*time.Second)
 		if msg.ID != subID {
 			t.Errorf("cycle %d: expected %s, got %s", i, subID, msg.ID)
@@ -994,7 +1042,7 @@ func TestPhase7Sub_ConcurrentSubscribers(t *testing.T) {
 	}()
 
 	// Publish one event — all should receive it.
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_STRESS", map[string]string{"status": "online"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_STRESS", map[string]string{"status": "online"})
 
 	for i, c := range conns {
 		msg := readMsg(t, c, 5*time.Second)
@@ -1095,7 +1143,7 @@ func TestPhase7Sub_FullLifecycle(t *testing.T) {
 	}
 
 	// 3. Publish telemetry → receive.
-	state.hub.PublishTelemetry(state.operator.ID, "IMEI_LIFECYCLE", map[string]any{"riskScore": 66})
+	state.hub.PublishTelemetry(state.orgID, "IMEI_LIFECYCLE", map[string]any{"riskScore": 66})
 	pubNext, ok := reader.recv(3 * time.Second)
 	if !ok || pubNext.Type != "next" {
 		t.Fatalf("expected published next, got ok=%v", ok)
@@ -1106,7 +1154,7 @@ func TestPhase7Sub_FullLifecycle(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// 5. Verify no more events.
-	state.hub.PublishTelemetry(state.operator.ID, "IMEI_LIFECYCLE", map[string]any{"riskScore": 99})
+	state.hub.PublishTelemetry(state.orgID, "IMEI_LIFECYCLE", map[string]any{"riskScore": 99})
 	if _, ok := reader.recv(1 * time.Second); ok {
 		t.Error("should not receive event after complete")
 	}
@@ -1165,9 +1213,9 @@ func TestPhase7Sub_DeviceStreamAndSubscriptionCoexist(t *testing.T) {
 	sendMsg(t, subConn, wsMessage{Type: "subscribe", ID: "sub-bridge", Payload: subPayload})
 	readMsg(t, subConn, 3*time.Second)
 
-// Publish telemetry via the subscription manager (simulating what an.
+	// Publish telemetry via the subscription manager (simulating what an.
 	// event processor would do after receiving device telemetry).
-	state.hub.PublishTelemetry(state.operator.ID, "IMEI_BRIDGE", map[string]int{"riskScore": 55})
+	state.hub.PublishTelemetry(state.orgID, "IMEI_BRIDGE", map[string]int{"riskScore": 55})
 
 	msg := readMsg(t, subConn, 3*time.Second)
 	if msg.Type != "next" {
@@ -1216,7 +1264,7 @@ func TestPhase7Sub_ServerPingKeepalive(t *testing.T) {
 	readMsg(t, conn, 3*time.Second)
 
 	// The subscription client's writePump sends pings every 30s.
-// We can't wait 30s in a test, so just verify the connection stays alive.
+	// We can't wait 30s in a test, so just verify the connection stays alive.
 	// for a few seconds and can still exchange messages.
 	time.Sleep(2 * time.Second)
 
@@ -1292,7 +1340,7 @@ func TestPhase7Sub_QueryContainsMatching(t *testing.T) {
 	sendMsg(t, conn, wsMessage{Type: "subscribe", ID: "sub-qm", Payload: subPayload})
 	readMsg(t, conn, 3*time.Second) // initial null
 
-	state.hub.PublishDeviceUpdate(state.operator.ID, "IMEI_QUERY_MATCH", map[string]string{"status": "online"})
+	state.hub.PublishDeviceUpdate(state.orgID, "IMEI_QUERY_MATCH", map[string]string{"status": "online"})
 	msg := readMsg(t, conn, 3*time.Second)
 	if msg.Type != "next" {
 		t.Errorf("expected next, got %s", msg.Type)

@@ -3,8 +3,8 @@ package tests
 import (
 	"bytes"
 	"context"
-	crypto_rand "crypto/rand"
 	"crypto/hmac"
+	crypto_rand "crypto/rand"
 	"crypto/sha512"
 	"database/sql"
 	"encoding/base64"
@@ -402,7 +402,7 @@ func login(t *testing.T, email, orgID string) (*http.Client, string) {
 	if status != 200 {
 		t.Fatalf("login %s -> %d: %s", email, status, string(body))
 	}
-// Capture the per-session signing key returned by the login response so.
+	// Capture the per-session signing key returned by the login response so.
 	// subsequent requests can be signed with X-Vyzorix-* headers.
 	loginData := parseJSON(t, body)
 	if signingKey, _ := loginData["signing_key"].(string); signingKey != "" {
@@ -566,11 +566,32 @@ func (d *discardWriter) Write(p []byte) (int, error) { return len(p), nil }
 // noopDeviceRepoForTests is a minimal device.Repository implementation for WS tests.
 type noopDeviceRepoForTests struct {
 	online map[string]bool
-	mu     sync.Mutex
+	// orgs mirrors which (imei, orgID) pairs the guard should treat as owned.
+	orgs map[string]string
+	mu   sync.Mutex
 }
 
 func newNoopDeviceRepoForTests() *noopDeviceRepoForTests {
-	return &noopDeviceRepoForTests{online: make(map[string]bool)}
+	return &noopDeviceRepoForTests{
+		online: make(map[string]bool),
+		orgs:   make(map[string]string),
+	}
+}
+
+// ownDevicesForTests registers several IMEIs as belonging to orgID.
+func (r *noopDeviceRepoForTests) ownDevicesForTests(orgID string, imeis ...string) {
+	for _, imei := range imeis {
+		r.ownDevice(imei, orgID)
+	}
+}
+
+// ownDevice registers an IMEI as belonging to an organization so the
+// subscription org guard admits it. Subscription tests call this for the
+// devices they intend to observe.
+func (r *noopDeviceRepoForTests) ownDevice(imei, orgID string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.orgs[imei] = orgID
 }
 
 func (r *noopDeviceRepoForTests) SetOnline(_ context.Context, id string, online bool) error {
@@ -600,7 +621,12 @@ func (r *noopDeviceRepoForTests) FindByIDAndOperatorID(context.Context, device.D
 func (r *noopDeviceRepoForTests) FindByIMEIAndOperator(context.Context, string, string) (*device.Device, error) {
 	return nil, nil
 }
-func (r *noopDeviceRepoForTests) FindByIMEIAndOrganization(context.Context, string, string) (*device.Device, error) {
+func (r *noopDeviceRepoForTests) FindByIMEIAndOrganization(_ context.Context, imei, orgID string) (*device.Device, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if owner, ok := r.orgs[imei]; ok && owner == orgID {
+		return &device.Device{ID: imei, OrganizationID: orgID}, nil
+	}
 	return nil, nil
 }
 func (r *noopDeviceRepoForTests) FindByIDAndOrganization(context.Context, string, string) (*device.Device, error) {

@@ -12,6 +12,7 @@ import (
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/dto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/outcome"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/updates"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/cache"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
@@ -133,12 +134,13 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 
 	var (
 		// DeviceIDs contains ALL requested device IDs (per spec).
-		deviceIDs     = make([]string, 0, len(req.DeviceIDs))
-		failedDevices = make([]FailedDevice, 0)
-		pendingCount  = 0
-		sentCount     = 0
-		acknowledged  = 0 // Acknowledged count is updated asynchronously by device responses.
-		failedCount   = 0
+		deviceIDs      = make([]string, 0, len(req.DeviceIDs))
+		failedDevices  = make([]FailedDevice, 0)
+		pendingCount   = 0
+		sentCount      = 0
+		acknowledged   = 0 // Acknowledged count is updated asynchronously by device responses.
+		failedCount    = 0
+		reconcileCount = 0
 	)
 
 	for _, deviceID := range req.DeviceIDs {
@@ -156,9 +158,13 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 			UpdatedAt:  now.UnixMilli(),
 		}
 		if err := s.repo.CreatePushDevice(ctx, devicePush); err != nil {
+			// The device push record was never written and nothing was sent, so
+			// this is a clean, effect-free failure.
 			failedDevices = append(failedDevices, FailedDevice{
-				DeviceID: deviceID,
-				Reason:   "failed to register device for update",
+				DeviceID:            deviceID,
+				Reason:              "failed to register device for update",
+				Disposition:         outcome.DispositionFailedClean.String(),
+				NeedsReconciliation: false,
 			})
 			failedCount++
 			continue
@@ -170,12 +176,20 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 		// Dispatch the update command to the device.
 		notifyErr := s.dispatchUpdateCommand(ctx, deviceID, push.ID, version.Version, version.APKFilename, version.SHA256, version.APKSize, payloadBytes)
 		if notifyErr != nil {
+			// The device was registered and a dispatch was attempted, but the
+			// command may have reached it before failing. The effect is unknown:
+			// re-pushing blindly could install the update twice, so surface it
+			// for reconciliation instead of collapsing it into a plain failure.
+			disposition := outcome.DispositionUncertain
 			failedDevices = append(failedDevices, FailedDevice{
-				DeviceID: deviceID,
-				Reason:   notifyErr.Error(),
+				DeviceID:            deviceID,
+				Reason:              notifyErr.Error(),
+				Disposition:         disposition.String(),
+				NeedsReconciliation: true,
 			})
 			failedCount++  // Count as failed.
 			pendingCount-- // No longer pending.
+			reconcileCount++
 			// Mark device push as failed but keep it in the push so operators can see it.
 			_ = s.repo.UpdatePushDeviceStatus(ctx, devicePush.ID, updates.DevicePushStatusFailed, notifyErr.Error())
 			continue
@@ -214,6 +228,7 @@ func (s *PushService) PushUpdate(ctx context.Context, req *PushUpdateRequest, in
 		Status:        string(push.Status),
 		DeviceIDs:     deviceIDs, // All requested device IDs (per spec).
 		FailedDevices: failedDevices,
+		Reconcile:     reconcileCount,
 		Devices: PushDeviceCounts{
 			Total:        len(deviceIDs),
 			Pending:      pendingCount,
