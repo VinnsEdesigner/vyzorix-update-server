@@ -54,6 +54,7 @@ func main() {
 	fmt.Println("VYZORIX structural verification")
 	fmt.Printf("  root: %s\n\n", getRoot())
 
+	//nolint:govet // fieldalignment: field order chosen for readability, not packing
 	gates := []struct {
 		name string
 		run  func() bool

@@ -13,6 +13,7 @@ var (
 	ErrSendFailed    = errors.New("transport reported a send failure")
 )
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type TransportResult struct {
 	Sent  bool
 	Acked bool
@@ -37,6 +38,7 @@ func ClassifyDelivery(result TransportResult) *outcome.Failure {
 	}
 }
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type DeliveryPlan struct {
 	Retry      bool
 	Reconcile  bool

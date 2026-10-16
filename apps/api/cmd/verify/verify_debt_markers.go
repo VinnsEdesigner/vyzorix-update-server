@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type debtMarker struct {
 	Marker string
 	File   string
@@ -88,7 +89,7 @@ func verifyDebtMarkers() bool {
 		}
 		file, perr := parser.ParseFile(fset, path, src, parser.ParseComments)
 		if perr != nil {
-			return nil
+			return perr
 		}
 		scanned++
 		rel, _ := filepath.Rel(getRoot(), path)
@@ -138,11 +139,11 @@ func verifyDebtMarkers() bool {
 	return false
 }
 
-func truncateForReport(s string, max int) string {
-	if len(s) <= max {
+func truncateForReport(s string, limit int) string {
+	if len(s) <= limit {
 		return s
 	}
-	return s[:max-1] + "..."
+	return s[:limit-1] + "..."
 }
 
 func verifyNoOrphanedFiles() bool {

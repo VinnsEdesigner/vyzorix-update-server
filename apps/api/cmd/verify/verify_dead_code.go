@@ -13,6 +13,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type deadCodeBaseline struct {
 	Version int      `json:"version"`
 	Allowed []string `json:"allowed"`
@@ -20,6 +21,7 @@ type deadCodeBaseline struct {
 
 const deadCodeBaselineVersion = 2
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type deadDecl struct {
 	id   string
 	pos  token.Position
@@ -102,8 +104,12 @@ func objectKey(pkgPath string, obj types.Object) string {
 }
 
 func methodKey(_ string, fn *types.Func) string {
-	recv := fn.Type().(*types.Signature).Recv().Type()
-	if ptr, ok := recv.(*types.Pointer); ok {
+	sig, ok := fn.Type().(*types.Signature)
+	if !ok {
+		return fn.Name()
+	}
+	recv := sig.Recv().Type()
+	if ptr, isPtr := recv.(*types.Pointer); isPtr {
 		recv = ptr.Elem()
 	}
 	return recv.String() + "." + fn.Name()
@@ -162,7 +168,7 @@ func collectUses(pkgs []*packages.Package) map[string]bool {
 	return used
 }
 
-func reachableFromEntryPoints(pkgs []*packages.Package, decls map[string]deadDecl, used map[string]bool) {
+func reachableFromEntryPoints(pkgs []*packages.Package, used map[string]bool) {
 	for _, pkg := range pkgs {
 		if pkg.TypesInfo == nil || pkg.Syntax == nil {
 			continue
@@ -193,7 +199,7 @@ func verifyDeadCode() bool {
 
 	decls := collectDeclarations(pkgs)
 	used := collectUses(pkgs)
-	reachableFromEntryPoints(pkgs, decls, used)
+	reachableFromEntryPoints(pkgs, used)
 
 	allowed := map[string]bool{}
 	for _, id := range loadDeadCodeBaseline() {
@@ -264,7 +270,7 @@ func exportDeadCodeBaseline() error {
 
 	decls := collectDeclarations(pkgs)
 	used := collectUses(pkgs)
-	reachableFromEntryPoints(pkgs, decls, used)
+	reachableFromEntryPoints(pkgs, used)
 
 	allowed := []string{}
 	for id := range decls {

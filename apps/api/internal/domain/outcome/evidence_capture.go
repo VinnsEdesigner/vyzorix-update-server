@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type Evidence struct {
 	Detail    string
 	Truncated bool

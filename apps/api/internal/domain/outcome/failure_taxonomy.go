@@ -109,6 +109,7 @@ func (s EffectStatus) NeedsReconciliation() bool {
 	return s == EffectUnknown || s == EffectPartial
 }
 
+//nolint:errname,govet // outcome value rather than a thrown error; field order chosen for readability
 type Failure struct {
 	class    Class
 	blame    Blame

@@ -2,6 +2,7 @@ package outcome
 
 import "strings"
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type Remediation struct {
 	Action            RemediationAction
 	Guidance          string
@@ -56,6 +57,9 @@ func Remediate(f *Failure) Remediation {
 			Action:   ActionReconcile,
 			Guidance: "The outcome could not be confirmed. Inspect the target before retrying.",
 		}
+	case EffectNone, EffectApplied:
+		// Nothing changed, or the change is confirmed and complete. Fall through
+		// to the class-based action below.
 	}
 
 	switch f.Class() {

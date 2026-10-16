@@ -28,6 +28,7 @@ type ruleViolation struct {
 	To   string `json:"to"`
 }
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type architectureBaseline struct {
 	Version int            `json:"version"`
 	Allowed map[string]int `json:"allowed"`
@@ -228,7 +229,7 @@ func exportArchitectureBaseline() error {
 		}
 		file, perr := parser.ParseFile(fset, path, nil, parser.ImportsOnly)
 		if perr != nil {
-			return nil
+			return perr
 		}
 		fromLayer, fromRank, ok := internalLayer(importPathForFile(path))
 		if !ok {

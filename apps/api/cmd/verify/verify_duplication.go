@@ -22,6 +22,7 @@ type duplicateBlock struct {
 	Lines int      `json:"lines"`
 }
 
+//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type duplicationBaseline struct {
 	Version int      `json:"version"`
 	Allowed []string `json:"allowed"`
@@ -133,7 +134,9 @@ func verifyDuplication() bool {
 
 	walkErr := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			// Propagate: a gate that silently skips unreadable input can be
+			// bypassed by making a file unreadable.
+			return err
 		}
 		if d.IsDir() {
 			if duplicationSkipDirs[d.Name()] {
@@ -146,7 +149,7 @@ func verifyDuplication() bool {
 		}
 		src, readErr := os.ReadFile(path)
 		if readErr != nil {
-			return nil
+			return readErr
 		}
 		tokens := normalizeTokenStream(string(src))
 		if len(tokens) < duplicationWindowTokens*2 {
@@ -237,9 +240,9 @@ func loadDuplicationBaseline() []string {
 func exportDuplicationBaseline() error {
 	root := getRoot()
 	seen := map[string][]string{}
-	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if d.IsDir() {
 			if duplicationSkipDirs[d.Name()] {
@@ -252,7 +255,7 @@ func exportDuplicationBaseline() error {
 		}
 		src, readErr := os.ReadFile(path)
 		if readErr != nil {
-			return nil
+			return readErr
 		}
 		tokens := normalizeTokenStream(string(src))
 		if len(tokens) < duplicationWindowTokens*2 {
@@ -265,6 +268,9 @@ func exportDuplicationBaseline() error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
 	var allowed []string
 	for h, files := range seen {
@@ -274,10 +280,13 @@ func exportDuplicationBaseline() error {
 	}
 	sort.Strings(allowed)
 
-	out, _ := json.MarshalIndent(duplicationBaseline{
+	out, err := json.MarshalIndent(duplicationBaseline{
 		Version: duplicationBaselineVersion,
 		Allowed: allowed,
 	}, "", "  ")
+	if err != nil {
+		return err
+	}
 	out = append(out, '\n')
 
 	dir := filepath.Join(root, "apps", "api", "config")
