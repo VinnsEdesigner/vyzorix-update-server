@@ -101,13 +101,23 @@ type PushUpdateResponse struct {
 	DeviceIDs     []string         `json:"deviceIds"`
 	FailedDevices []FailedDevice   `json:"failedDevices,omitempty"`
 	Devices       PushDeviceCounts `json:"devices"`
-	InitiatedAt   int64            `json:"initiatedAt"`
+	// Reconcile counts devices whose outcome is uncertain and that must be
+	// inspected before a re-push.
+	Reconcile   int   `json:"reconcile,omitempty"`
+	InitiatedAt int64 `json:"initiatedAt"`
 }
 
 // FailedDevice represents a device that failed to be added to a push.
 type FailedDevice struct {
 	DeviceID string `json:"deviceId"`
 	Reason   string `json:"reason"`
+	// Disposition distinguishes a device that provably received nothing from
+	// one whose outcome is unknown. An operator must reconcile the latter
+	// before re-pushing, or a device may install the update twice.
+	Disposition string `json:"disposition,omitempty"`
+	// NeedsReconciliation is true when the outcome is uncertain or partial;
+	// the dashboard surfaces these separately from clean failures.
+	NeedsReconciliation bool `json:"needsReconciliation,omitempty"`
 }
 
 // HistoryDeviceCounts represents device counts in history.

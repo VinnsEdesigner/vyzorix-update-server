@@ -9,6 +9,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/command"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/outcome"
 	cryptohmac "github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/crypto"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/fcm"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/infrastructure/metrics"
@@ -45,6 +46,7 @@ type Outbox struct {
 	log           *slog.Logger
 	stopCh        chan struct{}
 	cfg           OutboxConfig
+	guard         *command.DispatchGuard
 	wg            sync.WaitGroup
 	mu            sync.Mutex
 	running       bool
@@ -70,6 +72,7 @@ func NewOutbox(
 		commandSigner: cryptohmac.NewCommandSigner(),
 		cfg:           cfg,
 		log:           log,
+		guard:         command.NewDispatchGuard(1),
 		stopCh:        make(chan struct{}),
 	}
 }
@@ -147,29 +150,54 @@ func (o *Outbox) processPendingCommands() {
 func (o *Outbox) processCommand(cmd *command.Command) bool {
 	ctx := context.Background()
 
+	// Take the device's dispatch slot before sending anything. If it is already
+	// held, an earlier attempt to this device is still in flight and may yet
+	// execute; starting a second send would let two irreversible commands race.
+	if !o.guard.Acquire(cmd.DeviceID) {
+		o.log.Warn("dispatch already in flight for device; deferring",
+			"dispatchID", cmd.DispatchID,
+			"deviceID", cmd.DeviceID)
+		return false
+	}
+	defer o.guard.Release(cmd.DeviceID)
+
+	owned := command.DispatchResource(cmd.DeviceID)
+
 	// Try WebSocket delivery first if device is online.
 	if o.hub != nil && o.hub.Online(cmd.DeviceID) {
-		if o.deliverViaWebSocket(ctx, cmd) {
+		sent, err := o.deliverViaWebSocket(ctx, cmd)
+		if sent && err == nil {
 			return true
+		}
+		if failure := command.ClassifyDelivery(command.TransportResult{Sent: sent, Acked: false, Err: err}); failure != nil {
+			o.handleFailedDeliveryWith(cmd, failure.WithOwned(owned))
+			return false
 		}
 	}
 
 	// Try FCM delivery.
 	if o.fcmNotifier != nil && o.deviceRepo != nil {
-		if o.deliverViaFCM(ctx, cmd) {
+		sent, err := o.deliverViaFCM(ctx, cmd)
+		if sent && err == nil {
 			return true
+		}
+		if failure := command.ClassifyDelivery(command.TransportResult{Sent: sent, Acked: false, Err: err}); failure != nil {
+			o.handleFailedDeliveryWith(cmd, failure.WithOwned(owned))
+			return false
 		}
 	}
 
-	// Delivery failed - handle retry or mark as failed.
 	o.handleFailedDelivery(cmd)
 	return false
 }
 
-// deliverViaWebSocket attempts to deliver command via WebSocket with confirmation.
-func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) bool {
+// deliverViaWebSocket attempts to deliver command via WebSocket with
+// confirmation. It reports whether the frame was written to the socket, and any
+// error encountered. A written-but-unacknowledged frame is the uncertain case
+// the caller must classify before retrying.
+func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) (bool, error) {
 	if o.hub == nil {
-		return false
+		return false, nil
 	}
 
 	// Build command frame.
@@ -195,20 +223,20 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID,
 			"err", err)
-		return false
+		return false, err
 	}
 	if dev.CommandSecretHash == "" {
 		o.log.Warn("device has no command secret; cannot sign outbox command",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID)
-		return false
+		return false, nil
 	}
 	if signErr := cryptohmac.SignCommandFrame(o.commandSigner, &frame, cmd.DeviceID, dev.CommandSecretHash); signErr != nil {
 		o.log.Warn("failed to sign outbox command frame",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID,
 			"err", signErr)
-		return false
+		return false, signErr
 	}
 
 	// Use delivery confirmation with 5 second timeout.
@@ -218,7 +246,9 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID,
 			"err", err)
-		return false
+		// The frame was written to the socket before the acknowledgement
+		// window elapsed, so the device may already have executed it.
+		return true, err
 	}
 
 	if confirmed {
@@ -228,21 +258,23 @@ func (o *Outbox) deliverViaWebSocket(ctx context.Context, cmd *command.Command) 
 				"deviceID", cmd.DeviceID,
 				"err", err)
 			// Don't return true - delivery confirmation failed to persist.
-			return false
+			return true, err
 		}
 		o.log.Info("command delivered via websocket",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID)
-		return true
+		return true, nil
 	}
 
-	return false
+	return true, command.ErrAckTimeout
 }
 
-// deliverViaFCM attempts to deliver command via FCM push notification.
-func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
+// deliverViaFCM attempts to deliver command via FCM push notification. FCM is
+// fire-and-forget: a successful send means the device was woken, not that it
+// received the command, so the caller treats this as an uncertain outcome.
+func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) (bool, error) {
 	if o.fcmNotifier == nil || o.deviceRepo == nil {
-		return false
+		return false, nil
 	}
 
 	// Get device to retrieve FCM token.
@@ -251,7 +283,7 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 		o.log.Warn("device not found for FCM delivery",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID)
-		return false
+		return false, err
 	}
 
 	fcmToken := dev.FCMToken
@@ -259,7 +291,7 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 		o.log.Debug("device has no FCM token",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID)
-		return false
+		return false, nil
 	}
 
 	// Build and send FCM wake notification.
@@ -275,7 +307,7 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID,
 			"err", err)
-		return false
+		return false, err
 	}
 
 	o.log.Info("command queued via FCM",
@@ -284,7 +316,7 @@ func (o *Outbox) deliverViaFCM(ctx context.Context, cmd *command.Command) bool {
 
 	// FCM is fire-and-forget, so we mark as queued - device will poll for commands.
 	// The command remains in pending status until device confirms receipt.
-	return true
+	return true, nil
 }
 
 // markDelivered marks a command as successfully delivered.
@@ -305,6 +337,12 @@ func (o *Outbox) markDelivered(cmd *command.Command) error {
 // handleFailedDelivery handles a command that couldn't be delivered.
 // Implements retry with exponential backoff up to MaxRetries.
 func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
+	o.handleFailedDeliveryWith(cmd, nil)
+}
+
+// handleFailedDeliveryWith applies the typed retry policy for a failed attempt.
+// When failure is nil the attempt is treated as a clean, effect-free failure.
+func (o *Outbox) handleFailedDeliveryWith(cmd *command.Command, failure *outcome.Failure) {
 	ctx := context.Background()
 	if cmd.IsExpired() {
 		errMsg := "command expired before delivery"
@@ -320,18 +358,37 @@ func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 		return
 	}
 
-	// Increment retry count and set max retries from config.
 	cmd.RetryCount++
 	cmd.MaxRetries = o.cfg.MaxRetries
 
-	if cmd.RetryCount >= cmd.MaxRetries {
-		// Mark as failed.
+	tier := command.LookupRiskProfile(cmd.Command).Tier
+	plan := command.PlanDelivery(failure, tier, cmd.RetryCount, cmd.MaxRetries)
+
+	if plan.Reconcile {
+		errMsg := "delivery outcome uncertain for a destructive command; manual reconciliation required"
+		if err := o.repo.MarkFailed(ctx, cmd.DispatchID, errMsg); err != nil {
+			o.log.Error("failed to mark uncertain command for reconciliation",
+				"dispatchID", cmd.DispatchID,
+				"err", err)
+		}
+		metrics.Get().RecordCommandOutcome("reconcile")
+		o.log.Warn("command needs reconciliation - not retrying",
+			"dispatchID", cmd.DispatchID,
+			"deviceID", cmd.DeviceID,
+			"command", cmd.Command,
+			"tier", string(tier),
+			"reason", plan.Reason)
+		return
+	}
+
+	if !plan.Retry {
 		errMsg := "max delivery retries exceeded"
 		if err := o.repo.MarkFailed(ctx, cmd.DispatchID, errMsg); err != nil {
 			o.log.Error("failed to mark command as failed",
 				"dispatchID", cmd.DispatchID,
 				"err", err)
 		}
+		metrics.Get().RecordCommandOutcome("failed")
 		o.log.Warn("command marked as failed after max retries",
 			"dispatchID", cmd.DispatchID,
 			"deviceID", cmd.DeviceID,
@@ -339,13 +396,10 @@ func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 		return
 	}
 
-	// Calculate next retry time with exponential backoff.
-	// Exponential backoff: baseDelay * 2^(retryCount-1).
 	delay := o.cfg.RetryBaseDelay * time.Duration(1<<(cmd.RetryCount-1))
 	nextRetry := time.Now().Add(delay)
 	cmd.NextRetryAt = &nextRetry
 
-	// Persist retry info to database for outbox pattern durability.
 	if err := o.repo.UpdateRetryInfo(ctx, cmd.ID, cmd.RetryCount, cmd.MaxRetries, cmd.NextRetryAt); err != nil {
 		o.log.Error("failed to persist retry info",
 			"dispatchID", cmd.DispatchID,
@@ -356,7 +410,8 @@ func (o *Outbox) handleFailedDelivery(cmd *command.Command) {
 		"dispatchID", cmd.DispatchID,
 		"deviceID", cmd.DeviceID,
 		"retryCount", cmd.RetryCount,
-		"nextRetryIn", delay)
+		"nextRetryIn", delay,
+		"reason", plan.Reason)
 }
 
 // IsRunning returns whether the outbox worker is currently running.
