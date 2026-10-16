@@ -49,7 +49,7 @@ func Injector(cfg config.Config) (*Server, error) {
 	}
 	memberStorage := ProvideMemberRepository(db)
 	invitationStorage := ProvideInvitationRepository(db)
-	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager, memberStorage, invitationStorage)
+	authService := ProvideAuthService(logger, operatorRepository, sessionRepository, emailVerificationRepository, passwordResetRepository, refreshTokenRepository, argon2idHasher, jwtManager, memberStorage, invitationStorage, sqLite)
 	// Set session manager on auth service to enable session cookie creation during login.
 	authService.SetSessionManager(manager)
 	txManager := ProvideTxManager(db)

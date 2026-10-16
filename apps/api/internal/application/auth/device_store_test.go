@@ -99,7 +99,7 @@ func TestDeviceStore_StaysBounded(t *testing.T) {
 
 	// Many distinct fingerprints for one operator.
 	for i := 0; i < maxDevicesPerOperator*3; i++ {
-		ds.RegisterDevice("op-1", fingerprintN(i), "203.0.113.10", "UA")
+		ds.RegisterDevice(context.Background(), "op-1", fingerprintN(i), "203.0.113.10", "UA")
 	}
 
 	ds.mu.RLock()
@@ -112,7 +112,7 @@ func TestDeviceStore_StaysBounded(t *testing.T) {
 	// Many distinct IPs for a single device.
 	const fp = "fp-signals"
 	for i := 0; i < maxSignalsPerDevice*3; i++ {
-		ds.RegisterDevice("op-2", fp, ipN(i), "UA")
+		ds.RegisterDevice(context.Background(), "op-2", fp, ipN(i), "UA")
 	}
 
 	ds.mu.RLock()

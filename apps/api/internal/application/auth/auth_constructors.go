@@ -7,6 +7,7 @@ import (
 
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/device"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/devicestore"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/email_verification"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/operator"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/domain/organization"
@@ -72,7 +73,7 @@ type AuthService struct {
 	operatorRepo       operator.Repository
 	jwtManager         *infraauth.JWTManager
 	ldapConfig         *LDAPConfig
-	deviceStore        *DeviceStore
+	deviceStore        devicestore.Store
 	sessionManager     *infraSession.Manager
 	logger             *slog.Logger
 	sessionTTL         time.Duration

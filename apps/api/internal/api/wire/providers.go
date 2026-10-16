@@ -298,6 +298,7 @@ func ProvideAuthService(
 	jwtManager *infraauth.JWTManager,
 	memberRepo *storage.MemberStorage,
 	invitationRepo *storage.InvitationStorage,
+	sqlite *storage.SQLite,
 ) *auth.AuthService {
 	sessionTTL := 7 * 24 * time.Hour
 	svc := auth.NewAuthServiceWithRefresh(
@@ -323,6 +324,12 @@ func ProvideAuthService(
 	// (DELETE /v1/auth/admin/operators/:id) can cancel pending invitations.
 	// Without this, s.invitationRepo is nil and DeleteOperator panics.
 	svc.SetInvitationRepository(invitationRepo)
+	// Use the persistent device store so "known device" state survives restarts
+	// and deploys. The in-memory default created by the constructor would reset on
+	// every deploy and re-notify every operator on their first login after it.
+	if sqlite != nil {
+		svc.SetDeviceStore(storage.NewKnownDeviceRepository(sqlite.DB()))
+	}
 	return svc
 }
 

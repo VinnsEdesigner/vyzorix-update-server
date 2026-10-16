@@ -110,7 +110,8 @@ After a successful login, `AuthService.ShouldNotifyLogin` decides whether to ema
 
 The signal is a device fingerprint built from the request's IP, User-Agent, `Accept-Language` and `Accept-Encoding` (`LoginHandler.generateDeviceFingerprint`). Because the fingerprint already includes the IP, a change in either the network or the client produces a new fingerprint and therefore a notification; a repeat login from the same device on the same IP does not.
 
-Fingerprints are held in `DeviceStore` (`internal/application/auth/auth_device_recognition.go`), keyed per operator, and both the per-operator device map and the per-device signal sets are bounded so a client that changes IP or User-Agent repeatedly cannot grow them without limit.
+Known devices are **persisted** in the `known_devices` and `known_device_signals` tables (migration 72), so a device stays known across restarts and deployments. The store is keyed per operator, and both tables are bounded (50 devices per operator, 20 IP/User-Agent values per device) so a client that changes its IP or User-Agent repeatedly cannot grow them without limit. Eviction removes the least-recently-seen device / oldest signal.
 
-The store is **in-memory**: it is populated on login and reset on restart, so the first login after a deployment notifies. Persisting it would need a schema and migration, and notifying is the safe direction for a security signal.
+The port is `domain/devicestore.Store`. The production implementation is `storage.KnownDeviceRepository` (wired in `ProvideAuthService`); the in-memory `auth.DeviceStore` is used in tests.
+
 
