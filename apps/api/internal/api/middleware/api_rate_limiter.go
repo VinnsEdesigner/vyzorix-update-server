@@ -23,9 +23,16 @@ type RateLimiter struct {
 	Refill          time.Duration
 	CleanupInterval time.Duration
 	TTL             time.Duration
-	mu              sync.RWMutex
-	cleanupWg       sync.WaitGroup
+	// MaxBuckets caps the number of tracked keys. Without it the map is bounded
+	// only by TTL, so a flood of distinct keys (spoofed client addresses) grows it
+	// faster than cleanup reclaims it. 0 means the default cap.
+	MaxBuckets int
+	mu         sync.RWMutex
+	cleanupWg  sync.WaitGroup
 }
+
+// DefaultMaxBuckets caps the tracked keys in a RateLimiter.
+const DefaultMaxBuckets = 100_000
 
 type bucket struct {
 	last   time.Time
@@ -82,6 +89,7 @@ func NewRateLimiterWithOptions(capacity int, refill time.Duration, opts ...RateL
 		Refill:          refill,
 		CleanupInterval: DefaultCleanupInterval,
 		TTL:             DefaultBucketTTL,
+		MaxBuckets:      DefaultMaxBuckets,
 		ctx:             ctx,
 		cancel:          cancel,
 		logger:          slog.Default(),
@@ -114,6 +122,31 @@ func (l *RateLimiter) cleanupLoop() {
 }
 
 // cleanup removes buckets that have been idle longer than TTL.
+// evictIfFullLocked drops the least-recently-used bucket when the map is at its
+// cap. Caller holds l.mu. Cost is O(n) but runs only when full.
+func (l *RateLimiter) evictIfFullLocked() {
+	limit := l.MaxBuckets
+	if limit <= 0 {
+		limit = DefaultMaxBuckets
+	}
+	if len(l.buckets) < limit {
+		return
+	}
+
+	var oldestKey string
+
+	var oldest time.Time
+
+	for k, v := range l.buckets {
+		if oldestKey == "" || v.last.Before(oldest) {
+			oldestKey, oldest = k, v.last
+		}
+	}
+	if oldestKey != "" {
+		delete(l.buckets, oldestKey)
+	}
+}
+
 func (l *RateLimiter) cleanup() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -168,6 +201,11 @@ func (l *RateLimiter) Allow(key string) bool {
 	b := l.buckets[key]
 
 	if b == nil {
+		// Enforce a hard cap before inserting so a flood of distinct keys cannot
+		// outrun the TTL sweep. Evict the stalest entry rather than refusing new
+		// keys, so a genuine client is not locked out by an attacker's churn.
+		l.evictIfFullLocked()
+
 		b = &bucket{tokens: l.Capacity, last: now}
 		l.buckets[key] = b
 	}

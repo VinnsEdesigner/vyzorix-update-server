@@ -42,16 +42,22 @@ func NewInMemoryRateLimiter(limit int, window time.Duration) *InMemoryRateLimite
 }
 
 // Allow checks if a request is allowed under the rate limit.
+//
+// Uses a sliding window: the count is anchored to the first request in the current
+// window and the window expires `window` after that, rather than snapping to a
+// fixed calendar boundary. A fixed window (truncate-to-boundary) lets a caller send
+// the full quota at the end of one window and again at the start of the next - a 2x
+// burst across the boundary.
 func (r *InMemoryRateLimiter) Allow(keyID string) *RateLimitResult {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	now := time.Now()
-	windowEnd := now.Add(r.window).Truncate(r.window).Add(r.window)
 
 	counter, exists := r.data[keyID]
-	if !exists || now.After(counter.windowEnd) {
-		counter = &windowedCounter{windowEnd: windowEnd}
+	if !exists || !now.Before(counter.windowEnd) {
+		// Start a fresh window anchored at this request.
+		counter = &windowedCounter{windowEnd: now.Add(r.window)}
 		r.data[keyID] = counter
 	}
 

@@ -4,6 +4,7 @@ package subscription
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -24,21 +25,38 @@ func allowedOrigins(cfg config.Config) func(r *http.Request) bool {
 		if origin == "" {
 			return true // Allow empty origin (e.g., same-origin requests).
 		}
-		// Check against allowed origins.
+
+		u, err := url.Parse(origin)
+		if err != nil || u.Host == "" {
+			return false
+		}
+		host := u.Hostname()
+
 		for _, allowed := range origins {
-			if allowed == "*" || allowed == origin {
+			if allowed == "*" {
 				return true
 			}
-			// Support wildcard subdomains (e.g., *.example.com).
-			if strings.HasPrefix(allowed, "*.") {
-				domain := allowed[2:]
-				if strings.HasSuffix(origin, domain) {
+			if strings.EqualFold(allowed, origin) {
+				return true
+			}
+			// Wildcard subdomain, e.g. "*.example.com". The host must be the bare
+			// domain or a true subdomain of it; a plain suffix match would also
+			// accept "evil-example.com" and "notexample.com".
+			if rest, ok := strings.CutPrefix(allowed, "*."); ok {
+				if hostMatchesDomain(host, rest) {
 					return true
 				}
 			}
 		}
 		return false
 	}
+}
+
+// hostMatchesDomain reports whether host is domain or a subdomain of it.
+func hostMatchesDomain(host, domain string) bool {
+	domain = strings.ToLower(strings.TrimSuffix(domain, "."))
+	host = strings.ToLower(host)
+	return host == domain || strings.HasSuffix(host, "."+domain)
 }
 
 var upgrader = websocket.Upgrader{
