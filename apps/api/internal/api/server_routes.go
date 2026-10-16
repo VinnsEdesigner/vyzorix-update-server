@@ -128,8 +128,17 @@ func (s *Server) setupStaticRoutes() {
 	}
 	s.engine.GET("/healthz", auth.Middleware(), s.healthHandler)
 
-	if s.metricsHandler != nil {
-		s.engine.GET("/metrics", s.metricsHandler.Handle)
+	if s.metricsHandler != nil && s.config.MetricsEnabled {
+		// Scrape access control: loopback by default, plus an optional bearer
+		// scrape token and/or a source CIDR allowlist for an external Prometheus.
+		s.engine.GET("/metrics",
+			middleware.MetricsAccess(middleware.MetricsAccessConfig{
+				Token:         s.config.MetricsToken,
+				AllowedCIDRs:  s.config.MetricsAllowedCIDRs,
+				AllowLoopback: true,
+			}),
+			s.metricsHandler.Handle,
+		)
 	}
 	s.engine.GET("/api/v1/version", s.versionHandler)
 	s.engine.GET("/api/v1/changelog", s.changelogHandler)

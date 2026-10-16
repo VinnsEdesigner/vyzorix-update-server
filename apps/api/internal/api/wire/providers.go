@@ -687,6 +687,21 @@ func ProvideGinEngine(cfg config.Config, log *slog.Logger) *gin.Engine {
 	}
 	engine := gin.New()
 	engine.Use(middleware.GinPanicRecovery(log))
+
+	// Trust no proxy by default, so c.ClientIP() is the real peer and cannot be
+	// spoofed with an X-Forwarded-For header. When TRUSTED_PROXIES is set, only
+	// those networks may influence the client IP. A failure here is fatal to the
+	// intent of the setting, so surface it loudly rather than silently trusting all.
+	if len(cfg.TrustedProxies) == 0 {
+		if err := engine.SetTrustedProxies(nil); err != nil {
+			log.Error("failed to disable trusted proxies", "err", err)
+		}
+	} else if err := engine.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		log.Error("invalid TRUSTED_PROXIES; refusing to trust any proxy",
+			"err", err, "trustedProxies", cfg.TrustedProxies)
+		_ = engine.SetTrustedProxies(nil)
+	}
+
 	return engine
 }
 

@@ -79,14 +79,15 @@ func LoadSigningConfig() SigningConfig {
 type Config struct {
 	APIKeys                       map[string]string
 	SlackConfig                   SlackConfig
-	PublicDir                     string
-	DeviceSecret                  string
+	DeploymentMode                string
+	GitHubWebhookSecret           string
 	GitHubOAuthClientSecret       string
 	FirebaseCreds                 string
-	SessionSecret                 string
+	PublicDir                     string
 	FrontendURL                   string
 	BinDir                        string
 	Port                          string
+	BindAddr                      string
 	BaseURL                       string
 	EmailFrom                     string
 	DataDir                       string
@@ -95,7 +96,7 @@ type Config struct {
 	FirebaseAppID                 string
 	GitHubReleaseToken            string
 	AuditLogPath                  string
-	GitHubWebhookSecret           string
+	MetricsToken                  string
 	JWTSecret                     string
 	GitHubOAuthClientID           string
 	Env                           string
@@ -110,8 +111,12 @@ type Config struct {
 	AuditLogSeparateDBPath        string
 	APIKeyPrefix                  string
 	TurnstileSecret               string
-	DeploymentMode                string
+	SessionSecret                 string
+	DeviceSecret                  string
+	MetricsBindAddr               string
 	AllowedOrigins                []string
+	MetricsAllowedCIDRs           []string
+	TrustedProxies                []string
 	AlertConfig                   AlertConfig
 	DiagnosticsConfig             DiagnosticsConfig
 	HMACWindow                    time.Duration
@@ -132,6 +137,7 @@ type Config struct {
 	MaxKeyNameLength              int
 	DatabaseMaxOpenConns          int
 	NonceCacheTTL                 time.Duration
+	CacheTTLSeconds               int
 	RequireKeyName                bool
 	AllowKeyRenaming              bool
 	EnableUsageTracking           bool
@@ -140,7 +146,7 @@ type Config struct {
 	AuditLogSeparateDB            bool
 	EnableGraphQL                 bool
 	EnablePprof                   bool
-	CacheTTLSeconds               int
+	MetricsEnabled                bool
 }
 
 // DiagnosticsConfig holds configuration for the diagnostics API.
@@ -267,7 +273,12 @@ func Load() (Config, error) {
 	}
 
 	c := Config{
-		Port:                      get("PORT", "3000"),
+		Port: get("PORT", "3000"),
+		// BindAddr is the interface the API listens on. Default 0.0.0.0 so a
+		// container/behind-proxy deployment works out of the box; set BIND_ADDR to
+		// a specific address (e.g. 127.0.0.1) when a local reverse proxy is the only
+		// intended entry point, or to a private interface address on a multi-homed host.
+		BindAddr:                  get("BIND_ADDR", "0.0.0.0"),
 		Env:                       get("NODE_ENV", get("GO_ENV", "development")),
 		DatabaseURL:               get("DATABASE_URL", "./data/vyzorix.db"),
 		DatabaseBackend:           get("DATABASE_BACKEND", "auto"),
@@ -313,15 +324,21 @@ func Load() (Config, error) {
 		PasswordResetTokenExpiry:  passwordResetExpiry,
 		EnableGraphQL:             getBool("ENABLE_GRAPHQL", true),
 		EnablePprof:               getBool("ENABLE_PPROF", false),
-		CacheTTLSeconds:           getInt("CACHE_TTL_SECONDS", 30),
-		AuditLogPath:              get("AUDIT_LOG_PATH", "./data/audit.log"),
-		AuditLogSeparateDB:        getBool("AUDIT_LOG_SEPARATE_DB", false),
-		AuditLogSeparateDBPath:    get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
-		DiagnosticsConfig:         LoadDiagnosticsConfig(),
-		AlertConfig:               LoadAlertConfig(),
-		SlackConfig:               LoadSlackConfig(),
-		RateLimitPerMin:           getenvInt("RATE_LIMIT_REQUESTS", 100),
-		AuthRateLimitMin:          getenvInt("AUTH_RATE_LIMIT_REQUESTS", 60),
+		MetricsEnabled:            getBool("METRICS_ENABLED", true),
+		MetricsToken:              get("METRICS_TOKEN", ""),
+		MetricsAllowedCIDRs:       splitCSV(get("METRICS_ALLOWED_CIDRS", "")),
+		MetricsBindAddr:           get("METRICS_BIND_ADDR", "127.0.0.1"),
+		// Empty trusts no proxy, so ClientIP is the real peer (not spoofable via XFF).
+		TrustedProxies:         splitCSV(get("TRUSTED_PROXIES", "")),
+		CacheTTLSeconds:        getInt("CACHE_TTL_SECONDS", 30),
+		AuditLogPath:           get("AUDIT_LOG_PATH", "./data/audit.log"),
+		AuditLogSeparateDB:     getBool("AUDIT_LOG_SEPARATE_DB", false),
+		AuditLogSeparateDBPath: get("AUDIT_LOG_SEPARATE_DB_PATH", "./data/audit/audit.db"),
+		DiagnosticsConfig:      LoadDiagnosticsConfig(),
+		AlertConfig:            LoadAlertConfig(),
+		SlackConfig:            LoadSlackConfig(),
+		RateLimitPerMin:        getenvInt("RATE_LIMIT_REQUESTS", 100),
+		AuthRateLimitMin:       getenvInt("AUTH_RATE_LIMIT_REQUESTS", 60),
 	}
 
 	c.APIKeys = loadAPIKeys()
@@ -335,19 +352,7 @@ func Load() (Config, error) {
 	}
 	c.HMACWindow = hmacWindow
 
-	if err := validateRequiredSecrets(&c); err != nil {
-		return c, err
-	}
-
-	if err := validateProductionConfig(&c); err != nil {
-		return c, err
-	}
-
-	if err := validateDatabaseConfig(&c); err != nil {
-		return c, err
-	}
-
-	if err := validatePort(&c); err != nil {
+	if err := Err(ValidateConfig(&c)); err != nil {
 		return c, err
 	}
 
@@ -453,46 +458,6 @@ func parseHMACWindow() (time.Duration, error) {
 	return time.Duration(n) * time.Second, nil
 }
 
-// validateRequiredSecrets checks for required secrets.
-func validateRequiredSecrets(c *Config) error {
-	var missingVars []string
-
-	if strings.TrimSpace(c.DatabaseURL) == "" {
-		missingVars = append(missingVars, "DATABASE_URL")
-	}
-	if len(c.APIKeys) == 0 {
-		missingVars = append(missingVars, "at least one API_KEY_* (e.g., API_KEY_primary=<key>)")
-	}
-	if c.JWTSecret == "" {
-		missingVars = append(missingVars, "JWT_SECRET")
-	}
-	if c.SessionSecret == "" {
-		missingVars = append(missingVars, "SESSION_SECRET")
-	}
-
-	if len(missingVars) > 0 {
-		return fmt.Errorf("missing required environment variables: %v", missingVars)
-	}
-	return nil
-}
-
-// validateProductionConfig validates production-specific configuration.
-func validateProductionConfig(c *Config) error {
-	if c.Env != "production" {
-		return nil
-	}
-	if c.ServerAPIToken == "" {
-		return errors.New("SERVER_API_TOKEN is required in production")
-	}
-	if len(c.JWTSecret) < 32 {
-		return errors.New("JWT_SECRET must be at least 32 characters in production")
-	}
-	if len(c.SessionSecret) < 32 {
-		return errors.New("SESSION_SECRET must be at least 32 characters in production")
-	}
-	return nil
-}
-
 // ResolvedDatabaseBackend determines which storage backend will be used given.
 // the configured DATABASE_BACKEND and the presence of Turso credentials.
 // "auto" selects turso when TURSO_DB_URL is set, otherwise sqlite.
@@ -512,53 +477,8 @@ func (c *Config) ResolvedDatabaseBackend() string {
 
 // validateDatabaseConfig validates the database backend selection and the.
 // credentials required by the chosen backend.
-func validateDatabaseConfig(c *Config) error {
-	backend := c.ResolvedDatabaseBackend()
-
-	switch backend {
-	case "turso":
-		if c.TursoDatabaseURL == "" {
-			return errors.New("DATABASE_BACKEND=turso requires TURSO_DB_URL to be set")
-		}
-		if c.TursoAuthToken == "" {
-			return errors.New("DATABASE_BACKEND=turso requires TURSO_AUTH_TOKEN to be set")
-		}
-		if !strings.HasPrefix(c.TursoDatabaseURL, "libsql://") &&
-			!strings.HasPrefix(c.TursoDatabaseURL, "https://") &&
-			!strings.HasPrefix(c.TursoDatabaseURL, "http://") {
-			return errors.New("TURSO_DB_URL must use the libsql://, https://, or http:// scheme")
-		}
-		if c.Env == "production" && strings.HasPrefix(c.TursoDatabaseURL, "http://") {
-			return errors.New("TURSO_DB_URL must use libsql:// or https:// in production (http:// is plaintext)")
-		}
-	case "sqlite":
-		if strings.TrimSpace(c.DatabaseURL) == "" {
-			return errors.New("DATABASE_BACKEND=sqlite requires DATABASE_URL to be set")
-		}
-	default:
-		return fmt.Errorf("invalid DATABASE_BACKEND %q (want auto, sqlite, or turso)", c.DatabaseBackend)
-	}
-
-	if c.DatabaseMaxOpenConns < 0 {
-		return errors.New("DATABASE_MAX_OPEN_CONNS must be >= 0")
-	}
-	if c.DatabaseMaxIdleConns < 0 {
-		return errors.New("DATABASE_MAX_IDLE_CONNS must be >= 0")
-	}
-	if c.DatabaseRequestTimeout <= 0 {
-		return errors.New("DATABASE_REQUEST_TIMEOUT must be positive")
-	}
-	return nil
-}
 
 // validatePort validates the port configuration.
-func validatePort(c *Config) error {
-	port, err := strconv.Atoi(c.Port)
-	if err != nil || port < 1 || port > 65535 {
-		return fmt.Errorf("invalid PORT: %q (must be between 1 and 65535)", c.Port)
-	}
-	return nil
-}
 
 // parseDeviceDeletionConfig parses device deletion configuration.
 func parseDeviceDeletionConfig(c *Config) error {

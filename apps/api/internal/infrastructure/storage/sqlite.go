@@ -204,6 +204,10 @@ func openWithLogger(cfg *Config, log *slog.Logger) (*SQLite, error) {
 		return nil, fmt.Errorf("storage: %s migrations failed: %w", backend, err)
 	}
 
+	if backend == BackendSQLite {
+		restrictSQLiteFilePermissions(cfg.Path, nil)
+	}
+
 	s := &SQLite{
 		db:         db,
 		backend:    backend,
@@ -219,6 +223,43 @@ func openWithLogger(cfg *Config, log *slog.Logger) (*SQLite, error) {
 	}
 
 	return s, nil
+}
+
+// restrictSQLiteFilePermissions chmods the SQLite database and its WAL/SHM
+// sidecars to owner-only (0600).
+//
+// SQLite creates these files with the process umask, which is commonly 022 -
+// giving a world-readable database. The file holds password hashes, session
+// signing keys, API-key hashes and the full audit trail, so it must not be
+// readable by other users on the host. Missing sidecars are not an error: WAL and
+// SHM appear once the database is first written.
+func restrictSQLiteFilePermissions(path string, logger *slog.Logger) {
+	if path == "" {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	// The configured path may carry DSN query parameters (e.g.
+	// "/data/vyzorix.db?mode=rwc"); only the filesystem part can be chmodded.
+	base := path
+	if i := strings.IndexAny(base, "?"); i >= 0 {
+		base = base[:i]
+	}
+	if base == "" {
+		return
+	}
+
+	for _, candidate := range []string{base, base + "-wal", base + "-shm", base + "-journal"} {
+		if _, err := os.Stat(candidate); err != nil {
+			continue // Not created yet (or not a local file).
+		}
+		if err := os.Chmod(candidate, 0o600); err != nil {
+			logger.Warn("failed to restrict database file permissions",
+				"path", candidate, "err", err)
+		}
+	}
 }
 
 // applyPool configures connection-pool limits appropriate to the backend.

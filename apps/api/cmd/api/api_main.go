@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -272,9 +273,14 @@ func startServer(cfg *config.Config, log *slog.Logger, apiServer *api.Server,
 	ssrConfig config.SSRConfig, ssrManager *ssr.Manager,
 	orgService *orgapplication.OrganizationService, authService *auth.AuthService, keyService *keys.APIKeyService) {
 	PrintSection("Server")
-	PrintStatus("Go Server", "Starting on "+cfg.Port)
+	PrintStatus("Go Server", "Starting on "+cfg.BindAddr+":"+cfg.Port)
 
-	addr := ":" + cfg.Port
+	if cfg.Env == "production" && (cfg.BindAddr == "0.0.0.0" || cfg.BindAddr == "::") {
+		log.Warn("API is bound to all interfaces; ensure a firewall or private network restricts access, or set BIND_ADDR",
+			"bindAddr", cfg.BindAddr, "port", cfg.Port)
+	}
+
+	addr := net.JoinHostPort(cfg.BindAddr, cfg.Port)
 	server := &http.Server{
 		Addr:    addr,
 		Handler: apiServer.Routes(),

@@ -42,22 +42,27 @@ services:
     container_name: vyzorix-server
     restart: unless-stopped
     environment:
-      - API_KEY_primary=change-me-in-production
-      - TOKEN_SECRET=change-me-32-chars-minimum!!
-      - JWT_SECRET=change-me-32-chars-minimum!!
-      - SESSION_SECRET=change-me-32-chars-minimum!!
-      - DEVICE_SECRET=change-me-32-chars-minimum!!
-      - SERVER_API_TOKEN=change-me-server-api-token
+      # Secrets come from the environment / a .env file, never from this file.
+      # Generate each with: openssl rand -hex 32
+      - API_KEY_primary=${API_KEY_primary:?API_KEY_primary must be set}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set}
+      - DEVICE_SECRET=${DEVICE_SECRET:-}
+      - SERVER_API_TOKEN=${SERVER_API_TOKEN:?SERVER_API_TOKEN must be set}
       - SSR_ENABLED=true
       - SSR_AUTO_BUILD=false
       - NODE_ENV=production
       - PORT=3000
+      # Bind all interfaces inside the container (required for nginx to reach it
+      # over the compose network). This container publishes no host port, so it is
+      # not reachable from outside the compose network.
+      - BIND_ADDR=0.0.0.0
       - DATABASE_URL=/data/vyzorix.db
       - VYZORIX_API_DIR=/data
       - VYZORIX_BIN_DIR=/app/bin
       - VYZORIX_PUBLIC_DIR=/app/public
       - ENFORCE_HMAC=true
-      - ALLOWED_ORIGINS=https://vyzorix.dev
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?ALLOWED_ORIGINS must be set}
     volumes:
       - vyzorix-data:/data
     healthcheck:
@@ -69,7 +74,12 @@ services:
     networks:
       - vyzorix-network
 
-  # profile (read-only, cap_drop, resource limits)
+  # Second API instance (read-only hardening demo). Start with:
+  #   docker compose --profile api2 up -d
+  #
+  # Deliberately NOT published to the host: it joins the internal network only, so
+  # it is reachable through nginx (with TLS) and never as cleartext on a host port.
+  # Secrets come from the environment / .env file, never from this file.
   vyzorix-api2:
     build:
       context: .
@@ -77,16 +87,21 @@ services:
     container_name: vyzorix-api2
     profiles:
       - api2
-    ports:
-      - "3001:3000"
     environment:
-      - TOKEN_SECRET=dev-token-secret-minimum-32-chars!!
-      - JWT_SECRET=dev-jwt-secret-minimum-32-chars!!
       - SSR_ENABLED=true
       - SSR_AUTO_BUILD=false
       - NODE_ENV=production
       - PORT=3000
+      - BIND_ADDR=0.0.0.0
       - DATABASE_URL=/data/vyzorix.db
+      # Secrets: set these in your shell or a .env file next to this compose file.
+      # The app refuses to start in production if they are missing, too short,
+      # placeholders, or reused across purposes.
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set}
+      - SERVER_API_TOKEN=${SERVER_API_TOKEN:?SERVER_API_TOKEN must be set}
+      - DEVICE_SECRET=${DEVICE_SECRET:-}
+      - API_KEY_primary=${API_KEY_primary:?API_KEY_primary must be set}
     volumes:
       - vyzorix-data-2:/data
     read_only: true
