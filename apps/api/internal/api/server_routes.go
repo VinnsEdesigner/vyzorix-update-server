@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/http/pprof"
 	"path/filepath"
 	"strings"
 	"time"
@@ -346,8 +347,15 @@ func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 	// Admin diagnostic + update routes (super_admin, no org scope needed).
 	// Guarded individually: a deployment without a DB never builds these
 	// handlers, and registering a nil handler panics on request.
+	//
+	// OrganizationContext is required even though these routes are not org-scoped:
+	// RequireSuperAdmin reads the org from the context to decide whether the caller
+	// is a super admin of it, so without this middleware the group always answered
+	// 400 "Organization ID is required for admin access" and support-bundle /
+	// updates-check / pprof were unreachable.
 	adminDiag := r.Group("/admin")
 	adminDiag.Use(s.cookieAuth.Middleware())
+	adminDiag.Use(middleware.NewOrganizationContext(nil).Middleware())
 	adminDiag.Use(middleware.RequireSuperAdmin())
 	{
 		if s.supportBundleHandler != nil {
@@ -356,7 +364,42 @@ func (s *Server) setupAdminRoutes(r *gin.RouterGroup) {
 		if s.updateCheckerHandler != nil {
 			adminDiag.GET("/updates/check", s.updateCheckerHandler.Check)
 		}
+		s.registerPprofRoutes(adminDiag)
 	}
+}
+
+// registerPprofRoutes exposes the net/http/pprof handlers for profiling a live
+// instance (heap, goroutine, allocs, block, mutex, CPU, trace).
+//
+// Disabled unless ENABLE_PPROF=true. When enabled the routes sit behind the admin
+// group's cookie auth + super-admin check and need the same X-Organization-ID
+// context as the other /admin routes, so a profile is never reachable
+// anonymously. Profiling is off by default deliberately: a heap or CPU profile is
+// a read of process memory.
+//
+// Usage (with a super-admin session and the org header):
+//
+//	go tool pprof http://host/v1/admin/pprof/heap
+//	go tool pprof http://host/v1/admin/pprof/profile?seconds=30
+//	curl -H 'X-Organization-ID: <org>' .../v1/admin/pprof/goroutine?debug=1
+func (s *Server) registerPprofRoutes(admin *gin.RouterGroup) {
+	if !s.config.EnablePprof {
+		return
+	}
+
+	pprofGroup := admin.Group("/pprof")
+	pprofGroup.GET("/", gin.WrapF(pprof.Index))
+	pprofGroup.GET("/cmdline", gin.WrapF(pprof.Cmdline))
+	pprofGroup.GET("/profile", gin.WrapF(pprof.Profile))
+	pprofGroup.GET("/symbol", gin.WrapF(pprof.Symbol))
+	pprofGroup.POST("/symbol", gin.WrapF(pprof.Symbol))
+	pprofGroup.GET("/trace", gin.WrapF(pprof.Trace))
+	// Named profiles: allocs, block, goroutine, heap, mutex, threadcreate.
+	pprofGroup.GET("/:profile", func(c *gin.Context) {
+		pprof.Handler(c.Param("profile")).ServeHTTP(c.Writer, c.Request)
+	})
+
+	s.log.Warn("pprof profiling endpoints enabled", "path", "/v1/admin/pprof", "note", "super-admin only")
 }
 
 func (s *Server) setupDeviceManagementRoutes(r *gin.RouterGroup) {

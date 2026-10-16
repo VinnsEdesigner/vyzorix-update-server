@@ -104,3 +104,33 @@ routes are templated, not raw — so the series count stays flat as the fleet
 grows. Metrics that would explode in cardinality (per-device, per-organization)
 are deliberately left to the database and the dashboard, where querying them is
 cheap and the answer is a number, not a time series.
+
+## Profiling (pprof)
+
+Metrics tell you *that* something is wrong; pprof tells you *where*. The Go
+runtime profilers are exposed under `/v1/admin/pprof` when `ENABLE_PPROF=true`:
+
+| Endpoint | Use |
+|:---------|:----|
+| `/v1/admin/pprof/heap` | In-use heap - what is retaining memory |
+| `/v1/admin/pprof/allocs` | Allocation sites - what churns |
+| `/v1/admin/pprof/goroutine?debug=1` | Every goroutine's stack - leaks, blocked work |
+| `/v1/admin/pprof/profile?seconds=30` | 30s CPU profile |
+| `/v1/admin/pprof/trace?seconds=5` | Execution trace |
+| `/v1/admin/pprof/block`, `/mutex` | Contention |
+
+Profiling is **off by default** and, when enabled, sits behind the same cookie
+auth + super-admin check as the other `/admin` routes, so a profile is never
+reachable anonymously. A heap or CPU profile is a read of process memory, so
+treat the endpoint as sensitive and turn it off when you are done.
+
+```bash
+# With a super-admin session cookie and the organization selected:
+go tool pprof -top http://localhost:3000/v1/admin/pprof/heap
+go tool pprof -top -seconds=30 http://localhost:3000/v1/admin/pprof/profile
+curl -b cookies.txt 'http://localhost:3000/v1/admin/pprof/goroutine?debug=1'
+```
+
+The endpoints are behind auth, so `go tool pprof` needs the cookie (pass
+`-header 'Cookie: vyz_session=...'`), or capture with `curl` first and run pprof
+against the saved file.
