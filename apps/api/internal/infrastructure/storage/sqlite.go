@@ -507,6 +507,8 @@ var migrations = []Migration{
 	{Apply: migrateAnnotations, Name: "create_annotations", Version: 69},
 	{Apply: migrateConfigVersions, Name: "create_config_versions", Version: 70},
 	{Apply: migrateAlertLabelInstanceKeys, Name: "alert_label_instance_keys", Version: 71},
+	// Persistent store for new-device login notifications.
+	{Apply: migrateKnownDevices, Name: "create_known_devices_tables", Version: 72},
 }
 
 // runMigrations applies all pending migrations.
