@@ -1,4 +1,4 @@
-.PHONY: all build run test test-quick test-race clean docker-build docker-run docker-stop lint lint-go lint-js fmt vet deps tidy check lint-fix lint-go-fix lint-js-fix wire migrate seed dev profile race build-prod build-production
+.PHONY: all build run test test-quick test-race clean docker-build docker-run docker-stop lint lint-go lint-js fmt vet deps tidy check lint-fix lint-go-fix lint-js-fix wire migrate seed dev profile race build-prod build-production verify verify-arch arch-baseline duplication-baseline deadcode-baseline
 
 # Go parameters
 GOCMD=go
@@ -176,9 +176,35 @@ lint: lint-go lint-js
 
 lint-fix: lint-go-fix lint-js-fix
 
-check: fmt lint vet test
+check: fmt lint vet test verify
 
-ci: fmt vet test
+ci: fmt vet test verify
+
+# =============================================
+# STRUCTURAL VERIFICATION GATES
+# =============================================
+
+# Run every structural gate (inward dependencies, and any future checks).
+verify:
+	@echo "Running structural verification gates..."
+	@$(GOCMD) run ./cmd/verify
+
+# Inward-dependency gate only; fast enough for a pre-commit hook.
+verify-arch:
+	@$(GOCMD) run ./cmd/verify arch
+
+# Rewrite the frozen dependency baseline. Run this only when the current
+# outward dependencies are the intended ones; the diff is the review artifact.
+arch-baseline:
+	@$(GOCMD) run ./cmd/verify arch-baseline
+
+# Rewrite the frozen duplication baseline.
+duplication-baseline:
+	@$(GOCMD) run ./cmd/verify duplication-baseline
+
+# Rewrite the frozen dead-code baseline.
+deadcode-baseline:
+	@$(GOCMD) run ./cmd/verify deadcode-baseline
 
 clean:
 	rm -f $(BINARY_NAME) $(BINARY_UNIX) coverage.out coverage.html *.prof

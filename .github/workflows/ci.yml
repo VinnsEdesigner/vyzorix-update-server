@@ -177,6 +177,34 @@ jobs:
         working-directory: apps/api
 
   # =============================================
+  # STRUCTURAL VERIFICATION GATES
+
+  # =============================================
+  structural-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.2'
+          cache: true
+          cache-dependency-path: apps/api/go.sum
+
+      - name: Inward-dependency gate
+        run: go run ./cmd/verify arch
+        working-directory: apps/api
+
+      - name: All structural gates
+        run: go run ./cmd/verify
+        working-directory: apps/api
+
+      - name: Failure-algebra tests
+        run: go test ./internal/domain/outcome/... ./internal/domain/command/...
+        working-directory: apps/api
+
+  # =============================================
   # DOCKER BUILD & SECURITY SCANNING
   # =============================================
 

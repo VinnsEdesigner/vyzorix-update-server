@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "allowed": {
+    "application -\u003e audit": 1,
+    "application -\u003e infrastructure": 51,
+    "application -\u003e ws": 3,
+    "domain -\u003e infrastructure": 1,
+    "infrastructure -\u003e api": 1
+  }
+}
