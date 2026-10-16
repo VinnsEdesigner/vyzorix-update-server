@@ -188,11 +188,11 @@ func (c *Client) ReadPump() {
 
 		c.RecordMessageReceived()
 
-		var env struct {
-			Type string `json:"type"`
-		}
-
-		if err := json.Unmarshal(raw, &env); err != nil {
+		// Decode once here and hand the frame to the telemetry path. Decoding in
+		// ReadPump just to read the type and again in processTelemetry doubled the
+		// per-frame cost on the busiest path.
+		var t telemetry.TelemetryFrame
+		if err := json.Unmarshal(raw, &t); err != nil {
 			if c.log != nil {
 				c.log.Warn("bad ws frame", "deviceId", c.DeviceID, "err", err)
 			}
@@ -200,14 +200,13 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
-		if env.Type == "telemetry" {
-			c.processTelemetry(raw)
+		if t.Type == "telemetry" {
+			c.processTelemetry(raw, &t)
 		}
 	}
 }
 
-func (c *Client) processTelemetry(raw []byte) {
-
+func (c *Client) processTelemetry(raw []byte, t *telemetry.TelemetryFrame) {
 	defer func() {
 		if r := recover(); r != nil {
 			if c.log != nil {
@@ -216,10 +215,6 @@ func (c *Client) processTelemetry(raw []byte) {
 		}
 	}()
 
-	var t telemetry.TelemetryFrame
-	if err := json.Unmarshal(raw, &t); err != nil {
-		return
-	}
 	t.Raw = raw
 	if t.DeviceID == "" {
 		t.DeviceID = c.DeviceID
@@ -227,7 +222,7 @@ func (c *Client) processTelemetry(raw []byte) {
 	if c.Hub.telemetryRepo != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := c.Hub.telemetryRepo.Save(ctx, c.DeviceID, raw, t); err != nil {
+		if err := c.Hub.telemetryRepo.Save(ctx, c.DeviceID, raw, *t); err != nil {
 			if c.log != nil {
 				c.log.Warn("telemetry save failed", "deviceId", c.DeviceID, "err", err)
 			}
@@ -238,7 +233,7 @@ func (c *Client) processTelemetry(raw []byte) {
 	// Fan out to GraphQL telemetryReceived subscribers in the device's org. The
 	// org is resolved once at registration (c.OrgID), so this is O(1).
 	if c.OrgID != "" {
-		c.Hub.PublishTelemetry(c.OrgID, c.DeviceID, t)
+		c.Hub.PublishTelemetry(c.OrgID, c.DeviceID, *t)
 	}
 
 	// Process telemetry for threshold breach events.

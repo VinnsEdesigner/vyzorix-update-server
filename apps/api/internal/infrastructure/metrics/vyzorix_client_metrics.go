@@ -227,6 +227,11 @@ func registerAll(m *Metrics) *Metrics {
 func (m *Metrics) Registry() *prometheus.Registry { return m.registry }
 
 // RecordHTTPRequest records an HTTP request with route, method, status labels.
+//
+// WithLabelValues is used rather than With(prometheus.Labels{...}): the latter
+// allocates a map and re-hashes the label set on every call, and this runs once
+// per HTTP request. Label order must match the []string passed to NewCounterVec /
+// NewHistogramVec ("route", "method", "status").
 func (m *Metrics) RecordHTTPRequest(route, method string, status int, duration time.Duration) {
 	statusStr := "2xx"
 	switch {
@@ -237,9 +242,9 @@ func (m *Metrics) RecordHTTPRequest(route, method string, status int, duration t
 	case status >= 300:
 		statusStr = "3xx"
 	}
-	labels := prometheus.Labels{"route": route, "method": method, "status": statusStr}
-	m.httpRequestsTotal.With(labels).Inc()
-	m.httpRequestDuration.With(labels).Observe(duration.Seconds())
+
+	m.httpRequestsTotal.WithLabelValues(route, method, statusStr).Inc()
+	m.httpRequestDuration.WithLabelValues(route, method, statusStr).Observe(duration.Seconds())
 }
 
 // RecordLogin records a login attempt with its outcome.
