@@ -440,7 +440,13 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 	ch := q.GetOrCreateQueue(deviceID)
 
 	count := 0
+
 	var remaining int
+
+	// Enqueue writes each message to BOTH the in-memory channel and the database,
+	// so the two sources hold the same messages. Track what has been delivered so a
+	// message present in both is not delivered twice.
+	delivered := make(map[string]struct{}, len(persisted))
 
 	// First, replay persisted messages in FIFO order.
 	persistedIdx := 0
@@ -451,6 +457,7 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 		case dest <- msg.Frame:
 			count++
 			persistedIdx++
+			delivered[msg.ID] = struct{}{}
 			q.incrementDelivered()
 
 			select {
@@ -475,10 +482,18 @@ func (q *MessageQueue) ReplayQueue(deviceID string, dest chan<- command.CommandF
 		}
 	}
 
-	// Then drain in-memory channel.
+	// Then drain the in-memory channel, skipping messages already replayed from the
+	// database above.
 	for {
 		select {
 		case msg := <-ch:
+			if _, already := delivered[msg.ID]; already {
+				// Same message as a persisted one; already delivered, so drop the
+				// in-memory copy rather than sending it again.
+				continue
+			}
+			delivered[msg.ID] = struct{}{}
+
 			// DeliveryConfirmation cannot be fulfilled after replay - clear it.
 			msg.Frame.DeliveryConfirmation = nil
 			select {

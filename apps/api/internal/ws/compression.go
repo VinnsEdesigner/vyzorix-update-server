@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"sync"
@@ -132,6 +133,12 @@ func (c *Compression) RecordCompression(originalSize, compressedSize int) {
 	// Metrics are already recorded in incrementCompressed.
 }
 
+// MaxDecompressedSize caps the output of a single decompression. A small gzip
+// payload can expand enormously (a decompression bomb), so a bound is applied even
+// though no caller feeds untrusted data in today - the guard belongs with the
+// function that can be misused, not with each caller.
+const MaxDecompressedSize = 16 << 20 // 16 MiB.
+
 // DecompressMessage decompresses a GZIP compressed message.
 func (c *Compression) DecompressMessage(data []byte) ([]byte, error) {
 	// Check for gzip magic bytes.
@@ -146,7 +153,17 @@ func (c *Compression) DecompressMessage(data []byte) ([]byte, error) {
 
 	defer func() { _ = reader.Close() }()
 
-	return io.ReadAll(reader)
+	// Read one byte past the cap so a payload that exceeds it is detected rather
+	// than silently truncated.
+	out, err := io.ReadAll(io.LimitReader(reader, MaxDecompressedSize+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(out) > MaxDecompressedSize {
+		return nil, fmt.Errorf("decompressed message exceeds %d bytes", MaxDecompressedSize)
+	}
+
+	return out, nil
 }
 
 // CompressJSON compresses a JSON message if it exceeds the threshold.
