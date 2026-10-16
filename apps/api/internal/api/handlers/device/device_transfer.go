@@ -1,12 +1,10 @@
 package device
 
 import (
-	"errors"
-
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/adapters/response"
+	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/apierrors"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/middleware"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/api/openapi"
-	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application"
 	"github.com/VinnsEdesigner/vyzorix/apps/api/internal/application/device"
 
 	"github.com/gin-gonic/gin"
@@ -105,19 +103,9 @@ func (h *TransferHandler) Transfer(c *gin.Context) {
 
 	err := h.deviceService.TransferDevice(c.Request.Context(), imei, sourceOrgID, req.TargetOrgID, op.ID)
 	if err != nil {
-		if errors.Is(err, application.ErrDeviceNotFound) {
-			h.presenter.NotFound(c, "device not found in this organization")
-			return
-		}
-		if errors.Is(err, application.ErrDeviceOnline) {
-			h.presenter.Forbidden(c, "device must be offline to transfer")
-			return
-		}
-		if errors.Is(err, application.ErrForbidden) {
-			h.presenter.Forbidden(c, "access denied")
-			return
-		}
-		h.presenter.InternalError(c, "failed to transfer device")
+		// The domain→HTTP classification (device not found → 404, device online →
+		// 400, forbidden → 403, anything else → 500) lives in one place now.
+		apierrors.RespondError(c, err)
 		return
 	}
 

@@ -2,6 +2,7 @@
 package responses
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 
@@ -290,13 +291,11 @@ func statusCodeToErrorCode(status int) errors.ErrorCode {
 	}
 }
 
-// RespondStructured sends a structured error response for the given status and.
-// human-readable message, deriving the canonical error code from the status.
-// It is the drop-in replacement for legacy `c.JSON(status, gin.H{"error","message"})`.
-// calls, so every error response shares the structured envelope with a trace id.
-// and docs link.
+// RespondStructured is a drop-in for legacy `c.JSON(status, gin.H{...})` calls,
+// so every error response shares the structured envelope with a trace id and
+// docs link.
 func RespondStructured(c *gin.Context, status int, message string) {
-	code := statusCodeToErrorCode(status)
+	code := StatusToErrorCode(status)
 	c.JSON(status, StructuredErrorResponse{
 		Error: ErrorDetail{
 			Code:    string(code),
@@ -307,11 +306,67 @@ func RespondStructured(c *gin.Context, status int, message string) {
 	})
 }
 
+// StatusToErrorCode is the exported form of the status→code mapping, for callers
+// (such as the apierrors adapter) that need the canonical code for a bare HTTP
+// status.
+func StatusToErrorCode(status int) errors.ErrorCode {
+	return statusCodeToErrorCode(status)
+}
+
+// WithTrace takes an already-encoded structured error body and returns a copy
+// with the trace id and docs URL filled in. It is used by value-typed responses
+// that build the envelope before a request context exists.
+//
+// It returns ok=false when body is not a structured error envelope, in which
+// case the caller should write body unchanged.
+func WithTrace(body []byte, traceID string) ([]byte, bool) {
+	var env StructuredErrorResponse
+	if err := json.Unmarshal(body, &env); err != nil || env.Error.Code == "" {
+		return nil, false
+	}
+	if env.Error.TraceID == "" {
+		env.Error.TraceID = traceID
+	}
+	if env.Error.DocsURL == "" {
+		env.Error.DocsURL = tracing.BuildErrorDocsURL(env.Error.Code)
+	}
+	out, err := json.Marshal(env)
+	if err != nil {
+		return nil, false
+	}
+	return out, true
+}
+
 // RespondStructuredAbort is RespondStructured plus c.Abort(), the drop-in.
 // replacement for legacy `c.AbortWithStatusJSON(status, gin.H{"error","message"})`.
 // middleware calls. Aborting is essential in middleware so the chain stops.
 // after an error response is written.
 func RespondStructuredAbort(c *gin.Context, status int, message string) {
 	RespondStructured(c, status, message)
+	c.Abort()
+}
+
+// RespondStructuredDetails is RespondStructured with an explicit error code and
+// optional structured details (e.g. field-level validation errors). Use it when
+// the code is known more precisely than the status alone implies, or when the
+// client needs machine-readable detail.
+func RespondStructuredDetails(c *gin.Context, status int, code errors.ErrorCode, message string, details any) {
+	if code == "" {
+		code = statusCodeToErrorCode(status)
+	}
+	c.JSON(status, StructuredErrorResponse{
+		Error: ErrorDetail{
+			Code:    string(code),
+			Message: message,
+			Details: details,
+			TraceID: GetTraceID(c),
+			DocsURL: tracing.BuildErrorDocsURL(string(code)),
+		},
+	})
+}
+
+// RespondStructuredAbortDetails is RespondStructuredDetails plus c.Abort().
+func RespondStructuredAbortDetails(c *gin.Context, status int, code errors.ErrorCode, message string, details any) {
+	RespondStructuredDetails(c, status, code, message, details)
 	c.Abort()
 }
