@@ -30,6 +30,7 @@ import os
 import re
 import sys
 import glob
+import subprocess
 
 SCHEMA_DIR = os.environ.get("SCHEMA_DIR", "tooling/schema")
 # The CUE schemas are the single source of truth for the swaggo DTO package.
@@ -281,6 +282,14 @@ def main():
 
     print(f"\nGenerated {len(all_schemas)} schemas -> {GO_OUT}")
     print("TypeScript comes from the spec via orval (not generated here).")
+
+    # gofmt the output. The committed file is gofmt-aligned, so emitting raw
+    # text would make the CI drift gate fail on every run for a purely cosmetic
+    # difference. Formatting here keeps generator output and repo state equal.
+    try:
+        subprocess.run(["gofmt", "-w", GO_OUT], check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        print(f"warning: could not gofmt {GO_OUT}: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":

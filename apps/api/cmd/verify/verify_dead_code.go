@@ -13,19 +13,17 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type deadCodeBaseline struct {
-	Version int      `json:"version"`
 	Allowed []string `json:"allowed"`
+	Version int      `json:"version"`
 }
 
 const deadCodeBaselineVersion = 2
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type deadDecl struct {
 	id   string
-	pos  token.Position
 	kind string
+	pos  token.Position
 }
 
 func loadTypedPackages() ([]*packages.Package, error) {

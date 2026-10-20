@@ -32,11 +32,10 @@ type Provenance struct {
 	ObservedAtUnix int64
 }
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type Claim[T any] struct {
 	value      T
-	certainty  Certainty
 	provenance Provenance
+	certainty  Certainty
 }
 
 func Observable[T any](value T, prov Provenance) Claim[T] {

@@ -28,10 +28,9 @@ type ruleViolation struct {
 	To   string `json:"to"`
 }
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type architectureBaseline struct {
-	Version int            `json:"version"`
 	Allowed map[string]int `json:"allowed"`
+	Version int            `json:"version"`
 }
 
 const architectureBaselineVersion = 1

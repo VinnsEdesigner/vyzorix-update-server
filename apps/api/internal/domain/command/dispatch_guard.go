@@ -2,11 +2,10 @@ package command
 
 import "sync"
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type DispatchGuard struct {
-	mu    sync.Mutex
 	held  map[string]int
 	limit int
+	mu    sync.Mutex
 }
 
 func NewDispatchGuard(limit int) *DispatchGuard {

@@ -22,10 +22,9 @@ type duplicateBlock struct {
 	Lines int      `json:"lines"`
 }
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type duplicationBaseline struct {
-	Version int      `json:"version"`
 	Allowed []string `json:"allowed"`
+	Version int      `json:"version"`
 }
 
 const duplicationBaselineVersion = 1

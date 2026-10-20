@@ -5,14 +5,13 @@ import (
 	"strings"
 )
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type Evidence struct {
-	Detail    string
-	Truncated bool
-	Bytes     int
 	ExitCode  *int
-	Signal    string
 	Facts     map[string]string
+	Detail    string
+	Signal    string
+	Bytes     int
+	Truncated bool
 }
 
 const maxEvidenceBytes = 8 * 1024

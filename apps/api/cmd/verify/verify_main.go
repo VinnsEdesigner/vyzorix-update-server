@@ -54,16 +54,15 @@ func main() {
 	fmt.Println("VYZORIX structural verification")
 	fmt.Printf("  root: %s\n\n", getRoot())
 
-	//nolint:govet // fieldalignment: field order chosen for readability, not packing
 	gates := []struct {
-		name string
 		run  func() bool
+		name string
 	}{
-		{"inward dependencies", verifyArchitectureBoundaries},
-		{"debt markers cite a ticket", verifyDebtMarkers},
-		{"no orphaned source files", verifyNoOrphanedFiles},
-		{"no new dead code", verifyDeadCode},
-		{"no new duplication", verifyDuplication},
+		{run: verifyArchitectureBoundaries, name: "inward dependencies"},
+		{run: verifyDebtMarkers, name: "debt markers cite a ticket"},
+		{run: verifyNoOrphanedFiles, name: "no orphaned source files"},
+		{run: verifyDeadCode, name: "no new dead code"},
+		{run: verifyDuplication, name: "no new duplication"},
 	}
 
 	allPassed := true

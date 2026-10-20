@@ -2,10 +2,9 @@ package outcome
 
 import "strings"
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type Remediation struct {
-	Action            RemediationAction
 	Guidance          string
+	Action            RemediationAction
 	RetryAfterSeconds int
 }
 

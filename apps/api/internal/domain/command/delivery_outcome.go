@@ -13,11 +13,10 @@ var (
 	ErrSendFailed    = errors.New("transport reported a send failure")
 )
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type TransportResult struct {
+	Err   error
 	Sent  bool
 	Acked bool
-	Err   error
 }
 
 func ClassifyDelivery(result TransportResult) *outcome.Failure {
@@ -38,12 +37,11 @@ func ClassifyDelivery(result TransportResult) *outcome.Failure {
 	}
 }
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type DeliveryPlan struct {
+	Reason     string
 	Retry      bool
 	Reconcile  bool
 	MarkFailed bool
-	Reason     string
 }
 
 func PlanDelivery(failure *outcome.Failure, tier RiskTier, retriesUsed, maxRetries int) DeliveryPlan {

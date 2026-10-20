@@ -37,8 +37,6 @@ func DefaultOutboxConfig() OutboxConfig {
 // Outbox processes pending commands from the outbox table.
 // It implements the transactional outbox pattern: commands are written to the DB.
 // atomically with their status, then processed asynchronously by this worker.
-//
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type Outbox struct {
 	repo          command.Repository
 	deviceRepo    device.Repository
@@ -47,8 +45,8 @@ type Outbox struct {
 	commandSigner *cryptohmac.CommandSigner
 	log           *slog.Logger
 	stopCh        chan struct{}
-	cfg           OutboxConfig
 	guard         *command.DispatchGuard
+	cfg           OutboxConfig
 	wg            sync.WaitGroup
 	mu            sync.Mutex
 	running       bool

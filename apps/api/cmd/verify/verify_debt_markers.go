@@ -10,12 +10,11 @@ import (
 	"strings"
 )
 
-//nolint:govet // fieldalignment: field order chosen for readability, not packing
 type debtMarker struct {
 	Marker string
 	File   string
-	Line   int
 	Text   string
+	Line   int
 }
 
 var markersRequiringTicket = []string{"TODO", "FIXME", "HACK", "XXX"}

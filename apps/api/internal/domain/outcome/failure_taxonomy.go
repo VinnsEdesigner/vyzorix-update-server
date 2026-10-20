@@ -111,15 +111,15 @@ func (s EffectStatus) NeedsReconciliation() bool {
 
 //nolint:errname,govet // outcome value rather than a thrown error; field order chosen for readability
 type Failure struct {
+	evidence Evidence
+	cause    *Failure
+	code     string
+	message  string
+	internal string
+	owned    []string
 	class    Class
 	blame    Blame
 	effect   EffectStatus
-	code     string
-	message  string
-	cause    *Failure
-	internal string
-	owned    []string
-	evidence Evidence
 }
 
 func New(class Class, blame Blame, effect EffectStatus, code, message string) *Failure {
