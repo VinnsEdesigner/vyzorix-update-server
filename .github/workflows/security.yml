@@ -12,6 +12,13 @@ on:
     # Run security checks weekly
     - cron: '0 0 * * 0'
 
+# upload-sarif publishes findings to the repository Security tab, which needs
+# security-events: write. Without it the step fails with 'Resource not
+# accessible by integration' and takes the job down with it.
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   # ============================================================================
   # 4.15.1 Secret Scanning
