@@ -40,13 +40,13 @@ WORKDIR /app
 COPY . .
 
 # Install all dependencies
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Build config package first (outputs to dist/)
 RUN pnpm --filter @vyzorix/config run build
 
 # Then build web (which depends on config)
-RUN pnpm --filter @vyzorix/web run build
+RUN pnpm --filter @vyzorix/vyoriX run build
 
 # =============================================================================
 # Stage 3: Production - Ubuntu with Node.js for SSR
@@ -113,14 +113,14 @@ COPY --from=go-builder --chown=appuser:appuser /out/vyzorix-update-server /app/v
 COPY .env.example /app/.env.example
 
 # Copy web assets
-COPY --from=web-builder --chown=appuser:appuser /app/apps/web/dist/client /app/public
-COPY --from=web-builder --chown=appuser:appuser /app/apps/web/dist/server /app/data/server
+COPY --from=web-builder --chown=appuser:appuser /app/apps/VyzoriX_web/dist/client /app/public
+COPY --from=web-builder --chown=appuser:appuser /app/apps/VyzoriX_web/dist/server /app/data/server
 
 # Copy SSR server entry point from source
 COPY apps/api/ssr-server.js /app/ssr-server.js
 
 # Create web directory for SSR server
-COPY --from=web-builder --chown=appuser:appuser /app/apps/web /web
+COPY --from=web-builder --chown=appuser:appuser /app/apps/VyzoriX_web /web
 
 # Make binary executable
 RUN chmod +x /app/vyzorix-update-server /app/ssr-server.js

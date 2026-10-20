@@ -183,6 +183,6 @@ function AlertsPage() {
   );
 }
 
-export const Route = createFileRoute('/alerts')({
+export const Route = createFileRoute('/alerts/')({
   component: AlertsPage,
 });

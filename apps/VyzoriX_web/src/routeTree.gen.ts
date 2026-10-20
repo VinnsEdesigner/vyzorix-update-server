@@ -10,65 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AlertsRouteImport } from './routes/alerts'
-import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as ServiceAccountsRouteImport } from './routes/service-accounts'
+import { Route as AlertsIndexRouteImport } from './routes/alerts/index'
+import { Route as NotificationsIndexRouteImport } from './routes/notifications/index'
+import { Route as ServiceAccountsIndexRouteImport } from './routes/service-accounts/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-
-const AlertsRoute = AlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
+const AlertsIndexRoute = AlertsIndexRouteImport.update({
+  id: '/alerts/',
+  path: '/alerts/',
   getParentRoute: () => rootRouteImport,
 } as any)
-
-const NotificationsRoute = NotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
+const NotificationsIndexRoute = NotificationsIndexRouteImport.update({
+  id: '/notifications/',
+  path: '/notifications/',
   getParentRoute: () => rootRouteImport,
 } as any)
-
-const ServiceAccountsRoute = ServiceAccountsRouteImport.update({
-  id: '/service-accounts',
-  path: '/service-accounts',
+const ServiceAccountsIndexRoute = ServiceAccountsIndexRouteImport.update({
+  id: '/service-accounts/',
+  path: '/service-accounts/',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/alerts': typeof AlertsRoute
-  '/notifications': typeof NotificationsRoute
-  '/service-accounts': typeof ServiceAccountsRoute
+  '/alerts/': typeof AlertsIndexRoute
+  '/notifications/': typeof NotificationsIndexRoute
+  '/service-accounts/': typeof ServiceAccountsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/alerts': typeof AlertsRoute
-  '/notifications': typeof NotificationsRoute
-  '/service-accounts': typeof ServiceAccountsRoute
+  '/alerts': typeof AlertsIndexRoute
+  '/notifications': typeof NotificationsIndexRoute
+  '/service-accounts': typeof ServiceAccountsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/alerts': typeof AlertsRoute
-  '/notifications': typeof NotificationsRoute
-  '/service-accounts': typeof ServiceAccountsRoute
+  '/alerts/': typeof AlertsIndexRoute
+  '/notifications/': typeof NotificationsIndexRoute
+  '/service-accounts/': typeof ServiceAccountsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/alerts' | '/notifications' | '/service-accounts'
+  fullPaths: '/' | '/alerts/' | '/notifications/' | '/service-accounts/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/alerts' | '/notifications' | '/service-accounts'
-  id: '__root__' | '/' | '/alerts' | '/notifications' | '/service-accounts'
+  id: '__root__' | '/' | '/alerts/' | '/notifications/' | '/service-accounts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AlertsRoute: typeof AlertsRoute
-  NotificationsRoute: typeof NotificationsRoute
+  AlertsIndexRoute: typeof AlertsIndexRoute
+  NotificationsIndexRoute: typeof NotificationsIndexRoute
+  ServiceAccountsIndexRoute: typeof ServiceAccountsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -80,25 +78,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/alerts': {
-      id: '/alerts'
+    '/alerts/': {
+      id: '/alerts/'
       path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AlertsRouteImport
+      fullPath: '/alerts/'
+      preLoaderRoute: typeof AlertsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/notifications': {
-      id: '/notifications'
+    '/notifications/': {
+      id: '/notifications/'
       path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof NotificationsRouteImport
+      fullPath: '/notifications/'
+      preLoaderRoute: typeof NotificationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/service-accounts': {
-      id: '/service-accounts'
+    '/service-accounts/': {
+      id: '/service-accounts/'
       path: '/service-accounts'
-      fullPath: '/service-accounts'
-      preLoaderRoute: typeof ServiceAccountsRouteImport
+      fullPath: '/service-accounts/'
+      preLoaderRoute: typeof ServiceAccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -106,9 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AlertsRoute: AlertsRoute,
-  NotificationsRoute: NotificationsRoute,
-  ServiceAccountsRoute: ServiceAccountsRoute,
+  AlertsIndexRoute: AlertsIndexRoute,
+  NotificationsIndexRoute: NotificationsIndexRoute,
+  ServiceAccountsIndexRoute: ServiceAccountsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

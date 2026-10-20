@@ -125,6 +125,6 @@ function ServiceAccountsPage() {
   );
 }
 
-export const Route = createFileRoute('/service-accounts')({
+export const Route = createFileRoute('/service-accounts/')({
   component: ServiceAccountsPage,
 });
