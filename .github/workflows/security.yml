@@ -136,10 +136,6 @@ jobs:
   container-scan:
     name: Container Security
     runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -147,10 +143,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Build the image into the local daemon. Jobs do not share a Docker
+      # daemon, so this job cannot rely on the `build` job's output — and that
+      # job does not push, so the image must be produced here before Trivy can
+      # scan it.
+      - name: Build image for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: false
+          load: true
+          tags: vyzorix-scan:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'ghcr.io/vinnsedesigner/vyzorix-update-server/vyzorix:latest'
+          image-ref: 'vyzorix-scan:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -161,7 +172,6 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: 'apps/api/Dockerfile'
-          check-template: 'Dockerfile checks'
           format: 'table'
 
       - name: Upload Trivy results to Security tab
